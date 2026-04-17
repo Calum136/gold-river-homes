@@ -8,6 +8,7 @@ export interface CostBreakdown {
   delivery: number;
   permits: number;
   contingency: number;
+  upgrades: number; // extensions & add-ons
 }
 
 export interface MortgageInputs {

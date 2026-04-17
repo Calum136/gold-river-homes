@@ -18,8 +18,11 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gold/20 border border-gold/40 rounded flex items-center justify-center">
-              <span className="font-accent text-gold text-xl font-semibold leading-none">GR</span>
+            <div className="w-10 h-10 bg-gold/20 border border-gold/40 rounded flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gold">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+                <path d="M9 21V12h6v9" />
+              </svg>
             </div>
             <div className="hidden sm:block">
               <span className="font-display text-text-white text-lg tracking-wide">

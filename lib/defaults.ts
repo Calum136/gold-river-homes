@@ -7,6 +7,7 @@ export type WaterType = "well" | "municipal" | null;
 export type SewerType = "septic" | "municipal" | null;
 export type FoundationType = "slab" | "crawlspace" | "basement";
 export type LandSituation = "own" | "buying";
+export type HomeCategory = "mini" | "modular" | "traditional" | "multistory";
 
 // --- Cost estimates (what we TELL the user) ---
 
@@ -19,13 +20,338 @@ export interface CostEstimate {
   whyItMatters?: string;
 }
 
-export const homeModels = [
-  { id: "custom", name: "Enter a price", price: 0, beds: 0, baths: 0, sqft: 0 },
-  { id: "zen-ct-2", name: "Zen CT-2", price: 165000, beds: 2, baths: 1, sqft: 975, type: "Mini" },
-  { id: "fancy-tr-2", name: "Fancy TR-2", price: 185000, beds: 2, baths: 2, sqft: 1104, type: "Mini" },
-  { id: "zenith-ct", name: "Zenith CT", price: 195000, beds: 2, baths: 2, sqft: 1184, type: "Mini" },
-  { id: "fb10", name: "FB10", price: 210000, beds: 3, baths: 2, sqft: 1104, type: "Mini" },
-] as const;
+export interface HomeModel {
+  id: string;
+  name: string;
+  price: number;
+  beds: number;
+  baths: number;
+  sqft: number;
+  type: string;
+  category: HomeCategory;
+  description?: string;
+}
+
+export interface HomeCategoryDef {
+  id: HomeCategory;
+  label: string;
+  description: string;
+  priceRange: string;
+}
+
+export const homeCategories: HomeCategoryDef[] = [
+  {
+    id: "mini",
+    label: "Mini Home",
+    description: "Single-section homes, compact and efficient. Perfect for couples, retirees, or smaller lots.",
+    priceRange: "$140k – $220k",
+  },
+  {
+    id: "modular",
+    label: "Modular Home",
+    description: "Multi-section builds assembled on-site. More living space with room to customize your layout.",
+    priceRange: "$180k – $310k",
+  },
+  {
+    id: "traditional",
+    label: "Traditional Build",
+    description: "Classic bungalow and ranch-style designs with a conventional exterior and modern interior.",
+    priceRange: "$220k – $390k",
+  },
+  {
+    id: "multistory",
+    label: "Multi-Story",
+    description: "Two-storey designs that maximize living space on a smaller footprint. Great for families.",
+    priceRange: "$280k – $460k",
+  },
+];
+
+export const homeModels: HomeModel[] = [
+  {
+    id: "zen-ct-2",
+    name: "Zen CT-2",
+    price: 165000,
+    beds: 2,
+    baths: 1,
+    sqft: 975,
+    type: "Mini",
+    category: "mini",
+    description: "A smart, efficient 2-bedroom layout perfect for individuals or couples.",
+  },
+  {
+    id: "zenith-ct",
+    name: "Zenith CT",
+    price: 195000,
+    beds: 2,
+    baths: 2,
+    sqft: 1184,
+    type: "Mini",
+    category: "mini",
+    description: "Spacious for its class, with two full bathrooms and an open-concept kitchen.",
+  },
+  {
+    id: "fb10",
+    name: "FB10",
+    price: 210000,
+    beds: 3,
+    baths: 2,
+    sqft: 1104,
+    type: "Mini",
+    category: "mini",
+    description: "Three bedrooms in a compact footprint — a great choice for small families.",
+  },
+  {
+    id: "fancy-tr-2",
+    name: "Fancy TR-2",
+    price: 185000,
+    beds: 2,
+    baths: 2,
+    sqft: 1104,
+    type: "Modular",
+    category: "modular",
+    description: "A well-appointed modular with two full baths and a stylish interior package.",
+  },
+  {
+    id: "bali",
+    name: "Bali Series",
+    price: 245000,
+    beds: 3,
+    baths: 2,
+    sqft: 1380,
+    type: "Modular",
+    category: "modular",
+    description: "Generous open-plan living areas with a covered deck option and flexible layout.",
+  },
+  {
+    id: "meza",
+    name: "Meza Series",
+    price: 285000,
+    beds: 4,
+    baths: 2,
+    sqft: 1560,
+    type: "Modular",
+    category: "modular",
+    description: "Our largest modular — four bedrooms and plenty of room for a growing family.",
+  },
+  {
+    id: "heritage-28",
+    name: "Heritage 28",
+    price: 265000,
+    beds: 3,
+    baths: 2,
+    sqft: 1450,
+    type: "Traditional",
+    category: "traditional",
+    description: "A classic bungalow exterior with a warm, welcoming interior layout.",
+  },
+  {
+    id: "countryside",
+    name: "Countryside",
+    price: 315000,
+    beds: 4,
+    baths: 2,
+    sqft: 1720,
+    type: "Traditional",
+    category: "traditional",
+    description: "Wide lot presence with covered front porch and an upgraded traditional trim package.",
+  },
+  {
+    id: "summit-2",
+    name: "Summit II",
+    price: 355000,
+    beds: 3,
+    baths: 2,
+    sqft: 1600,
+    type: "Multi-Story",
+    category: "multistory",
+    description: "Full two-storey with master suite upstairs and an open-concept main floor.",
+  },
+  {
+    id: "ridge-view",
+    name: "Ridge View",
+    price: 425000,
+    beds: 4,
+    baths: 3,
+    sqft: 2050,
+    type: "Multi-Story",
+    category: "multistory",
+    description: "Our flagship two-storey — four bedrooms, three bathrooms, commanding curb appeal.",
+  },
+  {
+    id: "custom",
+    name: "Enter a price",
+    price: 0,
+    beds: 0,
+    baths: 0,
+    sqft: 0,
+    type: "Custom",
+    category: "mini",
+  },
+];
+
+// --- Finish options ---
+
+export interface FinishOption {
+  id: string;
+  label: string;
+  description: string;
+  priceDelta: number;
+}
+
+export interface FinishCategory {
+  id: string;
+  label: string;
+  options: FinishOption[];
+}
+
+export const finishCategories: FinishCategory[] = [
+  {
+    id: "insulation",
+    label: "Insulation",
+    options: [
+      {
+        id: "standard",
+        label: "Standard",
+        description: "Code-minimum insulation. Adequate for milder seasons.",
+        priceDelta: 0,
+      },
+      {
+        id: "enhanced",
+        label: "Enhanced",
+        description: "Upgraded batt insulation in walls and attic. Noticeably warmer winters and lower heating bills.",
+        priceDelta: 3000,
+      },
+      {
+        id: "premium",
+        label: "Premium",
+        description: "Spray foam + high-R batts with full air sealing. Best possible energy performance.",
+        priceDelta: 6000,
+      },
+    ],
+  },
+  {
+    id: "siding",
+    label: "Exterior Siding",
+    options: [
+      {
+        id: "vinyl-horizontal",
+        label: "Vinyl Horizontal",
+        description: "Classic horizontal lap siding. Durable, low-maintenance, and timeless.",
+        priceDelta: 0,
+      },
+      {
+        id: "vinyl-vertical",
+        label: "Vinyl Vertical",
+        description: "Board and batten vertical profile. Clean, modern look that photographs beautifully.",
+        priceDelta: 1500,
+      },
+      {
+        id: "premium-board-batten",
+        label: "Premium Board & Batten",
+        description: "Wide-profile board & batten with an upgraded trim package. A standout exterior.",
+        priceDelta: 3000,
+      },
+    ],
+  },
+  {
+    id: "roofing",
+    label: "Roofing",
+    options: [
+      {
+        id: "shingles",
+        label: "Architectural Shingles",
+        description: "30-year rated asphalt shingles. Reliable, attractive, and industry standard.",
+        priceDelta: 0,
+      },
+      {
+        id: "metal",
+        label: "Metal Roof",
+        description: "50+ year standing seam metal roof. Higher upfront, but lower lifetime cost and superior in heavy snow.",
+        priceDelta: 4000,
+      },
+    ],
+  },
+  {
+    id: "flooring",
+    label: "Flooring",
+    options: [
+      {
+        id: "standard",
+        label: "Standard Vinyl Plank",
+        description: "Durable, waterproof LVP throughout. Easy to clean and maintain.",
+        priceDelta: 0,
+      },
+      {
+        id: "upgraded-laminate",
+        label: "Upgraded Laminate",
+        description: "Thicker planks with a more authentic wood appearance and a softer underfoot feel.",
+        priceDelta: 2500,
+      },
+      {
+        id: "hardwood",
+        label: "Engineered Hardwood",
+        description: "Real wood veneer over plywood core. Warm, premium aesthetic that adds resale value.",
+        priceDelta: 6000,
+      },
+    ],
+  },
+  {
+    id: "countertops",
+    label: "Countertops",
+    options: [
+      {
+        id: "laminate",
+        label: "Laminate",
+        description: "Clean laminate counters in a range of colours. Practical and affordable.",
+        priceDelta: 0,
+      },
+      {
+        id: "quartz",
+        label: "Quartz",
+        description: "Engineered stone with a high-end look, excellent durability, and zero maintenance.",
+        priceDelta: 3500,
+      },
+    ],
+  },
+];
+
+// --- Extensions & add-ons ---
+
+export interface Extension {
+  id: string;
+  label: string;
+  description: string;
+  low: number;
+  mid: number;
+  high: number;
+}
+
+export const extensionOptions: Extension[] = [
+  {
+    id: "front-extension",
+    label: "Front Extension / Covered Porch",
+    description: "A covered entry porch or bump-out. Improves curb appeal and gives a transitional indoor/outdoor space.",
+    low: 12000,
+    mid: 20000,
+    high: 30000,
+  },
+  {
+    id: "garage",
+    label: "Attached Garage",
+    description: "Single-car attached garage with concrete slab, overhead door, and electrical.",
+    low: 25000,
+    mid: 35000,
+    high: 45000,
+  },
+  {
+    id: "second-story",
+    label: "Second Storey Addition",
+    description: "Full second floor for models that support it. Significantly increases livable square footage.",
+    low: 60000,
+    mid: 90000,
+    high: 120000,
+  },
+];
 
 export const waterCosts: Record<Exclude<WaterType, null>, CostEstimate> = {
   well: {
@@ -141,7 +467,7 @@ export const mortgageDefaults = {
 
 export const amortizationOptions = [15, 20, 25, 30];
 
-// Category labels for display
+// Category labels for display (used by chart)
 export const costLabels: Record<string, string> = {
   homePrice: "Home Purchase",
   landPrice: "Land Purchase",
@@ -154,4 +480,6 @@ export const costLabels: Record<string, string> = {
   delivery: "Delivery & Setup",
   permits: "Permits & Inspections",
   contingency: "Contingency (10%)",
+  upgrades: "Add-ons & Extensions",
+  sitePrep: "Site Preparation",
 };

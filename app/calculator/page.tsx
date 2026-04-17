@@ -15,6 +15,9 @@ import {
 } from "@/lib/calculator";
 import {
   homeModels,
+  homeCategories,
+  finishCategories,
+  extensionOptions,
   waterCosts,
   sewerCosts,
   foundationCosts,
@@ -24,12 +27,36 @@ import {
   SewerType,
   FoundationType,
   LandSituation,
+  HomeCategory,
 } from "@/lib/defaults";
 
+const energyRating = (insulation: string, roofing: string) => {
+  if (insulation === "premium") return { grade: "A", label: "Excellent", color: "#6BAE8B" };
+  if (insulation === "enhanced" && roofing === "metal") return { grade: "B+", label: "Very Good", color: "#9BAE6B" };
+  if (insulation === "enhanced") return { grade: "B", label: "Good", color: "#C4A35A" };
+  if (roofing === "metal") return { grade: "C+", label: "Above Average", color: "#C4882A" };
+  return { grade: "C", label: "Standard", color: "#9B8B7A" };
+};
+
 export default function CalculatorPage() {
-  // User choices
-  const [selectedModel, setSelectedModel] = useState<string>(homeModels[3].id); // Zenith CT default
+  // Category & model selection
+  const [selectedCategory, setSelectedCategory] = useState<HomeCategory>("mini");
+  const [selectedModel, setSelectedModel] = useState<string>("zenith-ct");
   const [customPrice, setCustomPrice] = useState(200000);
+
+  // Finishes
+  const [finishes, setFinishes] = useState<Record<string, string>>({
+    insulation: "standard",
+    siding: "vinyl-horizontal",
+    roofing: "shingles",
+    flooring: "standard",
+    countertops: "laminate",
+  });
+
+  // Extensions
+  const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
+
+  // Site questions
   const [landSituation, setLandSituation] = useState<LandSituation>("buying");
   const [landPrice, setLandPrice] = useState(75000);
   const [foundation, setFoundation] = useState<FoundationType>("crawlspace");
@@ -39,11 +66,41 @@ export default function CalculatorPage() {
   // Mortgage
   const [mortgage, setMortgage] = useState(mortgageDefaults);
 
-  // Derived costs — the site TELLS the user what things cost
-  const homePrice = useMemo(() => {
+  const handleCategorySelect = (category: HomeCategory) => {
+    setSelectedCategory(category);
+    const first = homeModels.find((m) => m.category === category && m.id !== "custom");
+    if (first) setSelectedModel(first.id);
+  };
+
+  const toggleExtension = (id: string) => {
+    setSelectedExtensions((prev) =>
+      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]
+    );
+  };
+
+  // Finish delta = sum of all selected finish price deltas
+  const finishDelta = useMemo(() => {
+    return finishCategories.reduce((sum, cat) => {
+      const opt = cat.options.find((o) => o.id === finishes[cat.id]);
+      return sum + (opt?.priceDelta ?? 0);
+    }, 0);
+  }, [finishes]);
+
+  // Extensions cost = sum of selected extension mid values
+  const extensionsCost = useMemo(() => {
+    return selectedExtensions.reduce((sum, id) => {
+      const ext = extensionOptions.find((e) => e.id === id);
+      return sum + (ext?.mid ?? 0);
+    }, 0);
+  }, [selectedExtensions]);
+
+  // Base home price (model price + finish upgrades)
+  const baseModelPrice = useMemo(() => {
     if (selectedModel === "custom") return customPrice;
     return homeModels.find((m) => m.id === selectedModel)?.price ?? 180000;
   }, [selectedModel, customPrice]);
+
+  const homePrice = useMemo(() => baseModelPrice + finishDelta, [baseModelPrice, finishDelta]);
 
   const costs: CostBreakdown = useMemo(() => {
     const land = landSituation === "buying" ? landPrice : 0;
@@ -56,7 +113,9 @@ export default function CalculatorPage() {
     const delivery = siteEstimates.delivery.mid;
     const permits = siteEstimates.permits.mid;
 
-    const subtotal = homePrice + land + found + clearing + driveway + water + sewer + electrical + delivery + permits;
+    const subtotal =
+      homePrice + land + found + clearing + driveway + water + sewer +
+      electrical + delivery + permits + extensionsCost;
     const contingency = Math.round(subtotal * 0.1);
 
     return {
@@ -69,8 +128,9 @@ export default function CalculatorPage() {
       delivery,
       permits,
       contingency,
+      upgrades: extensionsCost,
     };
-  }, [homePrice, landSituation, landPrice, foundation, waterType, sewerType]);
+  }, [homePrice, landSituation, landPrice, foundation, waterType, sewerType, extensionsCost]);
 
   const totalCost = useMemo(() => calculateTotalCost(costs), [costs]);
   const mortgageResult = useMemo(
@@ -78,16 +138,31 @@ export default function CalculatorPage() {
     [totalCost, mortgage]
   );
 
-  // For itemized display with more detail
   const detailedCosts = useMemo(() => {
     const land = landSituation === "buying" ? landPrice : 0;
     const water = waterType ? waterCosts[waterType].mid : 0;
     const sewer = sewerType ? sewerCosts[sewerType].mid : 0;
-    const subtotal = homePrice + land + foundationCosts[foundation].mid + siteEstimates.clearing.mid + siteEstimates.driveway.mid + water + sewer + siteEstimates.electrical.mid + siteEstimates.delivery.mid + siteEstimates.permits.mid;
+    const subtotal =
+      homePrice + land + foundationCosts[foundation].mid +
+      siteEstimates.clearing.mid + siteEstimates.driveway.mid +
+      water + sewer + siteEstimates.electrical.mid +
+      siteEstimates.delivery.mid + siteEstimates.permits.mid + extensionsCost;
+
+    const modelName =
+      selectedModel !== "custom"
+        ? homeModels.find((m) => m.id === selectedModel)?.name
+        : "Custom price";
 
     return [
-      { label: "Home Purchase", amount: homePrice, desc: selectedModel !== "custom" ? homeModels.find(m => m.id === selectedModel)?.name : "Custom price" },
+      { label: "Home Purchase", amount: baseModelPrice, desc: modelName },
+      ...(finishDelta > 0
+        ? [{ label: "Finish Upgrades", amount: finishDelta, desc: "Selected upgrades" }]
+        : []),
       ...(land > 0 ? [{ label: "Land Purchase", amount: land }] : []),
+      ...selectedExtensions.map((extId) => {
+        const ext = extensionOptions.find((e) => e.id === extId)!;
+        return { label: ext.label, amount: ext.mid };
+      }),
       { label: foundationCosts[foundation].label, amount: foundationCosts[foundation].mid },
       { label: "Land Clearing & Grading", amount: siteEstimates.clearing.mid },
       { label: "Driveway", amount: siteEstimates.driveway.mid },
@@ -96,11 +171,19 @@ export default function CalculatorPage() {
       { label: "Electrical Service", amount: siteEstimates.electrical.mid },
       { label: "Delivery & Setup", amount: siteEstimates.delivery.mid },
       { label: "Permits & Inspections", amount: siteEstimates.permits.mid },
-      { label: "Contingency (10%)", amount: Math.round(subtotal * 0.1), desc: "Buffer for unexpected costs" },
+      {
+        label: "Contingency (10%)",
+        amount: Math.round(subtotal * 0.1),
+        desc: "Buffer for unexpected costs",
+      },
     ];
-  }, [homePrice, selectedModel, landSituation, landPrice, foundation, waterType, sewerType]);
+  }, [homePrice, baseModelPrice, finishDelta, selectedModel, landSituation, landPrice, foundation, waterType, sewerType, selectedExtensions, extensionsCost]);
 
-  const selectedModelData = homeModels.find((m) => m.id === selectedModel);
+  const modelsInCategory = homeModels.filter(
+    (m) => m.category === selectedCategory && m.id !== "custom"
+  );
+
+  const efficiency = energyRating(finishes.insulation, finishes.roofing);
 
   return (
     <div className="min-h-screen">
@@ -114,10 +197,9 @@ export default function CalculatorPage() {
             What Does It <span className="text-gold">Really</span> Cost?
           </h1>
           <p className="text-text-muted text-base max-w-2xl">
-            Buying a modular home is more than just the home price. Answer a few
-            simple questions and we&apos;ll show you the full picture &mdash;
-            including land prep, well, septic, electrical, and everything else
-            most people don&apos;t think about.
+            Answer a few simple questions and we&apos;ll show you the full
+            picture &mdash; home, finishes, land prep, well, septic, electrical,
+            and everything else most people don&apos;t think about.
           </p>
         </div>
       </div>
@@ -126,14 +208,46 @@ export default function CalculatorPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Questions */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Q1: Choose your home */}
+
+            {/* Step 1: Choose category */}
             <QuestionCard
               step={1}
-              title="Choose Your Home"
-              subtitle="Select a model or enter a custom price."
+              title="What Type of Home Are You Looking For?"
+              subtitle="Select a category to see models in that range."
+            >
+              <div className="grid grid-cols-2 gap-3">
+                {homeCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategorySelect(cat.id)}
+                    className={`text-left p-4 border transition-all duration-200 ${
+                      selectedCategory === cat.id
+                        ? "bg-gold/10 border-gold"
+                        : "bg-bg-elevated border-border hover:border-border-gold/50"
+                    }`}
+                  >
+                    <h4 className={`font-medium text-sm mb-1 ${selectedCategory === cat.id ? "text-gold" : "text-text-white"}`}>
+                      {cat.label}
+                    </h4>
+                    <p className="text-text-muted text-xs leading-snug mb-2">
+                      {cat.description}
+                    </p>
+                    <span className={`text-xs font-semibold tabular-nums ${selectedCategory === cat.id ? "text-gold" : "text-text-muted"}`}>
+                      {cat.priceRange}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </QuestionCard>
+
+            {/* Step 2: Choose model */}
+            <QuestionCard
+              step={2}
+              title="Select Your Model"
+              subtitle="These are the available models in your chosen category."
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {homeModels.filter(m => m.id !== "custom").map((model) => (
+                {modelsInCategory.map((model) => (
                   <button
                     key={model.id}
                     onClick={() => setSelectedModel(model.id)}
@@ -143,19 +257,31 @@ export default function CalculatorPage() {
                         : "bg-bg-elevated border-border hover:border-border-gold/50"
                     }`}
                   >
+                    {/* Placeholder image area */}
+                    <div className="w-full h-24 bg-white/5 border border-white/5 rounded mb-3 flex items-center justify-center">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-white/20">
+                        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+                        <path d="M9 21V12h6v9" />
+                      </svg>
+                    </div>
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className={`font-medium ${selectedModel === model.id ? "text-gold" : "text-text-white"}`}>
+                        <h4 className={`font-medium text-sm ${selectedModel === model.id ? "text-gold" : "text-text-white"}`}>
                           {model.name}
                         </h4>
-                        <p className="text-text-muted text-xs mt-1">
-                          {model.type} &bull; {model.beds} bed / {model.baths} bath &bull; {model.sqft.toLocaleString()} ft&sup2;
+                        <p className="text-text-muted text-xs mt-0.5">
+                          {model.beds} bed &bull; {model.baths} bath &bull; {model.sqft.toLocaleString()} ft&sup2;
                         </p>
                       </div>
-                      <span className={`text-lg font-bold tabular-nums ${selectedModel === model.id ? "text-gold" : "text-text-white"}`}>
+                      <span className={`text-sm font-bold tabular-nums ${selectedModel === model.id ? "text-gold" : "text-text-white"}`}>
                         {formatCurrency(model.price)}
                       </span>
                     </div>
+                    {model.description && (
+                      <p className="text-text-muted/60 text-xs mt-2 leading-snug">
+                        {model.description}
+                      </p>
+                    )}
                   </button>
                 ))}
               </div>
@@ -170,7 +296,7 @@ export default function CalculatorPage() {
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`font-medium ${selectedModel === "custom" ? "text-gold" : "text-text-white"}`}>
+                  <span className={`font-medium text-sm ${selectedModel === "custom" ? "text-gold" : "text-text-white"}`}>
                     I have a different price in mind
                   </span>
                   {selectedModel === "custom" && (
@@ -190,9 +316,123 @@ export default function CalculatorPage() {
               </button>
             </QuestionCard>
 
-            {/* Q2: Land situation */}
+            {/* Step 3: Customize finishes */}
             <QuestionCard
-              step={2}
+              step={3}
+              title="Customize Your Finish"
+              subtitle="Choose your interior and exterior finishes. Each upgrade adds to your home price."
+            >
+              <div className="space-y-6">
+                {finishCategories.map((cat) => (
+                  <div key={cat.id}>
+                    <p className="text-text-secondary text-xs uppercase tracking-widest font-medium mb-2">
+                      {cat.label}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {cat.options.map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setFinishes((prev) => ({ ...prev, [cat.id]: opt.id }))}
+                          className={`text-left p-3 border text-sm transition-all duration-200 ${
+                            finishes[cat.id] === opt.id
+                              ? "bg-gold/10 border-gold"
+                              : "bg-bg-elevated border-border hover:border-border-gold/50"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <span className={`font-medium ${finishes[cat.id] === opt.id ? "text-gold" : "text-text-white"}`}>
+                              {opt.label}
+                            </span>
+                            {opt.priceDelta > 0 && (
+                              <span className="text-gold text-xs font-semibold tabular-nums ml-1 shrink-0">
+                                +{formatCurrency(opt.priceDelta)}
+                              </span>
+                            )}
+                            {opt.priceDelta === 0 && (
+                              <span className="text-text-muted/50 text-xs ml-1 shrink-0">Included</span>
+                            )}
+                          </div>
+                          <p className="text-text-muted/60 text-xs leading-snug">{opt.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Energy efficiency badge */}
+                <div className="bg-bg-elevated border border-border/50 p-4 flex items-center gap-4">
+                  <div
+                    className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 text-bg-primary font-bold text-lg"
+                    style={{ backgroundColor: efficiency.color }}
+                  >
+                    {efficiency.grade}
+                  </div>
+                  <div>
+                    <p className="text-text-white text-sm font-medium">
+                      Energy Efficiency: <span style={{ color: efficiency.color }}>{efficiency.label}</span>
+                    </p>
+                    <p className="text-text-muted/60 text-xs mt-0.5">
+                      Based on your insulation and roofing selection. Upgrade to Enhanced or Premium insulation to improve your rating.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </QuestionCard>
+
+            {/* Step 4: Extensions & add-ons */}
+            <QuestionCard
+              step={4}
+              title="Extensions &amp; Add-Ons"
+              subtitle="Optional upgrades that attach to your home. Select any that interest you."
+            >
+              <div className="space-y-3">
+                {extensionOptions.map((ext) => {
+                  const selected = selectedExtensions.includes(ext.id);
+                  return (
+                    <button
+                      key={ext.id}
+                      onClick={() => toggleExtension(ext.id)}
+                      className={`w-full text-left p-4 border transition-all duration-200 ${
+                        selected
+                          ? "bg-gold/10 border-gold"
+                          : "bg-bg-elevated border-border hover:border-border-gold/50"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Checkbox indicator */}
+                        <div className={`w-5 h-5 rounded border shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
+                          selected ? "bg-gold border-gold" : "border-border"
+                        }`}>
+                          {selected && (
+                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="2 6 5 9 10 3" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <h4 className={`font-medium text-sm ${selected ? "text-gold" : "text-text-white"}`}>
+                              {ext.label}
+                            </h4>
+                            <span className={`text-sm font-bold tabular-nums ml-2 shrink-0 ${selected ? "text-gold" : "text-text-muted"}`}>
+                              ~{formatCurrency(ext.mid)}
+                            </span>
+                          </div>
+                          <p className="text-text-muted/60 text-xs mt-1 leading-snug">{ext.description}</p>
+                          <p className="text-text-muted/40 text-[10px] mt-1 tabular-nums">
+                            Range: {formatCurrency(ext.low)} &ndash; {formatCurrency(ext.high)}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </QuestionCard>
+
+            {/* Step 5: Land situation */}
+            <QuestionCard
+              step={5}
               title="Do You Own Land?"
               subtitle="Already have a lot, or still looking?"
             >
@@ -205,7 +445,9 @@ export default function CalculatorPage() {
                       : "bg-bg-elevated border-border hover:border-border-gold/50"
                   }`}
                 >
-                  <span className="text-2xl block mb-1">{"\u2705"}</span>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`mx-auto mb-2 ${landSituation === "own" ? "text-gold" : "text-text-muted"}`}>
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   <span className={`font-medium text-sm ${landSituation === "own" ? "text-gold" : "text-text-white"}`}>
                     I own my land
                   </span>
@@ -218,7 +460,10 @@ export default function CalculatorPage() {
                       : "bg-bg-elevated border-border hover:border-border-gold/50"
                   }`}
                 >
-                  <span className="text-2xl block mb-1">{"\u{1F50D}"}</span>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`mx-auto mb-2 ${landSituation === "buying" ? "text-gold" : "text-text-muted"}`}>
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
                   <span className={`font-medium text-sm ${landSituation === "buying" ? "text-gold" : "text-text-white"}`}>
                     I need to buy land
                   </span>
@@ -247,9 +492,9 @@ export default function CalculatorPage() {
               )}
             </QuestionCard>
 
-            {/* Q3: Foundation */}
+            {/* Step 6: Foundation */}
             <QuestionCard
-              step={3}
+              step={6}
               title="What Type of Foundation?"
               subtitle="Your home needs a foundation. Here's what each option typically costs."
             >
@@ -267,9 +512,9 @@ export default function CalculatorPage() {
               </div>
             </QuestionCard>
 
-            {/* Q4: Water */}
+            {/* Step 7: Water */}
             <QuestionCard
-              step={4}
+              step={7}
               title="How Will You Get Water?"
               subtitle="Most rural properties need a well. If you're in town, you may have municipal water available."
             >
@@ -287,9 +532,9 @@ export default function CalculatorPage() {
               </div>
             </QuestionCard>
 
-            {/* Q5: Sewer */}
+            {/* Step 8: Sewer */}
             <QuestionCard
-              step={5}
+              step={8}
               title="How Will Waste Be Handled?"
               subtitle="Rural properties need a septic system. Municipal sewer is only available within town limits."
             >
@@ -307,9 +552,9 @@ export default function CalculatorPage() {
               </div>
             </QuestionCard>
 
-            {/* Q6: Mortgage terms */}
+            {/* Step 9: Mortgage terms */}
             <QuestionCard
-              step={6}
+              step={9}
               title="Mortgage Details"
               subtitle="Adjust your down payment, interest rate, and amortization to see your estimated payments."
             >
@@ -329,15 +574,14 @@ export default function CalculatorPage() {
               />
             </QuestionCard>
 
-            {/* Other costs info */}
+            {/* Auto-estimated costs info */}
             <div className="bg-bg-secondary border border-border p-6 sm:p-8">
               <h3 className="font-display text-text-white text-xl mb-4">
                 What Else Is Included?
               </h3>
               <p className="text-text-muted text-sm mb-4">
                 The following costs are automatically estimated based on typical
-                prices in the Lunenburg/Queens/Shelburne area. These are included
-                in your total above.
+                prices in the Lunenburg/Queens/Shelburne area.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {Object.entries(siteEstimates).map(([key, est]) => (
@@ -383,7 +627,7 @@ export default function CalculatorPage() {
                       key={item.label}
                       label={item.label}
                       amount={item.amount}
-                      description={item.desc}
+                      description={"desc" in item ? item.desc : undefined}
                     />
                   ))}
                 </div>
