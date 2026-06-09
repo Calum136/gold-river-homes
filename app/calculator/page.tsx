@@ -57,10 +57,10 @@ export default function CalculatorPage() {
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
 
   // Site questions
-  const [landSituation, setLandSituation] = useState<LandSituation>("buying");
+  const [landSituation, setLandSituation] = useState<LandSituation>("gold-river");
   const [landPrice, setLandPrice] = useState(75000);
   const [foundation, setFoundation] = useState<FoundationType>("crawlspace");
-  const [waterType, setWaterType] = useState<WaterType>("well");
+  const [waterType, setWaterType] = useState<WaterType>("drilled");
   const [sewerType, setSewerType] = useState<SewerType>("septic");
 
   // Mortgage
@@ -103,7 +103,7 @@ export default function CalculatorPage() {
   const homePrice = useMemo(() => baseModelPrice + finishDelta, [baseModelPrice, finishDelta]);
 
   const costs: CostBreakdown = useMemo(() => {
-    const land = landSituation === "buying" ? landPrice : 0;
+    const land = landSituation === "gold-river" ? landPrice : 0;
     const water = waterType ? waterCosts[waterType].mid : 0;
     const sewer = sewerType ? sewerCosts[sewerType].mid : 0;
     const found = foundationCosts[foundation].mid;
@@ -139,7 +139,7 @@ export default function CalculatorPage() {
   );
 
   const detailedCosts = useMemo(() => {
-    const land = landSituation === "buying" ? landPrice : 0;
+    const land = landSituation === "gold-river" ? landPrice : 0;
     const water = waterType ? waterCosts[waterType].mid : 0;
     const sewer = sewerType ? sewerCosts[sewerType].mid : 0;
     const subtotal =
@@ -453,24 +453,24 @@ export default function CalculatorPage() {
                   </span>
                 </button>
                 <button
-                  onClick={() => setLandSituation("buying")}
+                  onClick={() => setLandSituation("gold-river")}
                   className={`p-4 border text-center transition-all duration-200 ${
-                    landSituation === "buying"
+                    landSituation === "gold-river"
                       ? "bg-gold/10 border-gold"
                       : "bg-bg-elevated border-border hover:border-border-gold/50"
                   }`}
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`mx-auto mb-2 ${landSituation === "buying" ? "text-gold" : "text-text-muted"}`}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`mx-auto mb-2 ${landSituation === "gold-river" ? "text-gold" : "text-text-muted"}`}>
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
-                  <span className={`font-medium text-sm ${landSituation === "buying" ? "text-gold" : "text-text-white"}`}>
+                  <span className={`font-medium text-sm ${landSituation === "gold-river" ? "text-gold" : "text-text-white"}`}>
                     I need to buy land
                   </span>
                 </button>
               </div>
 
-              {landSituation === "buying" && (
+              {landSituation === "gold-river" && (
                 <div className="bg-bg-elevated border border-border p-4">
                   <label className="text-text-secondary text-sm font-medium block mb-2">
                     Estimated land price
@@ -519,7 +519,7 @@ export default function CalculatorPage() {
               subtitle="Most rural properties need a well. If you're in town, you may have municipal water available."
             >
               <div className="space-y-3">
-                {(Object.entries(waterCosts) as [Exclude<WaterType, null>, typeof waterCosts.well][]).map(
+                {(Object.entries(waterCosts) as [Exclude<WaterType, null>, typeof waterCosts.drilled][]).map(
                   ([key, estimate]) => (
                     <ChoiceCard
                       key={key}

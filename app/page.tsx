@@ -153,10 +153,10 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/calculator"
+              href="/configure"
               className="bg-gold hover:bg-gold-bright text-white uppercase text-sm font-medium tracking-widest px-10 py-4 transition-colors duration-200"
             >
-              Calculate Your Costs
+              Design Your Home
             </Link>
             <a
               href="#how-it-works"
@@ -222,10 +222,10 @@ export default function Home() {
 
           <div className="text-center mt-12">
             <Link
-              href="/calculator"
+              href="/configure"
               className="inline-block bg-gold hover:bg-gold-bright text-white uppercase text-sm font-medium tracking-widest px-10 py-4 transition-colors duration-200"
             >
-              Try the Calculator
+              Start Configuring
             </Link>
           </div>
         </div>
