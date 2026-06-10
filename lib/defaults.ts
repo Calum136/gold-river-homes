@@ -41,8 +41,9 @@ export interface LotOption {
   preselectedSewer?: Exclude<SewerType, null>;
 }
 
+// Own-land details are pricing/fit inputs only — lot visualization exists
+// solely for Gold River lots (master plan amendment #7, Jun 9 2026).
 export interface UploadedLot {
-  imageDataUrl: string;
   widthFt: number;
   depthFt: number;
 }
@@ -136,6 +137,8 @@ export interface HomeModel {
   category: HomeCategory;
   description?: string;
   photoUrl?: string;
+  /** What the photo shows — interiors get an honest "Interior shown" tag on model cards. */
+  photoKind?: "exterior" | "interior";
 }
 
 export interface HomeCategoryDef {
@@ -187,6 +190,7 @@ export const homeModels: HomeModel[] = [
     category: "mini",
     description: "Minimalist 2-bedroom cottage — high ceilings, generous windows, open-concept living in a compact footprint.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/ZEN-2.jpeg",
+    photoKind: "exterior",
   },
   {
     id: "zenith-ct",
@@ -202,6 +206,7 @@ export const homeModels: HomeModel[] = [
     category: "mini",
     description: "Three bedrooms, two full baths, fireplace in the living room, and a master suite with walk-in closet.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/06/01-1.png",
+    photoKind: "interior",
   },
   {
     id: "fb10",
@@ -217,6 +222,7 @@ export const homeModels: HomeModel[] = [
     category: "mini",
     description: "Traditional mini home with three bedrooms in a compact footprint — ideal for small families.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-20.jpg",
+    photoKind: "interior",
   },
   {
     id: "fancy-tr-2",
@@ -232,6 +238,7 @@ export const homeModels: HomeModel[] = [
     category: "mini",
     description: "Well-appointed traditional mini home with two full baths and a stylish interior package.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/Copy-of-10-scaled.jpg",
+    photoKind: "interior",
   },
   {
     id: "acadie-ct",
@@ -247,6 +254,7 @@ export const homeModels: HomeModel[] = [
     category: "modular",
     description: "Closed entry vestibule, open-concept kitchen and living, master suite with walk-in closet. A proven layout.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-30.jpg",
+    photoKind: "interior",
   },
   {
     id: "sauvignon-ct-2",
@@ -262,6 +270,7 @@ export const homeModels: HomeModel[] = [
     category: "modular",
     description: "The house that has it all — covered porch, walk-in pantry, kitchen island, fireplace, and a luxury master ensuite.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/06/ONLINE_SUPREME_Truro_18_3981-1.jpg",
+    photoKind: "interior",
   },
   {
     id: "acadie-cr",
@@ -277,6 +286,7 @@ export const homeModels: HomeModel[] = [
     category: "traditional",
     description: "A winning plan — craftsman exterior with efficient open-concept interior and a generous entry walk-in closet.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-23.jpg",
+    photoKind: "interior",
   },
   {
     id: "porto",
@@ -292,6 +302,7 @@ export const homeModels: HomeModel[] = [
     category: "traditional",
     description: "Standout craftsman curb appeal with a wide covered porch, vaulted ceilings, and a well-appointed open kitchen.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/10/Porto33-1.jpg",
+    photoKind: "interior",
   },
   {
     id: "windsor-ct",
@@ -307,6 +318,7 @@ export const homeModels: HomeModel[] = [
     category: "multistory",
     description: "Two-storey contemporary with 2½ baths. Grand master bedroom with walk-in closet and ensuite. Laundry on the main floor.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/DSC_8122-scaled.jpg",
+    photoKind: "interior",
   },
   {
     id: "bordeaux-tr",
@@ -322,6 +334,7 @@ export const homeModels: HomeModel[] = [
     category: "multistory",
     description: "Majestic traditional exterior — large kitchen with walk-in pantry, master ensuite, and optional multi-car garage.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-32.jpg",
+    photoKind: "interior",
   },
 ];
 
@@ -339,6 +352,15 @@ export interface OptionItem {
   paletteHexes?: string[];
   imageUrl?: string;
   isDefault?: boolean;
+  /** When set, this option is only offered on the listed model IDs.
+   *  Populate from Supreme's factory options matrix (Phase 7 reliability layer). */
+  availableForModels?: string[];
+}
+
+/** True when an option can be ordered on the given model. No list = available everywhere. */
+export function isOptionAvailable(opt: OptionItem, modelId: string | null): boolean {
+  if (!opt.availableForModels || !modelId) return true;
+  return opt.availableForModels.includes(modelId);
 }
 
 export interface OptionGroup {
@@ -676,6 +698,22 @@ export const interiorGroups: OptionGroup[] = [
       },
     ],
   },
+];
+
+// --- Room → finish map (Phase 5: which selections affect which room) ---
+
+export interface RoomDef {
+  id: "kitchen" | "living" | "bath" | "bedroom";
+  label: string;
+  /** ConfiguratorState keys whose selections are visible in this room */
+  finishKeys: string[];
+}
+
+export const roomFinishMap: RoomDef[] = [
+  { id: "kitchen", label: "Kitchen", finishKeys: ["flooringId", "countertopsId", "cabinetStyleId", "hardwareFinishId", "lightingPackageId"] },
+  { id: "living", label: "Living Room", finishKeys: ["flooringId", "paintPackageId", "interiorTrimId", "lightingPackageId", "hasFireplace"] },
+  { id: "bath", label: "Bathroom", finishKeys: ["flooringId", "countertopsId", "cabinetStyleId", "hardwareFinishId"] },
+  { id: "bedroom", label: "Bedroom", finishKeys: ["flooringId", "paintPackageId", "interiorTrimId"] },
 ];
 
 // --- Site costs ---

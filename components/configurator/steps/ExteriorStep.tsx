@@ -1,9 +1,11 @@
 "use client";
 
-import { exteriorGroups, sidingColors, metalRoofColors } from "@/lib/defaults";
+import { exteriorGroups, sidingColors, metalRoofColors, isOptionAvailable } from "@/lib/defaults";
 import ColorSwatch from "@/components/configurator/ui/ColorSwatch";
 import StyleToggle from "@/components/configurator/ui/StyleToggle";
 import OptionTile from "@/components/configurator/ui/OptionTile";
+import { displayedOptionDelta, porchDelta } from "@/lib/pricing";
+import { formatCurrency } from "@/lib/calculator";
 import type { ConfiguratorState } from "@/lib/pricing";
 
 interface ExteriorStepProps {
@@ -45,9 +47,10 @@ export default function ExteriorStep({ state, onChange }: ExteriorStepProps) {
               key={opt.id}
               label={opt.label}
               description={opt.description}
-              priceDelta={opt.priceDelta}
+              priceDelta={displayedOptionDelta("sidingStyle", opt.id, state.modelId, opt.priceDelta)}
               selected={state.sidingStyleId === opt.id}
               onClick={() => onChange({ sidingStyleId: opt.id })}
+              unavailable={!isOptionAvailable(opt, state.modelId)}
             />
           ))}
         </div>
@@ -76,9 +79,10 @@ export default function ExteriorStep({ state, onChange }: ExteriorStepProps) {
               key={opt.id}
               label={opt.label}
               description={opt.description}
-              priceDelta={opt.priceDelta}
+              priceDelta={displayedOptionDelta("roofType", opt.id, state.modelId, opt.priceDelta)}
               selected={state.roofTypeId === opt.id}
               onClick={() => onChange({ roofTypeId: opt.id })}
+              unavailable={!isOptionAvailable(opt, state.modelId)}
             />
           ))}
         </div>
@@ -106,7 +110,10 @@ export default function ExteriorStep({ state, onChange }: ExteriorStepProps) {
       <AccordionSection title="Front Porch" subtitle="Adds a covered porch to the front of your home">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-white text-sm font-medium">Covered Front Porch</p>
+            <p className="text-white text-sm font-medium">
+              Covered Front Porch
+              <span className="text-gold text-xs font-semibold ml-2 tabular-nums">+{formatCurrency(porchDelta(state))}</span>
+            </p>
             <p className="text-text-muted/60 text-xs mt-0.5">Adds ~200 sq ft to your roof area · Increases curb appeal</p>
           </div>
           <button
@@ -135,6 +142,7 @@ export default function ExteriorStep({ state, onChange }: ExteriorStepProps) {
               priceDelta={opt.priceDelta}
               selected={state.exteriorTrimId === opt.id}
               onClick={() => onChange({ exteriorTrimId: opt.id })}
+              unavailable={!isOptionAvailable(opt, state.modelId)}
             />
           ))}
         </div>

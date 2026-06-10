@@ -8,6 +8,8 @@ interface OptionTileProps {
   onClick: () => void;
   paletteHexes?: string[];
   compact?: boolean;
+  /** Option can't be ordered on the selected model (Phase 7 compatibility data). */
+  unavailable?: boolean;
 }
 
 export default function OptionTile({
@@ -18,14 +20,18 @@ export default function OptionTile({
   onClick,
   paletteHexes,
   compact = false,
+  unavailable = false,
 }: OptionTileProps) {
   return (
     <button
-      onClick={onClick}
+      onClick={unavailable ? undefined : onClick}
+      disabled={unavailable}
       className={`w-full text-left border transition-all duration-150 ${
         compact ? "p-3" : "p-4"
       } ${
-        selected
+        unavailable
+          ? "bg-bg-elevated/50 border-border/50 opacity-45 cursor-not-allowed"
+          : selected
           ? "bg-gold/10 border-gold"
           : "bg-bg-elevated border-border hover:border-white/20"
       }`}
@@ -40,6 +46,9 @@ export default function OptionTile({
       </div>
       {description && !compact && (
         <p className="text-text-muted/60 text-xs leading-snug">{description}</p>
+      )}
+      {unavailable && (
+        <p className="text-text-muted/50 text-[11px] mt-1">Not available on this model</p>
       )}
       {paletteHexes && paletteHexes.length > 0 && (
         <div className="flex gap-1 mt-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { waterCosts, sewerCosts, foundationCosts } from "@/lib/defaults";
+import { waterCosts, sewerCosts, foundationCosts, siteEstimates } from "@/lib/defaults";
 import { formatCurrency } from "@/lib/calculator";
 import type { ConfiguratorState } from "@/lib/pricing";
 
@@ -41,13 +41,10 @@ function SiteOptionCard({ id, label, description, rangeLabel, selected, onClick 
   );
 }
 
-const AUTO_SITE_ITEMS = [
-  { label: "Land clearing & grading", low: 3000, high: 10000 },
-  { label: "Driveway installation", low: 2000, high: 8000 },
-  { label: "Electrical hookup", low: 5000, high: 12000 },
-  { label: "Home delivery & set", low: 4000, high: 7000 },
-  { label: "Permits & inspections", low: 2500, high: 5000 },
-];
+// Same data source the price calculation uses — the ranges shown must always
+// agree with the totals charged.
+const AUTO_SITE_KEYS = ["clearing", "driveway", "electrical", "delivery", "permits"] as const;
+const AUTO_SITE_ITEMS = AUTO_SITE_KEYS.map((key) => siteEstimates[key]);
 
 export default function SiteStep({ state, onChange }: SiteStepProps) {
   const preSelectedFromLot = state.landSituation === "gold-river" && state.selectedLotId !== null;

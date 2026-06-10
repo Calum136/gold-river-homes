@@ -117,8 +117,20 @@ const costItems = [
 export default function Home() {
   const [formStatus, setFormStatus] = useState<"idle" | "sent">("idle");
 
-  function handleSubmit(e: React.FormEvent) {
+  // Static site, no backend — compose the message in the visitor's own email
+  // app so it genuinely reaches the business.
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const subject = `Build inquiry — ${data.get("name") || "new customer"}`;
+    const body = [
+      `Name: ${data.get("name") || ""}`,
+      `Email: ${data.get("email") || ""}`,
+      `Area: ${data.get("city") || ""}`,
+      "",
+      `${data.get("message") || ""}`,
+    ].join("\n");
+    window.location.href = `mailto:info@goldriverhomes.ca?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setFormStatus("sent");
   }
 
@@ -272,8 +284,8 @@ export default function Home() {
 
               {formStatus === "sent" ? (
                 <div className="bg-gold/10 border border-gold/30 p-6 text-center">
-                  <p className="font-display text-text-white text-xl mb-2">Message Sent!</p>
-                  <p className="text-text-muted text-sm">We&apos;ll be in touch shortly.</p>
+                  <p className="font-display text-text-white text-xl mb-2">Almost there —</p>
+                  <p className="text-text-muted text-sm">Your email app should have opened with your message ready to send. Or reach us directly at info@goldriverhomes.ca.</p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">

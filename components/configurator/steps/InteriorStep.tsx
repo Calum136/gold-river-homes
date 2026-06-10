@@ -1,8 +1,9 @@
 "use client";
 
-import { interiorGroups } from "@/lib/defaults";
+import { interiorGroups, isOptionAvailable } from "@/lib/defaults";
 import ColorSwatch from "@/components/configurator/ui/ColorSwatch";
 import OptionTile from "@/components/configurator/ui/OptionTile";
+import { displayedOptionDelta } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import type { OptionGroup } from "@/lib/defaults";
 
@@ -25,10 +26,11 @@ const STATE_KEY_MAP: Record<string, keyof ConfiguratorState> = {
 interface SectionProps {
   group: OptionGroup;
   selectedId: string;
+  modelId: string | null;
   onSelect: (id: string) => void;
 }
 
-function OptionGroupSection({ group, selectedId, onSelect }: SectionProps) {
+function OptionGroupSection({ group, selectedId, modelId, onSelect }: SectionProps) {
   const isSwatches = group.displayType === "swatches";
 
   return (
@@ -52,10 +54,11 @@ function OptionGroupSection({ group, selectedId, onSelect }: SectionProps) {
               key={opt.id}
               label={opt.label}
               description={opt.description}
-              priceDelta={opt.priceDelta}
+              priceDelta={displayedOptionDelta(group.id, opt.id, modelId, opt.priceDelta)}
               selected={selectedId === opt.id}
               onClick={() => onSelect(opt.id)}
               paletteHexes={opt.paletteHexes}
+              unavailable={!isOptionAvailable(opt, modelId)}
             />
           )
         )}
@@ -85,6 +88,7 @@ export default function InteriorStep({ state, onChange }: InteriorStepProps) {
             key={group.id}
             group={group}
             selectedId={selectedId}
+            modelId={model}
             onSelect={(id) => onChange({ [stateKey]: id })}
           />
         );

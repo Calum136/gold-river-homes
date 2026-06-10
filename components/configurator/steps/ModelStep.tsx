@@ -85,9 +85,9 @@ export default function ModelStep({ state, onChange }: ModelStepProps) {
                           </svg>
                         </div>
                       )}
-                      {model.hasFireplace && (
-                        <div className="absolute bottom-2 left-2 z-10">
-                          <span className="text-[9px] px-1.5 py-0.5 bg-amber-700/80 text-amber-100 rounded backdrop-blur-sm">Fireplace option</span>
+                      {model.photoUrl && model.photoKind === "interior" && (
+                        <div className="absolute bottom-2 right-2 z-10">
+                          <span className="text-[9px] px-1.5 py-0.5 bg-black/60 text-white/70 rounded backdrop-blur-sm">Interior shown</span>
                         </div>
                       )}
                     </div>
@@ -104,6 +104,7 @@ export default function ModelStep({ state, onChange }: ModelStepProps) {
                       </div>
                       <p className="text-text-muted/60 text-[11px] mb-1.5">
                         {model.beds} bed · {model.baths} bath · {model.sqft.toLocaleString()} ft²
+                        {model.hasFireplace && <span className="text-amber-500/80"> · Fireplace option</span>}
                       </p>
                       {model.description && (
                         <p className="text-text-muted/50 text-xs leading-snug">{model.description}</p>

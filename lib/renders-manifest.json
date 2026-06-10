@@ -1,0 +1,4 @@
+{
+  "_comment": "Written by scripts/render_stack.py (Phase 7). Lists which render layers exist per model under public/renders3d/<modelId>/. Empty until 3D assets arrive — the visualizer falls back to ParametricHouse.",
+  "models": {}
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { defaultState, calculateConfiguratorPrice } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { formatCurrency } from "@/lib/calculator";
@@ -31,8 +31,28 @@ function canAdvance(state: ConfiguratorState): boolean {
   }
 }
 
+// Bump the version whenever ConfiguratorState changes shape — stale saves are discarded by key.
+const STORAGE_KEY = "grh-configurator-v1";
+
 export default function ConfigurePage() {
   const [state, setState] = useState<ConfiguratorState>(defaultState);
+
+  // A refresh shouldn't cost the buyer their whole configuration.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setState({ ...defaultState(), ...JSON.parse(saved) });
+    } catch {
+      // Corrupt/blocked storage — start fresh.
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Storage unavailable (private mode) — configurator still works, just won't persist.
+    }
+  }, [state]);
 
   function patch(updates: Partial<ConfiguratorState>) {
     setState((prev) => ({ ...prev, ...updates }));
@@ -106,6 +126,10 @@ export default function ConfigurePage() {
           {/* Visualizer — sticky on desktop, inline on mobile */}
           <div className="w-full lg:w-[45%] lg:sticky lg:top-[112px]">
             <HomeVisualizer state={state} />
+            <p className="text-text-muted/40 text-[11px] mt-2 leading-snug">
+              Illustrative preview. Photorealistic renderings of each model and finish — built
+              from Supreme Homes product files — are in production and will appear here.
+            </p>
 
             {/* Running price pill */}
             {priceResult && (

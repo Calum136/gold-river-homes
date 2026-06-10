@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   const links = [
     { href: "/", label: "Home" },
-    { href: "/calculator", label: "Calculator" },
+    { href: "/configure", label: "Design & Price" },
     { href: "#contact", label: "Contact" },
   ];
+
+  // The configurator has its own focused header — showing both reads as a glitch.
+  if (pathname?.startsWith("/configure")) return null;
 
   return (
     <header className="sticky top-0 z-50 bg-bg-primary/95 backdrop-blur-sm border-b border-border">

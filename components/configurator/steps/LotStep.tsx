@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { lotOptions } from "@/lib/defaults";
 import { formatCurrency } from "@/lib/calculator";
 import LotBackdrop from "@/components/configurator/LotBackdrop";
@@ -12,26 +11,6 @@ interface LotStepProps {
 }
 
 export default function LotStep({ state, onChange }: LotStepProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      onChange({
-        landSituation: "own",
-        selectedLotId: null,
-        uploadedLot: {
-          imageDataUrl: ev.target?.result as string,
-          widthFt: state.uploadedLot?.widthFt ?? 150,
-          depthFt: state.uploadedLot?.depthFt ?? 300,
-        },
-      });
-    };
-    reader.readAsDataURL(file);
-  }
-
   const tab = state.landSituation === "own" ? "own" : "gold-river";
 
   return (
@@ -138,47 +117,9 @@ export default function LotStep({ state, onChange }: LotStepProps) {
         </div>
       )}
 
-      {/* Own land */}
+      {/* Own land — fit/pricing details only */}
       {tab === "own" && (
         <div className="space-y-4">
-          {/* Photo upload */}
-          <div
-            onClick={() => fileRef.current?.click()}
-            className={`relative border-2 border-dashed transition-colors duration-150 cursor-pointer overflow-hidden ${
-              state.uploadedLot?.imageDataUrl
-                ? "border-gold/40"
-                : "border-border hover:border-border-gold"
-            }`}
-            style={{ minHeight: "200px" }}
-          >
-            {state.uploadedLot?.imageDataUrl ? (
-              <>
-                <img
-                  src={state.uploadedLot.imageDataUrl}
-                  alt="Your land"
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute bottom-2 right-2 text-xs bg-black/60 text-white/80 px-2 py-1 rounded">
-                  Click to change photo
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-48 gap-3">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted/40">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-                <div className="text-center">
-                  <p className="text-text-secondary text-sm font-medium">Upload a photo of your land</p>
-                  <p className="text-text-muted/50 text-xs mt-0.5">Optional — helps visualize the home on your property</p>
-                </div>
-              </div>
-            )}
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-          </div>
-
-          {/* Dimensions */}
           <div className="bg-bg-elevated border border-border p-4 space-y-4">
             <p className="text-text-secondary text-xs uppercase tracking-widest font-medium">Lot Dimensions</p>
             <div className="grid grid-cols-2 gap-4">
@@ -190,7 +131,6 @@ export default function LotStep({ state, onChange }: LotStepProps) {
                   onChange={(e) =>
                     onChange({
                       uploadedLot: {
-                        imageDataUrl: state.uploadedLot?.imageDataUrl ?? "",
                         widthFt: parseInt(e.target.value) || 0,
                         depthFt: state.uploadedLot?.depthFt ?? 300,
                       },
@@ -207,7 +147,6 @@ export default function LotStep({ state, onChange }: LotStepProps) {
                   onChange={(e) =>
                     onChange({
                       uploadedLot: {
-                        imageDataUrl: state.uploadedLot?.imageDataUrl ?? "",
                         widthFt: state.uploadedLot?.widthFt ?? 150,
                         depthFt: parseInt(e.target.value) || 0,
                       },
@@ -219,6 +158,7 @@ export default function LotStep({ state, onChange }: LotStepProps) {
             </div>
             <p className="text-text-muted/50 text-xs">
               Rural lots in our service area typically range 1–3 acres. Most of our models require at least 100′ × 200′.
+              We'll confirm fit, setbacks, and access during your site assessment.
             </p>
           </div>
         </div>

@@ -71,7 +71,7 @@ export interface ConfiguratorState {
   // Step 1
   landSituation: "gold-river" | "own" | null;
   selectedLotId: string | null;
-  uploadedLot: { imageDataUrl: string; widthFt: number; depthFt: number } | null;
+  uploadedLot: { widthFt: number; depthFt: number } | null;
 
   // Step 2
   modelId: string | null;
@@ -141,6 +141,48 @@ export function defaultState(): ConfiguratorState {
       amortizationYears: 25,
     },
   };
+}
+
+// ============================================
+// Displayed option deltas
+// ============================================
+
+// Per-sqft options (siding style, roof, flooring) are charged by area, so the
+// price shown on their tiles must be computed from the selected model — a flat
+// "+$1,500" label that doesn't match the charged amount destroys trust.
+export function displayedOptionDelta(
+  groupId: string,
+  optionId: string,
+  modelId: string | null,
+  flatDelta: number
+): number {
+  const model = homeModels.find((m) => m.id === modelId);
+  if (!model) return flatDelta;
+
+  if (groupId === "sidingStyle") {
+    const rate = PRICING_SHEET.siding[optionId as keyof PricingSheet["siding"]];
+    if (!rate) return flatDelta;
+    return Math.round(model.wallSqft * (rate.perSqft - PRICING_SHEET.siding.horizontal.perSqft));
+  }
+  if (groupId === "roofType") {
+    if (optionId !== "metal") return 0;
+    return Math.round(model.roofSqft * (PRICING_SHEET.roof.metal.perSqft - PRICING_SHEET.roof.shingles.perSqft));
+  }
+  if (groupId === "flooring") {
+    const rate = PRICING_SHEET.flooring[optionId as keyof PricingSheet["flooring"]];
+    if (!rate) return flatDelta;
+    return Math.round(model.sqft * (rate.perSqft - PRICING_SHEET.flooring.lvp.perSqft));
+  }
+  return flatDelta;
+}
+
+/** Total added cost of the front porch: flat build cost + its added roof area. */
+export function porchDelta(state: ConfiguratorState): number {
+  const porchExt = extensionOptions.find((e) => e.id === "front-porch");
+  const roofRate = state.roofTypeId === "metal"
+    ? PRICING_SHEET.roof.metal.perSqft
+    : PRICING_SHEET.roof.shingles.perSqft;
+  return (porchExt?.mid ?? 18000) + Math.round(PRICING_SHEET.extensions["front-porch"].addedRoofSqft * roofRate);
 }
 
 // ============================================
