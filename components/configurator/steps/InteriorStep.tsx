@@ -10,6 +10,8 @@ import type { OptionGroup } from "@/lib/defaults";
 interface InteriorStepProps {
   state: ConfiguratorState;
   onChange: (patch: Partial<ConfiguratorState>) => void;
+  /** Render a single option group (or "fireplace") as a standalone screen. */
+  only?: string;
 }
 
 const STATE_KEY_MAP: Record<string, keyof ConfiguratorState> = {
@@ -23,52 +25,95 @@ const STATE_KEY_MAP: Record<string, keyof ConfiguratorState> = {
   insulation: "insulationId",
 };
 
-interface SectionProps {
+interface OptionsGridProps {
   group: OptionGroup;
   selectedId: string;
   modelId: string | null;
   onSelect: (id: string) => void;
 }
 
-function OptionGroupSection({ group, selectedId, modelId, onSelect }: SectionProps) {
+function OptionsGrid({ group, selectedId, modelId, onSelect }: OptionsGridProps) {
   const isSwatches = group.displayType === "swatches";
-
   return (
-    <div className="border border-border">
-      <div className="px-4 py-3 bg-bg-elevated border-b border-border">
-        <h3 className="text-white font-medium text-sm">{group.label}</h3>
-        {group.subtitle && <p className="text-text-muted/60 text-xs mt-0.5">{group.subtitle}</p>}
-      </div>
-      <div className={`p-4 bg-bg-secondary ${isSwatches ? "flex flex-wrap gap-3" : "grid grid-cols-1 gap-2"}`}>
-        {group.options.map((opt) =>
-          isSwatches ? (
-            <ColorSwatch
-              key={opt.id}
-              hex={opt.swatchHex ?? "#888"}
-              label={opt.label}
-              selected={selectedId === opt.id}
-              onClick={() => onSelect(opt.id)}
-            />
-          ) : (
-            <OptionTile
-              key={opt.id}
-              label={opt.label}
-              description={opt.description}
-              priceDelta={displayedOptionDelta(group.id, opt.id, modelId, opt.priceDelta)}
-              selected={selectedId === opt.id}
-              onClick={() => onSelect(opt.id)}
-              paletteHexes={opt.paletteHexes}
-              unavailable={!isOptionAvailable(opt, modelId)}
-            />
-          )
-        )}
-      </div>
+    <div className={isSwatches ? "flex flex-wrap gap-3" : "grid grid-cols-1 gap-2"}>
+      {group.options.map((opt) =>
+        isSwatches ? (
+          <ColorSwatch
+            key={opt.id}
+            hex={opt.swatchHex ?? "#888"}
+            label={opt.label}
+            selected={selectedId === opt.id}
+            onClick={() => onSelect(opt.id)}
+          />
+        ) : (
+          <OptionTile
+            key={opt.id}
+            label={opt.label}
+            description={opt.description}
+            priceDelta={displayedOptionDelta(group.id, opt.id, modelId, opt.priceDelta)}
+            selected={selectedId === opt.id}
+            onClick={() => onSelect(opt.id)}
+            paletteHexes={opt.paletteHexes}
+            unavailable={!isOptionAvailable(opt, modelId)}
+          />
+        )
+      )}
     </div>
   );
 }
 
-export default function InteriorStep({ state, onChange }: InteriorStepProps) {
-  const model = state.modelId;
+function FireplaceControl({ state, onChange }: { state: ConfiguratorState; onChange: InteriorStepProps["onChange"] }) {
+  if (!state.modelId) {
+    return <p className="text-text-muted/40 text-sm">Select a home model first to see fireplace options.</p>;
+  }
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-white text-sm font-medium">Electric Fireplace Insert</p>
+        <p className="text-text-muted/60 text-xs mt-0.5">
+          Wall-mounted electric insert, no venting required · +$4,500
+        </p>
+      </div>
+      <button
+        onClick={() => onChange({ hasFireplace: !state.hasFireplace })}
+        className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+          state.hasFireplace ? "bg-gold" : "bg-bg-elevated border border-border"
+        }`}
+      >
+        <span
+          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${
+            state.hasFireplace ? "left-7" : "left-1"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
+export default function InteriorStep({ state, onChange, only }: InteriorStepProps) {
+  // Single-decision screen — the page supplies the heading.
+  if (only === "fireplace") {
+    return (
+      <div className="border border-border bg-bg-secondary p-4">
+        <FireplaceControl state={state} onChange={onChange} />
+      </div>
+    );
+  }
+  if (only) {
+    const group = interiorGroups.find((g) => g.id === only);
+    const stateKey = STATE_KEY_MAP[only];
+    if (!group || !stateKey) return null;
+    return (
+      <div className="border border-border bg-bg-secondary p-4">
+        <OptionsGrid
+          group={group}
+          selectedId={state[stateKey] as string}
+          modelId={state.modelId}
+          onSelect={(id) => onChange({ [stateKey]: id })}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -80,50 +125,30 @@ export default function InteriorStep({ state, onChange }: InteriorStepProps) {
       {interiorGroups.map((group) => {
         const stateKey = STATE_KEY_MAP[group.id];
         if (!stateKey) return null;
-
-        const selectedId = state[stateKey] as string;
-
         return (
-          <OptionGroupSection
-            key={group.id}
-            group={group}
-            selectedId={selectedId}
-            modelId={model}
-            onSelect={(id) => onChange({ [stateKey]: id })}
-          />
+          <div key={group.id} className="border border-border">
+            <div className="px-4 py-3 bg-bg-elevated border-b border-border">
+              <h3 className="text-white font-medium text-sm">{group.label}</h3>
+              {group.subtitle && <p className="text-text-muted/60 text-xs mt-0.5">{group.subtitle}</p>}
+            </div>
+            <div className="p-4 bg-bg-secondary">
+              <OptionsGrid
+                group={group}
+                selectedId={state[stateKey] as string}
+                modelId={state.modelId}
+                onSelect={(id) => onChange({ [stateKey]: id })}
+              />
+            </div>
+          </div>
         );
       })}
 
-      {/* Fireplace — conditional on model support */}
       <div className="border border-border">
         <div className="px-4 py-3 bg-bg-elevated border-b border-border">
           <h3 className="text-white font-medium text-sm">Fireplace</h3>
         </div>
         <div className="p-4 bg-bg-secondary">
-          {model ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white text-sm font-medium">Electric Fireplace Insert</p>
-                <p className="text-text-muted/60 text-xs mt-0.5">
-                  Wall-mounted electric insert, no venting required · +$4,500
-                </p>
-              </div>
-              <button
-                onClick={() => onChange({ hasFireplace: !state.hasFireplace })}
-                className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
-                  state.hasFireplace ? "bg-gold" : "bg-bg-elevated border border-border"
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${
-                    state.hasFireplace ? "left-7" : "left-1"
-                  }`}
-                />
-              </button>
-            </div>
-          ) : (
-            <p className="text-text-muted/40 text-sm">Select a home model first to see fireplace options.</p>
-          )}
+          <FireplaceControl state={state} onChange={onChange} />
         </div>
       </div>
     </div>

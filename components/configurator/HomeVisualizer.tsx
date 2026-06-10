@@ -10,6 +10,8 @@ import PhotoStack from "./PhotoStack";
 
 interface HomeVisualizerProps {
   state: ConfiguratorState;
+  /** Which view the current screen is about — interior screens default to the selections board. */
+  view?: "exterior" | "interior";
 }
 
 type ViewMode = "exterior" | "interior";
@@ -66,7 +68,7 @@ function InteriorBoard({ state }: { state: ConfiguratorState }) {
   );
 }
 
-export default function HomeVisualizer({ state }: HomeVisualizerProps) {
+export default function HomeVisualizer({ state, view }: HomeVisualizerProps) {
   const lot = state.landSituation === "gold-river"
     ? lotOptions.find((l) => l.id === state.selectedLotId)
     : null;
@@ -75,9 +77,9 @@ export default function HomeVisualizer({ state }: HomeVisualizerProps) {
   const model = homeModels.find((m) => m.id === state.modelId);
   const renderStack = getRenderStack(state);
 
-  // Interior step shows the interior board by default; a manual tab choice
-  // sticks until the buyer moves to another step.
-  const defaultMode: ViewMode = state.step === 4 ? "interior" : "exterior";
+  // Interior screens show the interior board by default; a manual tab choice
+  // sticks until the buyer moves to another screen.
+  const defaultMode: ViewMode = view ?? "exterior";
   const [modeOverride, setModeOverride] = useState<ViewMode | null>(null);
   useEffect(() => {
     setModeOverride(null);
