@@ -8,6 +8,7 @@ export type WaterType = "drilled" | "dug" | "municipal" | null;
 export type SewerType = "septic" | "municipal" | null;
 export type FoundationType = "slab" | "crawlspace" | "basement";
 export type LandSituation = "gold-river" | "own" | null;
+export type LotTerrain = "wooded" | "meadow" | "coastal" | "town";
 export type HomeCategory = "mini" | "modular" | "traditional" | "multistory";
 
 // --- Cost estimates ---
@@ -31,7 +32,9 @@ export interface LotOption {
   widthFt: number;
   depthFt: number;
   price: number;
-  photoUrl: string;
+  terrain: LotTerrain;
+  /** Real lot photo — wins over the illustrated backdrop when present. See docs/visualization/02-lot-visuals.md */
+  photoUrl?: string;
   description: string;
   availableServices: string[];
   preselectedWater?: Exclude<WaterType, null>;
@@ -53,7 +56,7 @@ export const lotOptions: LotOption[] = [
     widthFt: 185,
     depthFt: 330,
     price: 68000,
-    photoUrl: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1200&q=80",
+    terrain: "wooded",
     description: "Gently sloping lot with mature maple trees at the rear. Easy road access, power at the lot line.",
     availableServices: ["power", "drilled-well", "septic"],
     preselectedWater: "drilled",
@@ -67,7 +70,7 @@ export const lotOptions: LotOption[] = [
     widthFt: 220,
     depthFt: 415,
     price: 85000,
-    photoUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80",
+    terrain: "wooded",
     description: "Private wooded lot with seasonal river views. Well and septic required. Excellent for a traditional or multi-story build.",
     availableServices: ["power", "drilled-well", "septic"],
     preselectedWater: "drilled",
@@ -81,7 +84,7 @@ export const lotOptions: LotOption[] = [
     widthFt: 110,
     depthFt: 240,
     price: 72000,
-    photoUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80",
+    terrain: "town",
     description: "Town lot with municipal water and sewer available. Level and cleared — move-in ready for a mini or modular home.",
     availableServices: ["power", "municipal-water", "municipal-sewer"],
     preselectedWater: "municipal",
@@ -95,7 +98,7 @@ export const lotOptions: LotOption[] = [
     widthFt: 200,
     depthFt: 390,
     price: 58000,
-    photoUrl: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=1200&q=80",
+    terrain: "meadow",
     description: "Open meadow lot on a quiet country road. Affordable and well-positioned for any home style.",
     availableServices: ["power", "drilled-well", "septic"],
     preselectedWater: "drilled",
@@ -109,7 +112,7 @@ export const lotOptions: LotOption[] = [
     widthFt: 310,
     depthFt: 450,
     price: 95000,
-    photoUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80",
+    terrain: "coastal",
     description: "Large coastal lot with ocean views. Power and road access established. Ideal for our flagship models.",
     availableServices: ["power", "drilled-well", "septic"],
     preselectedWater: "drilled",

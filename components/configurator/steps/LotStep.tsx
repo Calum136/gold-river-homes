@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { lotOptions } from "@/lib/defaults";
 import { formatCurrency } from "@/lib/calculator";
+import LotBackdrop from "@/components/configurator/LotBackdrop";
 import type { ConfiguratorState } from "@/lib/pricing";
 
 interface LotStepProps {
@@ -84,13 +85,17 @@ export default function LotStep({ state, onChange }: LotStepProps) {
                   selected ? "border-gold ring-1 ring-gold/30" : "border-border hover:border-white/20"
                 }`}
               >
-                {/* Photo */}
+                {/* Photo (real photo when we have one, illustrated NS scene until then) */}
                 <div className="relative h-36 overflow-hidden bg-bg-tertiary">
-                  <img
-                    src={lot.photoUrl}
-                    alt={lot.name}
-                    className="w-full h-full object-cover"
-                  />
+                  {lot.photoUrl ? (
+                    <img
+                      src={lot.photoUrl}
+                      alt={lot.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <LotBackdrop terrain={lot.terrain} />
+                  )}
                   {selected && (
                     <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gold flex items-center justify-center">
                       <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
