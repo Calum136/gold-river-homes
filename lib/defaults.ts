@@ -139,6 +139,9 @@ export interface HomeModel {
   photoUrl?: string;
   /** What the photo shows — interiors get an honest "Interior shown" tag on model cards. */
   photoKind?: "exterior" | "interior";
+  /** Static photoreal render shown in the visualizer (Phase 7 demo). The caption
+   *  states which options the render depicts, since it doesn't react to clicks yet. */
+  demoRender?: { url: string; caption: string };
 }
 
 export interface HomeCategoryDef {
@@ -176,6 +179,28 @@ export const homeCategories: HomeCategoryDef[] = [
 ];
 
 export const homeModels: HomeModel[] = [
+  {
+    // Specs from the Supreme Homes BALI web sheet (Casita Series, 74'-0" × 16'-0").
+    // The render demo uses Supreme's own archviz from that sheet — public/models/bali/exterior.webp.
+    id: "bali",
+    name: "Bali",
+    price: 219000,
+    beds: 3,
+    baths: 2,
+    sqft: 1440,
+    roofSqft: 1360,
+    wallSqft: 1620,
+    hasFireplace: false,
+    type: "Mini",
+    category: "mini",
+    description: "Casita Series flagship — three bedrooms and two full baths in a single 74-foot section, with a striking board & batten entry gable.",
+    photoUrl: "/models/bali/exterior.webp",
+    photoKind: "exterior",
+    demoRender: {
+      url: "/models/bali/exterior.webp",
+      caption: "Shown: slate-blue board & batten entry, cedar-shake gable, white lap wings, architectural shingles",
+    },
+  },
   {
     id: "zen-ct-2",
     name: "Zen CT-2",

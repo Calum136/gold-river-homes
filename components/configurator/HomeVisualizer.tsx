@@ -102,10 +102,26 @@ export default function HomeVisualizer({ state, view }: HomeVisualizerProps) {
             <LotBackdrop terrain={lot?.terrain ?? "meadow"} />
           )}
 
-          {/* The home: photoreal render stack when available (Phase 7), live parametric otherwise */}
+          {/* The home: option-reactive render stack (Phase 7) > static photoreal demo render > live parametric */}
           {model ? (
             renderStack ? (
               <PhotoStack stack={renderStack} alt={`${model.name} with your selected options`} />
+            ) : model.demoRender ? (
+              <>
+                <img
+                  src={model.demoRender.url}
+                  alt={`Photorealistic rendering of the ${model.name}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute bottom-2 left-2 right-24 flex flex-col gap-1 items-start">
+                  <span className="text-[10px] font-semibold bg-gold/90 text-white px-2 py-0.5 rounded">
+                    Photorealistic render
+                  </span>
+                  <span className="text-[10px] bg-black/60 text-white/80 px-2 py-1 rounded backdrop-blur-sm leading-snug">
+                    {model.demoRender.caption}
+                  </span>
+                </div>
+              </>
             ) : (
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[62%] max-w-md">
                 <ParametricHouse state={state} />
@@ -133,20 +149,20 @@ export default function HomeVisualizer({ state, view }: HomeVisualizerProps) {
             )}
           </div>
 
-          {/* Siding + roof indicators */}
+          {/* Siding + roof indicators — describe the parametric view; hidden when a fixed demo render is showing */}
           <div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end">
-            {model && sidingColor && (
+            {model && !(!renderStack && model.demoRender) && sidingColor && (
               <div className="flex items-center gap-1.5 bg-black/60 px-2 py-1 rounded backdrop-blur-sm">
                 <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: sidingColor.swatchHex }} />
                 <span className="text-[10px] text-white/80">{sidingColor.label}</span>
               </div>
             )}
-            {model && state.roofTypeId === "metal" && (
+            {model && !(!renderStack && model.demoRender) && state.roofTypeId === "metal" && (
               <div className="bg-black/60 px-2 py-1 rounded backdrop-blur-sm">
                 <span className="text-[10px] text-white/80">Metal Roof</span>
               </div>
             )}
-            {model && state.hasFrontPorch && (
+            {model && !(!renderStack && model.demoRender) && state.hasFrontPorch && (
               <div className="bg-black/60 px-2 py-1 rounded backdrop-blur-sm">
                 <span className="text-[10px] text-white/80">+ Front Porch</span>
               </div>
