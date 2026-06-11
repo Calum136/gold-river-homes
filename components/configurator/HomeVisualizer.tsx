@@ -87,7 +87,7 @@ export default function HomeVisualizer({ state, view }: HomeVisualizerProps) {
   const mode: ViewMode = model ? modeOverride ?? defaultMode : "exterior";
 
   return (
-    <div className="relative w-full overflow-hidden bg-bg-tertiary" style={{ aspectRatio: "16/7" }}>
+    <div className="relative w-full overflow-hidden bg-bg-tertiary" style={{ aspectRatio: "16/8" }}>
       {mode === "interior" && model ? (
         <InteriorBoard state={state} />
       ) : (

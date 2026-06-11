@@ -46,7 +46,7 @@ export default function LotStep({ state, onChange }: LotStepProps) {
 
       {/* Gold River lots */}
       {tab === "gold-river" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
           {lotOptions.map((lot) => {
             const selected = state.selectedLotId === lot.id;
             return (
@@ -60,56 +60,50 @@ export default function LotStep({ state, onChange }: LotStepProps) {
                     sewerType: lot.preselectedSewer ?? "septic",
                   })
                 }
-                className={`text-left border transition-all duration-150 overflow-hidden ${
-                  selected ? "border-gold ring-1 ring-gold/30" : "border-border hover:border-white/20"
+                className={`flex w-full text-left border transition-all duration-150 overflow-hidden ${
+                  selected ? "border-gold ring-1 ring-gold/30 bg-gold/5" : "border-border hover:border-white/20 bg-bg-elevated"
                 }`}
               >
                 {/* Photo (real photo when we have one, illustrated NS scene until then) */}
-                <div className="relative h-36 overflow-hidden bg-bg-tertiary">
+                <div className="relative w-28 sm:w-36 shrink-0 self-stretch overflow-hidden bg-bg-tertiary min-h-[5.5rem]">
                   {lot.photoUrl ? (
                     <img
                       src={lot.photoUrl}
                       alt={lot.name}
-                      className="w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   ) : (
                     <LotBackdrop terrain={lot.terrain} />
                   )}
-                  {selected && (
-                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gold flex items-center justify-center">
-                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="2 6 5 9 10 3" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                    <span className="text-white text-xs font-medium">{lot.location}</span>
-                  </div>
+                  <span className="absolute bottom-1 left-1 text-[8px] px-1 py-0.5 bg-black/60 text-white/80 rounded backdrop-blur-sm">
+                    {lot.location}
+                  </span>
                 </div>
 
                 {/* Details */}
-                <div className="p-4 bg-bg-elevated">
-                  <div className="flex items-start justify-between mb-1">
-                    <h4 className={`font-medium text-sm ${selected ? "text-gold" : "text-white"}`}>
+                <div className="flex-1 min-w-0 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className={`font-medium text-sm truncate ${selected ? "text-gold" : "text-white"}`}>
                       {lot.name}
                     </h4>
-                    <span className={`text-sm font-bold tabular-nums ${selected ? "text-gold" : "text-text-secondary"}`}>
-                      {formatCurrency(lot.price)}
-                    </span>
-                  </div>
-                  <p className="text-text-muted/70 text-xs leading-snug mb-2">{lot.description}</p>
-                  <div className="flex flex-wrap gap-2 text-[10px] text-text-muted/60">
-                    <span>{lot.acreage} acres</span>
-                    <span>·</span>
-                    <span>{lot.widthFt}′ × {lot.depthFt}′</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {lot.availableServices.map((s) => (
-                      <span key={s} className="text-[10px] px-1.5 py-0.5 bg-white/5 border border-white/10 text-text-muted/60 rounded">
-                        {s.replace(/-/g, " ")}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-sm font-bold tabular-nums ${selected ? "text-gold" : "text-text-secondary"}`}>
+                        {formatCurrency(lot.price)}
                       </span>
-                    ))}
+                      {selected && (
+                        <span className="w-5 h-5 rounded-full bg-gold flex items-center justify-center">
+                          <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="2 6 5 9 10 3" />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  <p className="text-text-muted/60 text-[11px] mt-0.5">
+                    {lot.acreage} acres · {lot.widthFt}′ × {lot.depthFt}′ ·{" "}
+                    <span className="text-text-muted/50">{lot.availableServices.map((s) => s.replace(/-/g, " ")).join(" · ")}</span>
+                  </p>
+                  <p className="text-text-muted/50 text-xs leading-snug mt-1 line-clamp-2">{lot.description}</p>
                 </div>
               </button>
             );

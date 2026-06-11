@@ -4,9 +4,21 @@ import { useEffect, useState } from "react";
 import { defaultState, calculateConfiguratorPrice } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { formatCurrency } from "@/lib/calculator";
-import { interiorGroups } from "@/lib/defaults";
+import {
+  interiorGroups,
+  exteriorGroups,
+  sidingColors,
+  metalRoofColors,
+  lotOptions,
+  homeModels,
+  foundationCosts,
+  waterCosts,
+  sewerCosts,
+} from "@/lib/defaults";
 
 import HomeVisualizer from "@/components/configurator/HomeVisualizer";
+import SelectionsSummary from "@/components/configurator/SelectionsSummary";
+import type { SelectionItem } from "@/components/configurator/SelectionsSummary";
 import StepNav from "@/components/configurator/StepNav";
 import LotStep from "@/components/configurator/steps/LotStep";
 import ModelStep from "@/components/configurator/steps/ModelStep";
@@ -61,6 +73,68 @@ const SCREENS: ScreenDef[] = [
 const EXTERIOR_IDS = new Set<string>(EXTERIOR_SCREENS.map((s) => s.id));
 const INTERIOR_IDS = new Set<string>(INTERIOR_SCREENS.map((s) => s.id));
 const SITE_IDS = new Set<string>(SITE_SCREENS.map((s) => s.id));
+
+// One line per decision the buyer has already made — shown under the visualizer
+// as clickable chips that jump back to that screen.
+function selectionValue(state: ConfiguratorState, screenId: string): { label: string; value: string; swatchHex?: string } | null {
+  const optLabel = (groupId: string, optId: string) =>
+    [...exteriorGroups, ...interiorGroups].find((g) => g.id === groupId)?.options.find((o) => o.id === optId)?.label;
+
+  switch (screenId) {
+    case "land": {
+      if (state.landSituation === "own") return { label: "Land", value: "Your own land" };
+      const lot = lotOptions.find((l) => l.id === state.selectedLotId);
+      return lot ? { label: "Land", value: lot.name } : null;
+    }
+    case "model": {
+      const model = homeModels.find((m) => m.id === state.modelId);
+      return model ? { label: "Model", value: model.name } : null;
+    }
+    case "sidingStyle":
+      return { label: "Siding", value: optLabel("sidingStyle", state.sidingStyleId) ?? "—" };
+    case "sidingColor": {
+      const c = sidingColors.find((c) => c.id === state.sidingColorId);
+      return c ? { label: "Siding Color", value: c.label, swatchHex: c.swatchHex } : null;
+    }
+    case "roofType": {
+      if (state.roofTypeId !== "metal") return { label: "Roof", value: "Shingles" };
+      const c = metalRoofColors.find((c) => c.id === state.metalRoofColorId);
+      return { label: "Roof", value: `Metal — ${c?.label ?? ""}`, swatchHex: c?.swatchHex };
+    }
+    case "porch":
+      return { label: "Front Porch", value: state.hasFrontPorch ? "Included" : "None" };
+    case "exteriorTrim":
+      return { label: "Ext. Trim", value: optLabel("exteriorTrim", state.exteriorTrimId) ?? "—" };
+    case "flooring":
+      return { label: "Flooring", value: optLabel("flooring", state.flooringId) ?? "—" };
+    case "countertops":
+      return { label: "Counters", value: optLabel("countertops", state.countertopsId) ?? "—" };
+    case "cabinetStyle":
+      return { label: "Cabinets", value: optLabel("cabinetStyle", state.cabinetStyleId) ?? "—" };
+    case "paintPackage":
+      return { label: "Paint", value: optLabel("paintPackage", state.paintPackageId) ?? "—" };
+    case "interiorTrim":
+      return { label: "Int. Trim", value: optLabel("interiorTrim", state.interiorTrimId) ?? "—" };
+    case "lightingPackage":
+      return { label: "Lighting", value: optLabel("lightingPackage", state.lightingPackageId) ?? "—" };
+    case "hardwareFinish": {
+      const opt = interiorGroups.find((g) => g.id === "hardwareFinish")?.options.find((o) => o.id === state.hardwareFinishId);
+      return opt ? { label: "Hardware", value: opt.label, swatchHex: opt.swatchHex } : null;
+    }
+    case "insulation":
+      return { label: "Insulation", value: optLabel("insulation", state.insulationId) ?? "—" };
+    case "fireplace":
+      return { label: "Fireplace", value: state.hasFireplace ? "Included" : "None" };
+    case "foundation":
+      return { label: "Foundation", value: foundationCosts[state.foundationType].label };
+    case "water":
+      return state.waterType ? { label: "Water", value: waterCosts[state.waterType].label } : null;
+    case "sewer":
+      return state.sewerType ? { label: "Sewer", value: sewerCosts[state.sewerType].label } : null;
+    default:
+      return null;
+  }
+}
 
 function canAdvance(state: ConfiguratorState, screenId: string): boolean {
   switch (screenId) {
@@ -127,6 +201,13 @@ export default function ConfigurePage() {
 
   const priceResult = state.modelId ? calculateConfiguratorPrice(state) : null;
 
+  // Decisions from screens the buyer has already completed (all of them on the summary).
+  const decidedScreens = SCREENS.slice(0, screenIndex - 1);
+  const selectionItems: SelectionItem[] = decidedScreens.flatMap((s, i) => {
+    const v = selectionValue(state, s.id);
+    return v ? [{ ...v, screenIndex: i + 1 }] : [];
+  });
+
   const renderScreen = () => {
     if (screen.id === "land") return <LotStep state={state} onChange={patch} />;
     if (screen.id === "model") return <ModelStep state={state} onChange={patch} />;
@@ -172,10 +253,6 @@ export default function ConfigurePage() {
           {/* Visualizer — sticky on desktop, inline on mobile */}
           <div className="w-full lg:w-[60%] lg:sticky lg:top-[112px]">
             <HomeVisualizer state={state} view={screen.phase === 4 ? "interior" : "exterior"} />
-            <p className="text-text-muted/40 text-[11px] mt-2 leading-snug">
-              Illustrative preview. Photorealistic renderings of each model and finish — built
-              from Supreme Homes product files — are in production and will appear here.
-            </p>
 
             {/* Running price pill */}
             {priceResult && (
@@ -186,6 +263,16 @@ export default function ConfigurePage() {
                 </span>
               </div>
             )}
+
+            {/* Decisions so far — desktop only; on mobile it would push the current decision down */}
+            <div className="hidden lg:block">
+              <SelectionsSummary items={selectionItems} onJump={goToScreen} />
+            </div>
+
+            <p className="text-text-muted/40 text-[11px] mt-3 leading-snug">
+              Illustrative preview. Photorealistic renderings of each model and finish — built
+              from Supreme Homes product files — are in production and will appear here.
+            </p>
           </div>
 
           {/* One decision per screen */}
