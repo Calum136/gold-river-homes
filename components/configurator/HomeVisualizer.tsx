@@ -8,6 +8,7 @@ import ParametricHouse from "./ParametricHouse";
 import LotBackdrop from "./LotBackdrop";
 import PhotoStack from "./PhotoStack";
 import RoomVisualizer from "./RoomVisualizer";
+import BaliPhotoConfigurator from "./BaliPhotoConfigurator";
 
 interface HomeVisualizerProps {
   state: ConfiguratorState;
@@ -56,46 +57,8 @@ export default function HomeVisualizer({ state, view }: HomeVisualizerProps) {
             renderStack ? (
               <PhotoStack stack={renderStack} alt={`${model.name} with your selected options`} />
             ) : model.demoRender ? (
-              /* Bali photoreal demo render with live siding-color overlay */
-              <div className="absolute inset-0">
-                <img
-                  src={model.demoRender.url}
-                  alt={`Photorealistic rendering of the ${model.name}`}
-                  className="w-full h-full object-cover"
-                  style={{ display: "block" }}
-                />
-                {/* Color multiply overlay for siding color changes */}
-                {sidingColor && sidingColor.id !== "white" && (
-                  <div
-                    className="absolute inset-0 transition-all duration-500"
-                    style={{
-                      backgroundColor: sidingColor.swatchHex,
-                      mixBlendMode: "multiply",
-                      opacity: 0.50,
-                    }}
-                  />
-                )}
-                {/* Metal roof tint */}
-                {state.roofTypeId === "metal" && (
-                  <div
-                    className="absolute inset-0 transition-all duration-500"
-                    style={{
-                      background: "linear-gradient(to bottom, rgba(80,90,100,0.4) 0%, transparent 35%)",
-                      mixBlendMode: "multiply",
-                    }}
-                  />
-                )}
-                <div className="absolute bottom-2 left-2 right-24 flex flex-col gap-1 items-start">
-                  <span className="text-[10px] font-semibold bg-gold/90 text-white px-2 py-0.5 rounded">
-                    Photorealistic render
-                  </span>
-                  <span className="text-[10px] bg-black/60 text-white/80 px-2 py-1 rounded backdrop-blur-sm leading-snug">
-                    {sidingColor && sidingColor.id !== "white"
-                      ? `${sidingColor.label} siding · ${state.roofTypeId === "metal" ? "Metal roof" : "Shingles"}${state.hasFrontPorch ? " · Covered porch" : ""}`
-                      : model.demoRender.caption}
-                  </span>
-                </div>
-              </div>
+              /* Bali photoreal demo render with targeted siding/roof/porch overlays */
+              <BaliPhotoConfigurator state={state} />
             ) : (
               /* Parametric SVG for all other models */
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[64%] max-w-lg">
