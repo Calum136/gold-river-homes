@@ -1,0 +1,13 @@
+# Normalize text to LF in the repo and in every working tree, regardless of core.autocrlf.
+* text=auto eol=lf
+
+# Binary assets
+*.webp binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
