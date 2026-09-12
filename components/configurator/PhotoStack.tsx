@@ -2,6 +2,8 @@ import type { RenderStack } from "@/lib/renders";
 
 // Composites pre-rendered photoreal layers (Phase 7). All layers share one
 // locked camera, so plain stacking produces the exact configured home.
+// Intentionally dormant: only reachable when getRenderStack() returns a stack,
+// which it won't until lib/renders-manifest.json is populated.
 export default function PhotoStack({ stack, alt }: { stack: RenderStack; alt: string }) {
   const layers = [stack.base, stack.siding, stack.roof, stack.trim, stack.porch].filter(
     (src): src is string => !!src

@@ -3,9 +3,14 @@ import type { ConfiguratorState } from "./pricing";
 
 // ============================================
 // Phase 7 runtime resolver (docs/visualization/07-photoreal-pipeline.md).
-// Maps the configurator state to pre-rendered photoreal layer URLs.
-// Returns null whenever any required layer is missing → caller falls back
-// to ParametricHouse. The manifest is written by scripts/render_stack.py.
+// Maps the configurator state to pre-rendered photoreal layer URLs under
+// public/renders3d/<modelId>/. Returns null whenever any required layer is
+// missing, and the visualizer falls back to the drawn elevation.
+//
+// INTENTIONALLY DORMANT: lib/renders-manifest.json stays empty until Supreme
+// Homes 3D sources exist and the Phase 7 render pipeline is built, so this
+// returns null for every model today. That is expected, not a bug. This is
+// the seam real renders plug into later.
 // ============================================
 
 export interface RenderStack {

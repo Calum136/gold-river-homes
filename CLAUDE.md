@@ -21,8 +21,8 @@ Full vision (from PDF brief) includes AI-generated home visuals, MLS land data i
 ## Tech Stack
 | Tech | Role |
 |------|------|
-| Next.js 14 (App Router) | Framework |
-| Tailwind CSS | Styling (custom dark theme matching supremehomes.ca) |
+| Next.js 16.2.3 (App Router) + React 19.2.4 | Framework |
+| Tailwind CSS v4 (tokens in app/globals.css @theme inline, no tailwind.config.js) | Styling (custom dark theme matching supremehomes.ca) |
 | Recharts | Donut chart for cost breakdown |
 | Netlify | Deployment (netlify.toml configured) |
 

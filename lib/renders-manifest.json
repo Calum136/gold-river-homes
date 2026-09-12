@@ -1,4 +1,4 @@
 {
-  "_comment": "Written by scripts/render_stack.py (Phase 7). Lists which render layers exist per model under public/renders3d/<modelId>/. Empty until 3D assets arrive — the visualizer falls back to ParametricHouse.",
+  "_comment": "Lists which photoreal render layers exist per model under public/renders3d/<modelId>/ (Phase 7, see docs/visualization/07-photoreal-pipeline.md). Intentionally empty until 3D sources arrive; getRenderStack() returns null and the visualizer uses the drawn elevation.",
   "models": {}
 }
