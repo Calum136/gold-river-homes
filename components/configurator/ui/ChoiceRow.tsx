@@ -12,6 +12,24 @@ export function PriceDelta({ amount }: { amount: number }) {
   );
 }
 
+/**
+ * How a choice would move the estimated monthly payment, relative to the
+ * buyer's current selections: "+$38/mo" or "−$12/mo". Renders nothing when
+ * there's no change, which includes the choice already selected. Amounts come
+ * from monthlyDeltaFor() in lib/pricing.ts.
+ */
+export function MonthlyDelta({ amount }: { amount: number | null | undefined }) {
+  if (!amount) return null;
+  return (
+    <span className="whitespace-nowrap font-accent text-figure-sm tabular-nums text-text-secondary">
+      {amount > 0 ? "+" : "−"}
+      {formatCurrency(Math.abs(amount))}
+      <span aria-hidden>/mo</span>
+      <span className="sr-only"> a month</span>
+    </span>
+  );
+}
+
 export function ChoiceGroup({
   legend,
   showLegend = false,
@@ -71,9 +89,12 @@ interface ChoiceRowProps {
   name: string;
   value: string;
   label: string;
-  description?: string;
+  /** The approved one-sentence reason this choice matters, shown in full under the label. */
+  reason?: string;
   /** Right-aligned price, e.g. <PriceDelta amount={1200} />. */
   price?: ReactNode;
+  /** Change in the estimated monthly payment if this row were chosen; see MonthlyDelta. */
+  monthlyDelta?: number | null;
   checked: boolean;
   onSelect: () => void;
   disabled?: boolean;
@@ -85,18 +106,18 @@ interface ChoiceRowProps {
   /** Keep the thumbnail column when a sibling row has one, so labels align. */
   reserveThumb?: boolean;
   paletteHexes?: string[];
-  /** Slot for the line that states what this choice changes (price and monthly payment). */
-  consequence?: ReactNode;
 }
 
 // One choice as a native radio: Tab reaches the group, arrow keys move the
-// selection, and the focus ring shows on the whole row.
+// selection, and the focus ring shows on the whole row. The row states what
+// the choice costs, how it moves the monthly payment, and why it matters.
 export default function ChoiceRow({
   name,
   value,
   label,
-  description,
+  reason,
   price,
+  monthlyDelta,
   checked,
   onSelect,
   disabled = false,
@@ -105,12 +126,11 @@ export default function ChoiceRow({
   swatchHex,
   reserveThumb = false,
   paletteHexes,
-  consequence,
 }: ChoiceRowProps) {
   const showThumbSlot = reserveThumb || !!thumb || !!swatchHex;
 
   return (
-    <label className={`flex items-center gap-4 px-4 py-3.5 ${choiceRowClass(checked, disabled)}`}>
+    <label className={`flex items-start gap-3 px-4 py-4 sm:gap-4 ${choiceRowClass(checked, disabled)}`}>
       <input
         type="radio"
         name={name}
@@ -120,10 +140,13 @@ export default function ChoiceRow({
         onChange={onSelect}
         className="sr-only"
       />
-      <RadioMark checked={checked} />
+      {/* Centred on the label's first line. */}
+      <span className="flex h-[1.6rem] shrink-0 items-center">
+        <RadioMark checked={checked} />
+      </span>
 
       {showThumbSlot && (
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden sm:h-14 sm:w-14">
           {thumb ? (
             <Image
               src={thumb.src}
@@ -153,9 +176,14 @@ export default function ChoiceRow({
             )}
             {label}
           </span>
-          {price && <span className="shrink-0 tabular-nums">{price}</span>}
+          {(price || !!monthlyDelta) && (
+            <span className="flex shrink-0 flex-col items-end tabular-nums">
+              {price}
+              <MonthlyDelta amount={monthlyDelta} />
+            </span>
+          )}
         </span>
-        {description && <span className="mt-1 block text-body-sm text-text-muted">{description}</span>}
+        {reason && <span className="mt-1 block text-body-sm text-text-muted">{reason}</span>}
         {paletteHexes && paletteHexes.length > 0 && (
           <span aria-hidden className="mt-2 flex gap-1">
             {paletteHexes.map((hex) => (
@@ -163,7 +191,6 @@ export default function ChoiceRow({
             ))}
           </span>
         )}
-        {consequence && <span className="mt-1 block">{consequence}</span>}
         {disabled && <span className="mt-1 block text-caption text-text-muted">{disabledNote}</span>}
       </span>
     </label>

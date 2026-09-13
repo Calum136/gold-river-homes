@@ -3,6 +3,7 @@
 import { waterCosts, sewerCosts, foundationCosts, siteEstimates } from "@/lib/defaults";
 import type { CostEstimate } from "@/lib/defaults";
 import { formatCurrency } from "@/lib/calculator";
+import { monthlyDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { getOptionAsset } from "@/lib/visual-assets";
 import ChoiceRow, { ChoiceGroup } from "@/components/configurator/ui/ChoiceRow";
@@ -16,28 +17,11 @@ interface SiteStepProps {
   only: SiteSection;
 }
 
-interface SiteChoice<K extends string> {
-  id: K;
-  label: string;
-  description: string;
-}
-
-const FOUNDATION_CHOICES: SiteChoice<ConfiguratorState["foundationType"]>[] = [
-  { id: "slab", label: "Concrete Slab", description: "Poured directly on grade. Most affordable, no crawl space access. Common in mild climates." },
-  { id: "crawlspace", label: "Crawlspace", description: "Raised foundation with enclosed space underneath. Good for service access in NS frost conditions." },
-  { id: "basement", label: "Full Basement", description: "Dig-out below grade. Significant added space and insulation value, higher upfront cost." },
-];
-
-const WATER_CHOICES: SiteChoice<ConfiguratorState["waterType"]>[] = [
-  { id: "drilled", label: "Drilled Well", description: "Most common in rural Nova Scotia. 100–250 ft depth, high yield, reliable year-round. Pump + pressure tank included." },
-  { id: "dug", label: "Dug Well", description: "Shallower (15–30 ft), lower yield. Lower cost but more vulnerable to drought and contamination." },
-  { id: "municipal", label: "Municipal Water", description: "Connection to town water main. Available in select areas — includes hookup fees and trenching." },
-];
-
-const SEWER_CHOICES: SiteChoice<ConfiguratorState["sewerType"]>[] = [
-  { id: "septic", label: "Septic System", description: "Standard for rural NS. Includes tank, distribution box, and leaching bed. Design depends on soil perc test." },
-  { id: "municipal", label: "Municipal Sewer", description: "Connection to town sewer main. Lower maintenance, available in some areas near Chester and Bridgewater." },
-];
+// The choices in the order they're offered. Each row's label, price range and
+// reason come from the same cost record the total charges.
+const FOUNDATION_IDS: ConfiguratorState["foundationType"][] = ["slab", "crawlspace", "basement"];
+const WATER_IDS: ConfiguratorState["waterType"][] = ["drilled", "dug", "municipal"];
+const SEWER_IDS: ConfiguratorState["sewerType"][] = ["septic", "municipal"];
 
 // Same data source the price calculation uses: the ranges shown must always
 // agree with the totals charged.
@@ -49,36 +33,46 @@ const range = (cost: { low: number; high: number }) => `${formatCurrency(cost.lo
 function SiteRows<K extends string>({
   groupId,
   legend,
-  choices,
+  ids,
   costs,
   selected,
-  onSelect,
+  patchFor,
+  state,
+  onChange,
 }: {
   groupId: string;
   legend: string;
-  choices: SiteChoice<K>[];
+  ids: K[];
   costs: Record<K, CostEstimate>;
   selected: K;
-  onSelect: (id: K) => void;
+  /** What choosing an id applies to the state. */
+  patchFor: (id: K) => Partial<ConfiguratorState>;
+  state: ConfiguratorState;
+  onChange: (patch: Partial<ConfiguratorState>) => void;
 }) {
-  const thumbs = choices.map((choice) => getOptionAsset(`${groupId}:${choice.id}`));
+  const thumbs = ids.map((id) => getOptionAsset(`${groupId}:${id}`));
   const reserveThumb = thumbs.some(Boolean);
+  const monthlyDelta = monthlyDeltaFor(state);
   return (
     <ChoiceGroup legend={legend}>
-      {choices.map((choice, i) => (
-        <ChoiceRow
-          key={choice.id}
-          name={groupId}
-          value={choice.id}
-          label={choice.label}
-          description={choice.description}
-          price={<span className="font-accent text-figure-sm text-text-primary">{range(costs[choice.id])}</span>}
-          checked={selected === choice.id}
-          onSelect={() => onSelect(choice.id)}
-          thumb={thumbs[i]}
-          reserveThumb={reserveThumb}
-        />
-      ))}
+      {ids.map((id, i) => {
+        const patch = patchFor(id);
+        return (
+          <ChoiceRow
+            key={id}
+            name={groupId}
+            value={id}
+            label={costs[id].label}
+            reason={costs[id].whyItMatters}
+            price={<span className="font-accent text-figure-sm text-text-primary">{range(costs[id])}</span>}
+            monthlyDelta={monthlyDelta(patch)}
+            checked={selected === id}
+            onSelect={() => onChange(patch)}
+            thumb={thumbs[i]}
+            reserveThumb={reserveThumb}
+          />
+        );
+      })}
     </ChoiceGroup>
   );
 }
@@ -96,10 +90,12 @@ export default function SiteStep({ state, onChange, only }: SiteStepProps) {
         <SiteRows
           groupId="foundation"
           legend="Foundation type"
-          choices={FOUNDATION_CHOICES}
+          ids={FOUNDATION_IDS}
           costs={foundationCosts}
           selected={state.foundationType}
-          onSelect={(id) => onChange({ foundationType: id })}
+          patchFor={(id) => ({ foundationType: id })}
+          state={state}
+          onChange={onChange}
         />
       )}
 
@@ -107,10 +103,12 @@ export default function SiteStep({ state, onChange, only }: SiteStepProps) {
         <SiteRows
           groupId="water"
           legend="Water supply"
-          choices={WATER_CHOICES}
+          ids={WATER_IDS}
           costs={waterCosts}
           selected={state.waterType}
-          onSelect={(id) => onChange({ waterType: id })}
+          patchFor={(id) => ({ waterType: id })}
+          state={state}
+          onChange={onChange}
         />
       )}
 
@@ -119,10 +117,12 @@ export default function SiteStep({ state, onChange, only }: SiteStepProps) {
           <SiteRows
             groupId="sewer"
             legend="Waste and sewer"
-            choices={SEWER_CHOICES}
+            ids={SEWER_IDS}
             costs={sewerCosts}
             selected={state.sewerType}
-            onSelect={(id) => onChange({ sewerType: id })}
+            patchFor={(id) => ({ sewerType: id })}
+            state={state}
+            onChange={onChange}
           />
 
           {/* Auto-estimated costs, included with the final site decision */}

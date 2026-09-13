@@ -2,54 +2,71 @@
 
 import Image from "next/image";
 import { lotOptions } from "@/lib/defaults";
+import type { LotOption } from "@/lib/defaults";
 import { formatCurrency } from "@/lib/calculator";
+import { landSituationCopy } from "@/lib/copy";
+import { monthlyDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { getLotAsset } from "@/lib/visual-assets";
-import { RadioMark, choiceRowClass } from "@/components/configurator/ui/ChoiceRow";
+import ChoiceRow, { ChoiceGroup, MonthlyDelta, RadioMark, choiceRowClass } from "@/components/configurator/ui/ChoiceRow";
 
 interface LotStepProps {
   state: ConfiguratorState;
   onChange: (patch: Partial<ConfiguratorState>) => void;
 }
 
+const BROWSE_LOTS: Partial<ConfiguratorState> = { landSituation: "gold-river", uploadedLot: null };
+const OWN_LAND: Partial<ConfiguratorState> = { landSituation: "own", selectedLotId: null };
+
+/** Choosing a lot also pre-selects the water and sewer services it has. */
+function lotPatch(lot: LotOption): Partial<ConfiguratorState> {
+  return {
+    landSituation: "gold-river",
+    selectedLotId: lot.id,
+    waterType: lot.preselectedWater ?? "drilled",
+    sewerType: lot.preselectedSewer ?? "septic",
+  };
+}
+
 export default function LotStep({ state, onChange }: LotStepProps) {
-  const tab = state.landSituation === "own" ? "own" : "gold-river";
+  // Until the buyer picks, the lots stay open so there's something to look at.
+  const situation = state.landSituation === "own" ? "own" : "gold-river";
   // Lots show the approved example photo for their terrain. A terrain without
   // one shows no photo but keeps the column, so the rows stay aligned.
   const reservePhoto = lotOptions.some((lot) => getLotAsset(lot.terrain));
-  const tabClass = (active: boolean) =>
-    `focus-ring flex-1 py-3 text-body-sm font-medium transition-colors duration-150 ${
-      active ? "bg-gold/15 text-gold" : "text-text-muted hover:bg-white/5 hover:text-text-secondary"
-    }`;
+  const monthlyDelta = monthlyDeltaFor(state);
 
   return (
-    <div className="space-y-6">
-      <div role="group" aria-label="Where you'll build" className="flex border border-border">
-        <button
-          type="button"
-          aria-pressed={tab === "gold-river"}
-          onClick={() => onChange({ landSituation: "gold-river", uploadedLot: null })}
-          className={tabClass(tab === "gold-river")}
-        >
-          Browse our lots
-        </button>
-        <button
-          type="button"
-          aria-pressed={tab === "own"}
-          onClick={() => onChange({ landSituation: "own", selectedLotId: null })}
-          className={`border-l border-border ${tabClass(tab === "own")}`}
-        >
-          Use my own land
-        </button>
-      </div>
+    <div className="space-y-8">
+      <ChoiceGroup legend="Where you'll build">
+        <ChoiceRow
+          name="land-situation"
+          value="gold-river"
+          label="Browse our lots"
+          reason={landSituationCopy["gold-river"]}
+          monthlyDelta={monthlyDelta(BROWSE_LOTS)}
+          checked={situation === "gold-river"}
+          onSelect={() => onChange(BROWSE_LOTS)}
+        />
+        <ChoiceRow
+          name="land-situation"
+          value="own"
+          label="Use my own land"
+          reason={landSituationCopy.own}
+          monthlyDelta={monthlyDelta(OWN_LAND)}
+          checked={situation === "own"}
+          onSelect={() => onChange(OWN_LAND)}
+        />
+      </ChoiceGroup>
 
-      {tab === "gold-river" && (
+      {situation === "gold-river" && (
         <fieldset className="min-w-0">
           <legend className="sr-only">Available lots</legend>
           <div className="flex flex-col gap-2">
             {lotOptions.map((lot) => {
               const selected = state.selectedLotId === lot.id;
               const photo = getLotAsset(lot.terrain);
+              const patch = lotPatch(lot);
               return (
                 <label key={lot.id} className={`flex gap-4 p-3 ${choiceRowClass(selected)}`}>
                   <input
@@ -57,14 +74,7 @@ export default function LotStep({ state, onChange }: LotStepProps) {
                     name="lot"
                     value={lot.id}
                     checked={selected}
-                    onChange={() =>
-                      onChange({
-                        landSituation: "gold-river",
-                        selectedLotId: lot.id,
-                        waterType: lot.preselectedWater ?? "drilled",
-                        sewerType: lot.preselectedSewer ?? "septic",
-                      })
-                    }
+                    onChange={() => onChange(patch)}
                     className="sr-only"
                   />
                   {reservePhoto && (
@@ -86,7 +96,10 @@ export default function LotStep({ state, onChange }: LotStepProps) {
                       <span className="text-body font-medium text-text-primary">{lot.name}</span>
                       <RadioMark checked={selected} />
                     </span>
-                    <span className="font-accent text-figure text-text-primary">{formatCurrency(lot.price)}</span>
+                    <span className="flex flex-wrap items-baseline gap-x-3">
+                      <span className="font-accent text-figure text-text-primary">{formatCurrency(lot.price)}</span>
+                      <MonthlyDelta amount={monthlyDelta(patch)} />
+                    </span>
                     <span className="text-body-sm text-text-secondary">{lot.location}</span>
                     <span className="font-accent text-figure-sm uppercase tracking-wide text-text-secondary">
                       {lot.acreage} acres · {lot.widthFt} × {lot.depthFt} ft
@@ -105,7 +118,7 @@ export default function LotStep({ state, onChange }: LotStepProps) {
       )}
 
       {/* Own land: fit and pricing details only */}
-      {tab === "own" && (
+      {situation === "own" && (
         <div className="space-y-4 border border-border p-5">
           <p className="text-eyebrow font-medium uppercase tracking-eyebrow text-text-muted">Lot Dimensions</p>
           <div className="grid grid-cols-2 gap-4">

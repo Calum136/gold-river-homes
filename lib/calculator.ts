@@ -138,6 +138,18 @@ export function monthlyPaymentFor(totalCost: number, inputs: MortgageInputs): nu
   return calculateMortgage(totalCost, inputs).monthlyPayment;
 }
 
+const assumptionNumber = new Intl.NumberFormat("en-CA", { maximumFractionDigits: 2 });
+
+/**
+ * The terms behind a monthly payment, in a few words: "at 5% down, 5.5%, 25 years".
+ * The down payment is the one actually used, which is higher than requested
+ * when the legal minimum applies.
+ */
+export function formatMortgageAssumption(result: MortgageResult, inputs: MortgageInputs): string {
+  const downPercent = Math.round(result.effectiveDownPaymentPercent * 10) / 10;
+  return `at ${assumptionNumber.format(downPercent)}% down, ${assumptionNumber.format(inputs.interestRate)}%, ${inputs.amortizationYears} years`;
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-CA", {
     style: "currency",

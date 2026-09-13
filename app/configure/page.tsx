@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { defaultState, calculateConfiguratorPrice } from "@/lib/pricing";
+import { defaultState, runningEstimate } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { sanitizeState } from "@/lib/state";
 import { resolveStage } from "@/lib/stage";
@@ -180,7 +180,7 @@ export default function ConfigurePage() {
     if (screenIndex > 1) goToScreen(screenIndex - 1);
   }
 
-  const priceResult = state.modelId ? calculateConfiguratorPrice(state) : null;
+  const estimate = runningEstimate(state);
 
   // Decisions from screens the buyer has already completed (all of them on the summary).
   const decidedScreens = SCREENS.slice(0, screenIndex - 1);
@@ -254,7 +254,7 @@ export default function ConfigurePage() {
                     <p className="mt-3 text-body text-text-secondary">{chapter.opener}</p>
                     <h1
                       id="decision-question"
-                      className="mt-8 border-t border-border pt-8 font-display text-display text-text-primary"
+                      className="mt-6 border-t border-border pt-6 font-display text-display text-text-primary sm:mt-8 sm:pt-8"
                     >
                       {screen.title}
                     </h1>
@@ -273,12 +273,6 @@ export default function ConfigurePage() {
 
               {renderScreen()}
 
-              {screen.id === "land" && (
-                <p className="mt-4 text-caption text-text-muted">
-                  Don&apos;t have land yet? Browse our available lots above.
-                </p>
-              )}
-
               <SelectionsSummary items={selectionItems} onJump={goToScreen} className="mt-12" />
 
               {/* Below xl the photo note lives here, once, instead of under the photo. */}
@@ -290,12 +284,12 @@ export default function ConfigurePage() {
             aria-label="Step navigation"
             className="sticky bottom-0 z-10 shrink-0 border-t border-border bg-bg-primary lg:static"
           >
-            <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-10 lg:py-4">
+            <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6 xl:px-10">
               <button
                 type="button"
                 onClick={back}
                 disabled={screenIndex === 1}
-                className={`focus-ring shrink-0 border px-4 py-2.5 text-body-sm font-medium transition-colors ${
+                className={`focus-ring shrink-0 border px-3 py-2.5 text-body-sm font-medium transition-colors sm:px-4 ${
                   screenIndex === 1
                     ? "cursor-not-allowed border-border/40 text-text-muted/50"
                     : "border-border text-text-secondary hover:border-white/30 hover:text-white"
@@ -304,17 +298,29 @@ export default function ConfigurePage() {
                 ← Back
               </button>
 
+              {/* The running figures: the monthly payment leads, the total follows, and the
+                  mortgage terms behind them are stated once, here, not on every choice. */}
               <div className="min-w-0 text-center">
-                {priceResult && (
-                  <p className="whitespace-nowrap">
-                    <span className="text-caption text-text-muted">
-                      <span className="sm:hidden">Est. total </span>
-                      <span className="hidden sm:inline">Estimated total </span>
-                    </span>
-                    <span className="font-accent text-figure tabular-nums text-text-primary">
-                      {formatCurrency(priceResult.totalCost)}
-                    </span>
-                  </p>
+                {estimate && (
+                  <>
+                    <p>
+                      <span className="sr-only">Estimated monthly payment </span>
+                      <span className="font-accent text-figure tabular-nums text-text-primary">
+                        {formatCurrency(estimate.monthlyPayment)}
+                      </span>
+                      <span aria-hidden className="text-caption text-text-muted">
+                        /mo
+                      </span>
+                    </p>
+                    <p className="text-caption text-text-muted">
+                      <span className="sm:hidden lg:inline">Est. total </span>
+                      <span className="hidden sm:inline lg:hidden">Estimated total </span>
+                      <span className="whitespace-nowrap tabular-nums text-text-secondary">
+                        {formatCurrency(estimate.totalCost)}
+                      </span>
+                    </p>
+                    <p className="text-eyebrow text-text-muted">{estimate.assumption}</p>
+                  </>
                 )}
               </div>
 
@@ -323,7 +329,7 @@ export default function ConfigurePage() {
                   type="button"
                   onClick={advance}
                   disabled={!ready}
-                  className={`focus-ring shrink-0 px-5 py-2.5 text-body-sm font-semibold transition-colors sm:px-8 ${
+                  className={`focus-ring shrink-0 px-4 py-2.5 text-body-sm font-semibold transition-colors sm:px-8 lg:px-5 xl:px-8 ${
                     ready ? "bg-gold text-white hover:bg-gold-bright" : "cursor-not-allowed bg-gold/30 text-white/50"
                   }`}
                 >

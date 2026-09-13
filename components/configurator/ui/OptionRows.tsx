@@ -1,45 +1,69 @@
 import { isOptionAvailable } from "@/lib/defaults";
 import type { OptionItem } from "@/lib/defaults";
-import { displayedOptionDelta } from "@/lib/pricing";
+import { displayedOptionDelta, monthlyDeltaFor } from "@/lib/pricing";
+import type { ConfiguratorState } from "@/lib/pricing";
 import { getOptionAsset } from "@/lib/visual-assets";
 import ChoiceRow, { ChoiceGroup, PriceDelta } from "./ChoiceRow";
+
+/** State fields that hold the id of one option from a data group. */
+export type OptionStateKey =
+  | "sidingStyleId"
+  | "sidingColorId"
+  | "roofTypeId"
+  | "metalRoofColorId"
+  | "exteriorTrimId"
+  | "flooringId"
+  | "countertopsId"
+  | "cabinetStyleId"
+  | "paintPackageId"
+  | "interiorTrimId"
+  | "lightingPackageId"
+  | "hardwareFinishId"
+  | "insulationId";
 
 interface OptionRowsProps {
   groupId: string;
   legend: string;
   showLegend?: boolean;
   options: OptionItem[];
-  selectedId: string;
-  modelId: string | null;
-  onSelect: (optionId: string) => void;
+  state: ConfiguratorState;
+  /** The state field this group's selection lives in. */
+  stateKey: OptionStateKey;
+  onChange: (patch: Partial<ConfiguratorState>) => void;
 }
 
-// One radio row per option in a data group. Thumbnails come from the approved
-// photo manifest under "<groupId>:<optionId>"; an option without a photo shows
-// its colour swatch if it has one, otherwise just the choice.
-export default function OptionRows({ groupId, legend, showLegend, options, selectedId, modelId, onSelect }: OptionRowsProps) {
+// One radio row per option in a data group, each with its price (the figure the
+// total charges), its effect on the monthly payment and its approved reason.
+// Thumbnails come from the approved photo manifest under "<groupId>:<optionId>";
+// an option without a photo shows its colour swatch if it has one.
+export default function OptionRows({ groupId, legend, showLegend, options, state, stateKey, onChange }: OptionRowsProps) {
   const thumbs = options.map((opt) => getOptionAsset(`${groupId}:${opt.id}`));
   const reserveThumb = options.some((opt, i) => !!thumbs[i] || !!opt.swatchHex);
+  const monthlyDelta = monthlyDeltaFor(state);
 
   return (
     <ChoiceGroup legend={legend} showLegend={showLegend}>
-      {options.map((opt, i) => (
-        <ChoiceRow
-          key={opt.id}
-          name={groupId}
-          value={opt.id}
-          label={opt.label}
-          description={opt.description}
-          price={<PriceDelta amount={displayedOptionDelta(groupId, opt.id, modelId, opt.priceDelta)} />}
-          checked={selectedId === opt.id}
-          onSelect={() => onSelect(opt.id)}
-          disabled={!isOptionAvailable(opt, modelId)}
-          thumb={thumbs[i]}
-          swatchHex={opt.swatchHex}
-          reserveThumb={reserveThumb}
-          paletteHexes={opt.paletteHexes}
-        />
-      ))}
+      {options.map((opt, i) => {
+        const patch: Partial<ConfiguratorState> = { [stateKey]: opt.id };
+        return (
+          <ChoiceRow
+            key={opt.id}
+            name={groupId}
+            value={opt.id}
+            label={opt.label}
+            reason={opt.whyItMatters}
+            price={<PriceDelta amount={displayedOptionDelta(groupId, opt.id, state.modelId, opt.priceDelta)} />}
+            monthlyDelta={monthlyDelta(patch)}
+            checked={state[stateKey] === opt.id}
+            onSelect={() => onChange(patch)}
+            disabled={!isOptionAvailable(opt, state.modelId)}
+            thumb={thumbs[i]}
+            swatchHex={opt.swatchHex}
+            reserveThumb={reserveThumb}
+            paletteHexes={opt.paletteHexes}
+          />
+        );
+      })}
     </ChoiceGroup>
   );
 }

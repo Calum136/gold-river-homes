@@ -1,8 +1,9 @@
 "use client";
 
 import { exteriorGroups, sidingColors, metalRoofColors } from "@/lib/defaults";
-import { porchDelta } from "@/lib/pricing";
+import { monthlyDeltaFor, porchDelta } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
+import { porchCopy } from "@/lib/copy";
 import { PORCH_LABELS } from "@/lib/stage";
 import { getOptionAsset } from "@/lib/visual-assets";
 import ChoiceRow, { ChoiceGroup, PriceDelta } from "@/components/configurator/ui/ChoiceRow";
@@ -27,9 +28,9 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
           groupId="sidingStyle"
           legend="Siding style"
           options={groupOptions("sidingStyle")}
-          selectedId={state.sidingStyleId}
-          modelId={state.modelId}
-          onSelect={(id) => onChange({ sidingStyleId: id })}
+          state={state}
+          stateKey="sidingStyleId"
+          onChange={onChange}
         />
       );
 
@@ -39,9 +40,9 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
           groupId="sidingColor"
           legend="Siding colour"
           options={sidingColors}
-          selectedId={state.sidingColorId}
-          modelId={state.modelId}
-          onSelect={(id) => onChange({ sidingColorId: id })}
+          state={state}
+          stateKey="sidingColorId"
+          onChange={onChange}
         />
       );
 
@@ -52,9 +53,9 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
             groupId="roofType"
             legend="Roofing"
             options={groupOptions("roofType")}
-            selectedId={state.roofTypeId}
-            modelId={state.modelId}
-            onSelect={(id) => onChange({ roofTypeId: id })}
+            state={state}
+            stateKey="roofTypeId"
+            onChange={onChange}
           />
           {state.roofTypeId === "metal" && (
             <OptionRows
@@ -62,9 +63,9 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
               legend="Metal roof colour"
               showLegend
               options={metalRoofColors}
-              selectedId={state.metalRoofColorId}
-              modelId={state.modelId}
-              onSelect={(id) => onChange({ metalRoofColorId: id })}
+              state={state}
+              stateKey="metalRoofColorId"
+              onChange={onChange}
             />
           )}
         </div>
@@ -74,13 +75,16 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
       const without = getOptionAsset("porch:without");
       const withPorch = getOptionAsset("porch:with");
       const reserveThumb = !!(without || withPorch);
+      const monthlyDelta = monthlyDeltaFor(state);
       return (
         <ChoiceGroup legend="Front porch">
           <ChoiceRow
             name="porch"
             value="without"
             label={PORCH_LABELS.without}
+            reason={porchCopy.without}
             price={<PriceDelta amount={0} />}
+            monthlyDelta={monthlyDelta({ hasFrontPorch: false })}
             checked={!state.hasFrontPorch}
             onSelect={() => onChange({ hasFrontPorch: false })}
             thumb={without}
@@ -90,8 +94,9 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
             name="porch"
             value="with"
             label={PORCH_LABELS.with}
-            description="Adds ~200 sq ft to your roof area · Increases curb appeal"
+            reason={porchCopy.with}
             price={<PriceDelta amount={porchDelta(state)} />}
+            monthlyDelta={monthlyDelta({ hasFrontPorch: true })}
             checked={state.hasFrontPorch}
             onSelect={() => onChange({ hasFrontPorch: true })}
             thumb={withPorch}
@@ -107,9 +112,9 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
           groupId="exteriorTrim"
           legend="Window and door trim"
           options={groupOptions("exteriorTrim")}
-          selectedId={state.exteriorTrimId}
-          modelId={state.modelId}
-          onSelect={(id) => onChange({ exteriorTrimId: id })}
+          state={state}
+          stateKey="exteriorTrimId"
+          onChange={onChange}
         />
       );
   }

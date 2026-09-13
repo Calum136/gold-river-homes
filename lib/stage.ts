@@ -1,6 +1,7 @@
 import type { ConfiguratorState } from "./pricing";
 import {
   homeModels,
+  lotOptions,
   exteriorGroups,
   interiorGroups,
   sidingColors,
@@ -11,7 +12,7 @@ import {
 } from "./defaults";
 import { getRenderStack } from "./renders";
 import type { RenderStack } from "./renders";
-import { getModelHero, getModelRoom, getShowHomeRoom, getOptionAsset } from "./visual-assets";
+import { getModelHero, getModelRoom, getShowHomeRoom, getOptionAsset, getLotAsset } from "./visual-assets";
 import type { RoomId, VisualAsset } from "./visual-assets";
 
 // ============================================
@@ -28,6 +29,11 @@ import type { RoomId, VisualAsset } from "./visual-assets";
 //
 // Only tier 1 shows the buyer's selections. Every other photo shows exactly
 // what its manifest caption says, and that caption is what the page prints.
+//
+// The example beside the decision is the selected choice's own approved photo.
+// It never borrows a photo of a different choice, and it never repeats the
+// photo already on the stage: in both cases it shows just the choice (its name
+// and swatch). On the land screen it's the selected example lot's terrain photo.
 // ============================================
 
 export type StageTier = "exact" | "this-model" | "other-supreme-home";
@@ -47,9 +53,9 @@ export interface StageChoice {
 }
 
 export interface StageExample {
-  /** Approved example photo of the selected choice; null when it has none. */
+  /** Approved example photo of the selected choice; null when it has none, or it's the stage photo. */
   asset: VisualAsset | null;
-  /** The selected choice itself, shown when there's no photo of it. */
+  /** The selected choice itself, shown when there's no photo to show. */
   choice: StageChoice;
 }
 
@@ -57,7 +63,10 @@ export interface StageResolution {
   view: "exterior" | "interior";
   /** Null only when no photo exists at any tier. */
   primary: StagePrimary | null;
-  /** Set on decision screens where at least one choice has an approved photo. */
+  /**
+   * Set on decision screens where at least one choice has an approved photo,
+   * and on the land screen once an example lot is selected.
+   */
   example: StageExample | null;
 }
 
@@ -132,8 +141,6 @@ interface Decision {
   keys: string[];
   /** Manifest key of the selected choice. */
   selected: string;
-  /** Photo to use when the selected key has none. */
-  fallback?: string;
   choice: StageChoice;
 }
 
@@ -189,13 +196,12 @@ function decisionFor(state: ConfiguratorState, screenId: string): Decision | nul
       if (!roof) return null;
       const keys = [...roof.keys, ...metalRoofColors.map((c) => `metalRoofColor:${c.id}`)];
       if (state.roofTypeId !== "metal") return { ...roof, keys };
-      // The metal roof screen also picks a colour; without a photo of that
-      // colour, show the metal roof example (its caption names only the roof type).
+      // The metal roof screen also picks a colour. A colour with no photo of its
+      // own shows just the choice, never a photo of a roof in another colour.
       const color = metalRoofColors.find((c) => c.id === state.metalRoofColorId);
       return {
         keys,
         selected: `metalRoofColor:${state.metalRoofColorId}`,
-        fallback: roof.selected,
         choice: { label: `${roof.choice.label}, ${color?.label ?? state.metalRoofColorId}`, swatchHex: color?.swatchHex },
       };
     }
@@ -216,16 +222,32 @@ function decisionFor(state: ConfiguratorState, screenId: string): Decision | nul
   }
 }
 
+// A selected example lot shows its terrain's photo with the manifest caption
+// (or just its name when that terrain has none). Own land shows no example.
+function landExample(state: ConfiguratorState): StageExample | null {
+  if (state.landSituation !== "gold-river") return null;
+  const lot = lotOptions.find((l) => l.id === state.selectedLotId);
+  return lot ? { asset: getLotAsset(lot.terrain), choice: { label: lot.name } } : null;
+}
+
 export function resolveStage(state: ConfiguratorState, screenId: string): StageResolution {
   const room = ROOM_FOR_DECISION[screenId];
   const primary = room ? resolveRoom(state.modelId, room) : resolveExterior(state);
 
-  const decision = decisionFor(state, screenId);
   let example: StageExample | null = null;
-  if (decision && decision.keys.some((key) => getOptionAsset(key))) {
-    const asset =
-      getOptionAsset(decision.selected) ?? (decision.fallback ? getOptionAsset(decision.fallback) : null);
-    example = { asset, choice: decision.choice };
+  if (screenId === "land") {
+    example = landExample(state);
+  } else {
+    const decision = decisionFor(state, screenId);
+    if (decision && decision.keys.some((key) => getOptionAsset(key))) {
+      example = { asset: getOptionAsset(decision.selected), choice: decision.choice };
+    }
+  }
+
+  // Some option examples are a model's own photo. When that's the photo already
+  // filling the stage, show just the choice rather than the same photo twice.
+  if (example?.asset && primary?.asset && example.asset.src === primary.asset.src) {
+    example = { ...example, asset: null };
   }
 
   return { view: room ? "interior" : "exterior", primary, example };

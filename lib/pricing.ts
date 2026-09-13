@@ -10,6 +10,7 @@ import {
   siteEstimates,
   extensionOptions,
 } from "./defaults";
+import { calculateMortgage, formatMortgageAssumption, monthlyPaymentFor } from "./calculator";
 import type { CostBreakdown } from "./calculator";
 
 // ============================================
@@ -183,6 +184,55 @@ export function porchDelta(state: ConfiguratorState): number {
   return (porchExt?.mid ?? 18000) + Math.round(PRICING_SHEET.extensions["front-porch"].addedRoofSqft * roofRate);
 }
 
+/** The electric fireplace insert: one flat line item in the total, and the price its choice shows. */
+export const FIREPLACE_PRICE = 4500;
+
+// ============================================
+// Monthly payment: the running figure and how each choice moves it
+// ============================================
+
+export interface RunningEstimate {
+  totalCost: number;
+  monthlyPayment: number;
+  /** The mortgage terms behind monthlyPayment, e.g. "at 5% down, 5.5%, 25 years". */
+  assumption: string;
+}
+
+/** The running figures for the buyer's current selections; null until a model is chosen. */
+export function runningEstimate(state: ConfiguratorState): RunningEstimate | null {
+  if (!state.modelId) return null;
+  const { totalCost } = calculateConfiguratorPrice(state);
+  const mortgage = calculateMortgage(totalCost, state.mortgage);
+  return {
+    totalCost,
+    monthlyPayment: mortgage.monthlyPayment,
+    assumption: formatMortgageAssumption(mortgage, state.mortgage),
+  };
+}
+
+/**
+ * Returns a function giving how the estimated monthly payment would change, in
+ * whole dollars, if `patch` (exactly what selecting a choice applies) were
+ * applied to the buyer's current selections: calculateConfiguratorPrice on the
+ * patched state, then monthlyPaymentFor(that total) minus monthlyPaymentFor(the
+ * current total), on the buyer's own mortgage terms.
+ *
+ * 0 when the total doesn't change, so the selected choice shows nothing. null
+ * until a model is chosen: there's no running monthly figure yet for a change
+ * to be relative to.
+ */
+export function monthlyDeltaFor(state: ConfiguratorState): (patch: Partial<ConfiguratorState>) => number | null {
+  if (!state.modelId) return () => null;
+  const currentTotal = calculateConfiguratorPrice(state).totalCost;
+  const currentMonthly = monthlyPaymentFor(currentTotal, state.mortgage);
+  return (patch) => {
+    const total = calculateConfiguratorPrice({ ...state, ...patch }).totalCost;
+    if (total === currentTotal) return 0;
+    // `|| 0` turns a rounded -0 into 0.
+    return Math.round(monthlyPaymentFor(total, state.mortgage) - currentMonthly) || 0;
+  };
+}
+
 // ============================================
 // Price calculation
 // ============================================
@@ -286,7 +336,7 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
 
   // Fireplace
   if (state.hasFireplace) {
-    items.push({ label: "Fireplace (Electric Insert)", amount: 4500 });
+    items.push({ label: "Fireplace (Electric Insert)", amount: FIREPLACE_PRICE });
   }
 
   // Land
