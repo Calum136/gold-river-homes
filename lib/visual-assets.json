@@ -101,12 +101,12 @@
       "exterior": [
         {
           "src": "/models/zenith-ct/exterior.webp",
-          "width": 630,
-          "height": 450,
-          "kind": "photo",
+          "width": 1483,
+          "height": 576,
+          "kind": "render",
           "tier": "this-model",
-          "caption": "Zenith CT, photographed by Supreme Homes",
-          "alt": "Front of the Zenith CT",
+          "caption": "Zenith CT, Supreme Homes rendering from its spec sheet",
+          "alt": "Front of the Zenith CT (rendering)",
           "credit": "Supreme Homes",
           "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
           "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
@@ -118,13 +118,25 @@
           "kind": "photo",
           "tier": "this-model",
           "caption": "Zenith CT, photographed by Supreme Homes",
-          "alt": "The Zenith CT from the driveway",
+          "alt": "Front of the Zenith CT",
           "credit": "Supreme Homes",
           "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
           "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
         },
         {
           "src": "/models/zenith-ct/exterior-3.webp",
+          "width": 630,
+          "height": 450,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zenith CT, photographed by Supreme Homes",
+          "alt": "The Zenith CT from the driveway",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+        },
+        {
+          "src": "/models/zenith-ct/exterior-4.webp",
           "width": 630,
           "height": 450,
           "kind": "photo",
@@ -827,7 +839,7 @@
       "sourceUrl": "https://www.supremehomes.ca/model/sauvignon-ct-2/"
     },
     "porch:without": {
-      "src": "/models/zenith-ct/exterior-3.webp",
+      "src": "/models/zenith-ct/exterior-4.webp",
       "width": 630,
       "height": 450,
       "kind": "photo",
