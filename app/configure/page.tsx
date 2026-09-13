@@ -7,6 +7,8 @@ import type { ConfiguratorState } from "@/lib/pricing";
 import { sanitizeState } from "@/lib/state";
 import { resolveStage } from "@/lib/stage";
 import { formatCurrency } from "@/lib/calculator";
+import { stageNote } from "@/lib/copy";
+import { SCREENS, chapterForScreen } from "@/lib/screens";
 import {
   interiorGroups,
   exteriorGroups,
@@ -24,7 +26,7 @@ import StageChrome from "@/components/configurator/StageChrome";
 import OptionExample from "@/components/configurator/OptionExample";
 import SelectionsSummary from "@/components/configurator/SelectionsSummary";
 import type { SelectionItem } from "@/components/configurator/SelectionsSummary";
-import StepNav from "@/components/configurator/StepNav";
+import ChapterNav from "@/components/configurator/ChapterNav";
 import LotStep from "@/components/configurator/steps/LotStep";
 import ModelStep from "@/components/configurator/steps/ModelStep";
 import ExteriorStep from "@/components/configurator/steps/ExteriorStep";
@@ -34,60 +36,10 @@ import SiteStep from "@/components/configurator/steps/SiteStep";
 import type { SiteSection } from "@/components/configurator/steps/SiteStep";
 import SummaryStep from "@/components/configurator/steps/SummaryStep";
 
-const STEP_LABELS = ["Land", "Home", "Exterior", "Interior", "Site Setup", "Your Price"];
-
-// state.step is now a SCREEN index (1-based) — one decision per screen.
-// Bump the version whenever ConfiguratorState changes shape or screens reorder.
+// state.step is a SCREEN index (1-based) into SCREENS (lib/screens.ts): one
+// decision per screen. Bump the version whenever ConfiguratorState changes
+// shape or screens reorder.
 const STORAGE_KEY = "grh-configurator-v2";
-
-interface ScreenDef {
-  id: string;
-  phase: number; // 1..6, indexes STEP_LABELS
-  title: string;
-  subtitle?: string;
-}
-
-const EXTERIOR_SCREENS: Array<ScreenDef & { id: ExteriorSection }> = [
-  { id: "sidingStyle", phase: 3, title: "Siding Style", subtitle: "Choose the profile of your exterior cladding." },
-  { id: "sidingColor", phase: 3, title: "Siding Color", subtitle: "Pick the color of your home's exterior." },
-  { id: "roofType", phase: 3, title: "Roofing", subtitle: "Shingles are industry standard; metal adds decades of life." },
-  { id: "porch", phase: 3, title: "Front Porch", subtitle: "Add a covered porch to the front of your home?" },
-  { id: "exteriorTrim", phase: 3, title: "Window & Door Trim", subtitle: "The casing style around your windows and doors." },
-];
-
-const INTERIOR_SCREENS: ScreenDef[] = [
-  ...interiorGroups.map((g) => ({ id: g.id, phase: 4, title: g.label, subtitle: g.subtitle })),
-  { id: "fireplace", phase: 4, title: "Fireplace", subtitle: "Add a cozy electric fireplace insert?" },
-];
-
-const SITE_SCREENS: Array<ScreenDef & { id: SiteSection }> = [
-  { id: "foundation", phase: 5, title: "Foundation Type", subtitle: "What your home sits on — affects cost, storage, and service access." },
-  { id: "water", phase: 5, title: "Water Supply", subtitle: "How your home gets its water. We'll explain what each option costs." },
-  { id: "sewer", phase: 5, title: "Waste & Sewer", subtitle: "How wastewater leaves your home — plus the site costs we estimate automatically." },
-];
-
-const SCREENS: ScreenDef[] = [
-  { id: "land", phase: 1, title: "Your Land", subtitle: "Browse our available lots or use your own property." },
-  {
-    id: "model",
-    phase: 2,
-    title: "Choose Your Home",
-    subtitle: "Select the model that fits your lifestyle. All prices are base — you'll customize finishes next.",
-  },
-  ...EXTERIOR_SCREENS,
-  ...INTERIOR_SCREENS,
-  ...SITE_SCREENS,
-  {
-    id: "summary",
-    phase: 6,
-    title: "Your Price Summary",
-    subtitle: "All costs are estimates. A Gold River Homes rep will confirm final pricing.",
-  },
-];
-
-const EXTERIOR_IDS = new Set<string>(EXTERIOR_SCREENS.map((s) => s.id));
-const INTERIOR_IDS = new Set<string>(INTERIOR_SCREENS.map((s) => s.id));
-const SITE_IDS = new Set<string>(SITE_SCREENS.map((s) => s.id));
 
 // One line per decision the buyer has already made — listed at the foot of the
 // decision panel as buttons that jump back to that screen.
@@ -167,6 +119,10 @@ function canAdvance(state: ConfiguratorState, screenId: string): boolean {
 
 export default function ConfigurePage() {
   const [state, setState] = useState<ConfiguratorState>(defaultState);
+  // Furthest screen reached this visit, so chapters the buyer has already been
+  // through stay one click away after going back. A reload starts from the
+  // saved screen.
+  const [furthestScreen, setFurthestScreen] = useState(1);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // A refresh shouldn't cost the buyer their whole configuration.
@@ -198,30 +154,30 @@ export default function ConfigurePage() {
     setState((prev) => ({ ...prev, ...updates }));
   }
 
-  function goToScreen(screen: number) {
-    setState((prev) => ({ ...prev, step: screen }));
+  const screenIndex = Math.min(Math.max(1, state.step), SCREENS.length);
+  const screen = SCREENS[screenIndex - 1];
+  const chapter = chapterForScreen(screenIndex);
+  const isChapterOpening = screenIndex === chapter.firstScreen;
+  const isLast = screenIndex === SCREENS.length;
+  const ready = canAdvance(state, screen.id);
+  // Chapters ahead stay out of reach until this screen's decision is made.
+  const reachedScreen = ready ? Math.max(furthestScreen, screenIndex) : screenIndex;
+  const model = homeModels.find((m) => m.id === state.modelId) ?? null;
+  const stage = resolveStage(state, screen.id);
+
+  function goToScreen(target: number) {
+    setFurthestScreen((prev) => Math.max(prev, screenIndex, target));
+    setState((prev) => ({ ...prev, step: target }));
     // Each new question starts at the top: the page on phones, the panel on desktop.
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
     panelRef.current?.scrollTo({ top: 0 });
   }
-
-  const screenIndex = Math.min(Math.max(1, state.step), SCREENS.length);
-  const screen = SCREENS[screenIndex - 1];
-  const isLast = screenIndex === SCREENS.length;
-  const ready = canAdvance(state, screen.id);
-  const model = homeModels.find((m) => m.id === state.modelId) ?? null;
-  const stage = resolveStage(state, screen.id);
-
   function advance() {
     if (!isLast && ready) goToScreen(screenIndex + 1);
   }
   function back() {
     if (screenIndex > 1) goToScreen(screenIndex - 1);
-  }
-  function onPhaseClick(phase: number) {
-    const first = SCREENS.findIndex((s) => s.phase === phase);
-    if (first >= 0) goToScreen(first + 1);
   }
 
   const priceResult = state.modelId ? calculateConfiguratorPrice(state) : null;
@@ -234,13 +190,20 @@ export default function ConfigurePage() {
   });
 
   const renderScreen = () => {
-    if (screen.id === "land") return <LotStep state={state} onChange={patch} />;
-    if (screen.id === "model") return <ModelStep state={state} onChange={patch} />;
-    if (screen.id === "summary") return <SummaryStep state={state} onChange={patch} />;
-    if (EXTERIOR_IDS.has(screen.id)) return <ExteriorStep state={state} onChange={patch} only={screen.id as ExteriorSection} />;
-    if (INTERIOR_IDS.has(screen.id)) return <InteriorStep state={state} onChange={patch} only={screen.id} />;
-    if (SITE_IDS.has(screen.id)) return <SiteStep state={state} onChange={patch} only={screen.id as SiteSection} />;
-    return null;
+    switch (screen.chapter) {
+      case "land":
+        return <LotStep state={state} onChange={patch} />;
+      case "home":
+        return <ModelStep state={state} onChange={patch} />;
+      case "outside":
+        return <ExteriorStep state={state} onChange={patch} only={screen.id as ExteriorSection} />;
+      case "inside":
+        return <InteriorStep state={state} onChange={patch} only={screen.id} />;
+      case "ready":
+        return <SiteStep state={state} onChange={patch} only={screen.id as SiteSection} />;
+      case "cost":
+        return <SummaryStep state={state} onChange={patch} />;
+    }
   };
 
   return (
@@ -255,12 +218,7 @@ export default function ConfigurePage() {
             Gold River Homes
           </Link>
           <div className="flex min-w-0 flex-1 justify-end lg:justify-center">
-            <StepNav
-              currentStep={screen.phase}
-              totalSteps={STEP_LABELS.length}
-              labels={STEP_LABELS}
-              onStepClick={onPhaseClick}
-            />
+            <ChapterNav screenIndex={screenIndex} reachedScreen={reachedScreen} onJump={goToScreen} />
           </div>
           <a
             href="tel:9022733033"
@@ -289,14 +247,26 @@ export default function ConfigurePage() {
           <div ref={panelRef} className="relative flex-1 lg:overflow-y-auto">
             <div className="mx-auto w-full max-w-2xl px-4 pb-10 pt-8 sm:px-6 lg:px-10 lg:pt-10">
               <header className="mb-8">
-                {/* Chapter slot: the phase name today; named chapters replace it in a later workstream. */}
-                <p className="text-eyebrow font-medium uppercase tracking-eyebrow text-text-muted">
-                  {STEP_LABELS[screen.phase - 1]}
-                </p>
-                <h1 id="decision-question" className="mt-3 font-display text-display text-text-primary">
-                  {screen.title}
-                </h1>
-                {screen.subtitle && <p className="mt-3 text-body text-text-secondary">{screen.subtitle}</p>}
+                {isChapterOpening ? (
+                  // Where a chapter opens: its name large, its opener, then the question.
+                  <>
+                    <p className="font-display text-chapter text-text-primary">{chapter.title}</p>
+                    <p className="mt-3 text-body text-text-secondary">{chapter.opener}</p>
+                    <h1
+                      id="decision-question"
+                      className="mt-8 border-t border-border pt-8 font-display text-display text-text-primary"
+                    >
+                      {screen.title}
+                    </h1>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-eyebrow font-medium uppercase tracking-eyebrow text-text-muted">{chapter.title}</p>
+                    <h1 id="decision-question" className="mt-3 font-display text-display text-text-primary">
+                      {screen.title}
+                    </h1>
+                  </>
+                )}
               </header>
 
               {stage.example && <OptionExample example={stage.example} className="mb-8" />}
@@ -310,6 +280,9 @@ export default function ConfigurePage() {
               )}
 
               <SelectionsSummary items={selectionItems} onJump={goToScreen} className="mt-12" />
+
+              {/* Below xl the photo note lives here, once, instead of under the photo. */}
+              <p className="mt-12 text-caption text-text-muted xl:hidden">{stageNote}</p>
             </div>
           </div>
 
@@ -343,9 +316,6 @@ export default function ConfigurePage() {
                     </span>
                   </p>
                 )}
-                <p className="text-caption tabular-nums text-text-muted">
-                  {screenIndex} of {SCREENS.length}
-                </p>
               </div>
 
               {!isLast ? (
@@ -374,7 +344,7 @@ export default function ConfigurePage() {
 
       {/* Focus stays on Next so the buyer can keep going; screen readers hear the new question. */}
       <p aria-live="polite" className="sr-only">
-        {screen.title}
+        {isChapterOpening ? `${chapter.title}. ${screen.title}` : screen.title}
       </p>
     </div>
   );

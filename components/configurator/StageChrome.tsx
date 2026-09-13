@@ -13,8 +13,10 @@ interface StageChromeProps {
 }
 
 // The one quiet region for everything about the stage photo: what it shows,
-// the model's other photos, and the single note on where photos come from.
-// Nothing is ever drawn over the photo itself.
+// the model's other photos, and (from xl up, where it fits in two lines) the
+// single note on where photos come from. Narrower screens show that note once
+// at the foot of the decision panel instead, so it never pushes the question
+// below the fold. Nothing is ever drawn over the photo itself.
 export default function StageChrome({ stage, model, className = "" }: StageChromeProps) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const gallery = getModelGallery(model?.id ?? null);
@@ -30,7 +32,7 @@ export default function StageChrome({ stage, model, className = "" }: StageChrom
             {credit && <span className="text-text-muted"> · {credit}</span>}
           </p>
         )}
-        <p className="text-caption text-text-muted">{stageNote}</p>
+        <p className="hidden text-caption text-text-muted xl:block">{stageNote}</p>
       </div>
 
       {model && gallery.length > 1 && (

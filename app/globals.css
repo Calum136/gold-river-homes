@@ -44,10 +44,13 @@
   --font-accent: 'Teko', sans-serif;
 
   /* Type scale.
+     chapter: a chapter's name on the screen where that chapter opens (Playfair Display).
      display: the question being asked (Playfair Display).
      body, body-sm: reading text at 16 and 15 px (Poppins).
      caption, eyebrow: photo captions and small labels, never below 13 px.
      figure: prices, sizes and dimensions (Teko runs small, so its steps are larger). */
+  --text-chapter: clamp(2.25rem, 1.25rem + 2.5vw, 3.5rem);
+  --text-chapter--line-height: 1.05;
   --text-display: clamp(2rem, 1.25rem + 1.5vw, 2.75rem);
   --text-display--line-height: 1.1;
   --text-title: 1.375rem;
