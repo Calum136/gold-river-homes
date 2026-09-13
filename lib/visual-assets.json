@@ -1,0 +1,1075 @@
+{
+  "version": 1,
+  "generated": "2026-09-13",
+  "models": {
+    "bali": {
+      "exterior": [
+        {
+          "src": "/models/bali/exterior.webp",
+          "width": 1920,
+          "height": 1080,
+          "kind": "render",
+          "tier": "this-model",
+          "caption": "Bali, Supreme Homes rendering",
+          "alt": "Front of the Bali (rendering)",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/bali/"
+        }
+      ],
+      "rooms": {}
+    },
+    "zen-ct-2": {
+      "exterior": [
+        {
+          "src": "/models/zen-ct-2/exterior.webp",
+          "width": 1483,
+          "height": 643,
+          "kind": "render",
+          "tier": "this-model",
+          "caption": "Zen CT-2, Supreme Homes rendering from its spec sheet",
+          "alt": "Front of the Zen CT-2 (rendering)",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zen-ct-2/"
+        },
+        {
+          "src": "/models/zen-ct-2/exterior-2.webp",
+          "width": 1500,
+          "height": 1000,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zen CT-2 on delivery day, photographed by Supreme Homes",
+          "alt": "Zen CT-2 on a delivery trailer",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zen-ct-2/"
+        }
+      ],
+      "rooms": {
+        "kitchen": {
+          "src": "/models/zen-ct-2/rooms/kitchen.webp",
+          "width": 1350,
+          "height": 900,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zen CT-2 kitchen, photographed by Supreme Homes",
+          "alt": "Zen CT-2 kitchen",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zen-ct-2/"
+        },
+        "living": {
+          "src": "/models/zen-ct-2/rooms/living.webp",
+          "width": 1600,
+          "height": 728,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zen CT-2 living room, photographed by Supreme Homes",
+          "alt": "Zen CT-2 living room",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zen-ct-2/"
+        },
+        "bath": {
+          "src": "/models/zen-ct-2/rooms/bath.webp",
+          "width": 639,
+          "height": 960,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zen CT-2 bathroom, photographed by Supreme Homes",
+          "alt": "Zen CT-2 bathroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zen-ct-2/"
+        },
+        "bedroom": {
+          "src": "/models/zen-ct-2/rooms/bedroom.webp",
+          "width": 1350,
+          "height": 900,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zen CT-2 bedroom, photographed by Supreme Homes",
+          "alt": "Zen CT-2 bedroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zen-ct-2/"
+        }
+      }
+    },
+    "zenith-ct": {
+      "exterior": [
+        {
+          "src": "/models/zenith-ct/exterior.webp",
+          "width": 630,
+          "height": 450,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zenith CT, photographed by Supreme Homes",
+          "alt": "Front of the Zenith CT",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+        },
+        {
+          "src": "/models/zenith-ct/exterior-2.webp",
+          "width": 630,
+          "height": 450,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zenith CT, photographed by Supreme Homes",
+          "alt": "The Zenith CT from the driveway",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+        },
+        {
+          "src": "/models/zenith-ct/exterior-3.webp",
+          "width": 630,
+          "height": 450,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zenith CT entry steps, photographed by Supreme Homes",
+          "alt": "Entry steps of the Zenith CT",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+        }
+      ],
+      "rooms": {
+        "kitchen": {
+          "src": "/models/zenith-ct/rooms/kitchen.webp",
+          "width": 630,
+          "height": 450,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zenith CT kitchen, photographed by Supreme Homes",
+          "alt": "Zenith CT kitchen",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+        },
+        "living": {
+          "src": "/models/zenith-ct/rooms/living.webp",
+          "width": 630,
+          "height": 450,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zenith CT living room, photographed by Supreme Homes",
+          "alt": "Zenith CT living room",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+        },
+        "bath": {
+          "src": "/models/zenith-ct/rooms/bath.webp",
+          "width": 630,
+          "height": 450,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zenith CT bathroom, photographed by Supreme Homes",
+          "alt": "Zenith CT bathroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+        },
+        "bedroom": {
+          "src": "/models/zenith-ct/rooms/bedroom.webp",
+          "width": 630,
+          "height": 450,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Zenith CT bedroom, photographed by Supreme Homes",
+          "alt": "Zenith CT bedroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+        }
+      }
+    },
+    "fb10": {
+      "exterior": [
+        {
+          "src": "/models/fb10/exterior.webp",
+          "width": 1920,
+          "height": 960,
+          "kind": "render",
+          "tier": "this-model",
+          "caption": "FB-10, Supreme Homes rendering",
+          "alt": "Front of the FB-10 (rendering)",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/fb-10/"
+        }
+      ],
+      "rooms": {}
+    },
+    "fancy-tr-2": {
+      "exterior": [
+        {
+          "src": "/models/fancy-tr-2/exterior.webp",
+          "width": 1920,
+          "height": 1440,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Fancy TR-2, photographed by Supreme Homes",
+          "alt": "Front of the Fancy TR-2",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/fancy-tr-2/"
+        },
+        {
+          "src": "/models/fancy-tr-2/exterior-2.webp",
+          "width": 1920,
+          "height": 1440,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Fancy TR-2, photographed by Supreme Homes",
+          "alt": "Front of the Fancy TR-2",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/fancy-tr-2/"
+        },
+        {
+          "src": "/models/fancy-tr-2/exterior-3.webp",
+          "width": 1920,
+          "height": 960,
+          "kind": "render",
+          "tier": "this-model",
+          "caption": "Fancy TR-2, Supreme Homes rendering",
+          "alt": "Front of the Fancy TR-2 (rendering)",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/fancy-tr-2/"
+        }
+      ],
+      "rooms": {
+        "kitchen": {
+          "src": "/models/fancy-tr-2/rooms/kitchen.webp",
+          "width": 1600,
+          "height": 1200,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Fancy TR-2 kitchen, photographed by Supreme Homes",
+          "alt": "Fancy TR-2 kitchen",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/fancy-tr-2/"
+        },
+        "living": {
+          "src": "/models/fancy-tr-2/rooms/living.webp",
+          "width": 1600,
+          "height": 1200,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Fancy TR-2 living room, photographed by Supreme Homes",
+          "alt": "Fancy TR-2 living room",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/fancy-tr-2/"
+        },
+        "bath": {
+          "src": "/models/fancy-tr-2/rooms/bath.webp",
+          "width": 1200,
+          "height": 1600,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Fancy TR-2 bathroom, photographed by Supreme Homes",
+          "alt": "Fancy TR-2 bathroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/fancy-tr-2/"
+        },
+        "bedroom": {
+          "src": "/models/fancy-tr-2/rooms/bedroom.webp",
+          "width": 1600,
+          "height": 1200,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Fancy TR-2 bedroom, photographed by Supreme Homes",
+          "alt": "Fancy TR-2 bedroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/fancy-tr-2/"
+        }
+      }
+    },
+    "acadie-ct": {
+      "exterior": [
+        {
+          "src": "/models/acadie-ct/exterior.webp",
+          "width": 1697,
+          "height": 820,
+          "kind": "render",
+          "tier": "this-model",
+          "caption": "Acadie CT, Supreme Homes rendering",
+          "alt": "Front of the Acadie CT (rendering)",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/acadie-ct/"
+        }
+      ],
+      "rooms": {}
+    },
+    "acadie-cr": {
+      "exterior": [
+        {
+          "src": "/models/acadie-cr/exterior.webp",
+          "width": 1697,
+          "height": 820,
+          "kind": "render",
+          "tier": "this-model",
+          "caption": "Acadie CR, Supreme Homes rendering",
+          "alt": "Front of the Acadie CR (rendering)",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/acadie-cr/"
+        }
+      ],
+      "rooms": {}
+    },
+    "sauvignon-ct-2": {
+      "exterior": [
+        {
+          "src": "/models/sauvignon-ct-2/exterior.webp",
+          "width": 1050,
+          "height": 700,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Sauvignon CT-2, photographed by Supreme Homes",
+          "alt": "Front of the Sauvignon CT-2",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/sauvignon-ct-2/"
+        }
+      ],
+      "rooms": {
+        "kitchen": {
+          "src": "/models/sauvignon-ct-2/rooms/kitchen.webp",
+          "width": 1050,
+          "height": 700,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Sauvignon CT-2 kitchen, photographed by Supreme Homes",
+          "alt": "Sauvignon CT-2 kitchen",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/sauvignon-ct-2/"
+        },
+        "living": {
+          "src": "/models/sauvignon-ct-2/rooms/living.webp",
+          "width": 1050,
+          "height": 700,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Sauvignon CT-2 living room, photographed by Supreme Homes",
+          "alt": "Sauvignon CT-2 living room",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/sauvignon-ct-2/"
+        },
+        "bath": {
+          "src": "/models/sauvignon-ct-2/rooms/bath.webp",
+          "width": 1050,
+          "height": 700,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Sauvignon CT-2 bathroom, photographed by Supreme Homes",
+          "alt": "Sauvignon CT-2 bathroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/sauvignon-ct-2/"
+        },
+        "bedroom": {
+          "src": "/models/sauvignon-ct-2/rooms/bedroom.webp",
+          "width": 1050,
+          "height": 700,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Sauvignon CT-2 bedroom, photographed by Supreme Homes",
+          "alt": "Sauvignon CT-2 bedroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/sauvignon-ct-2/"
+        }
+      }
+    },
+    "porto": {
+      "exterior": [
+        {
+          "src": "/models/porto/exterior.webp",
+          "width": 1845,
+          "height": 740,
+          "kind": "render",
+          "tier": "this-model",
+          "caption": "Porto, Supreme Homes rendering",
+          "alt": "Front of the Porto (rendering)",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/porto/"
+        }
+      ],
+      "rooms": {
+        "kitchen": {
+          "src": "/models/porto/rooms/kitchen.webp",
+          "width": 1600,
+          "height": 1019,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Porto kitchen, photographed by Supreme Homes",
+          "alt": "Porto kitchen",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/porto/"
+        },
+        "living": {
+          "src": "/models/porto/rooms/living.webp",
+          "width": 1600,
+          "height": 1034,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Porto living room, photographed by Supreme Homes",
+          "alt": "Porto living room",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/porto/"
+        },
+        "bath": {
+          "src": "/models/porto/rooms/bath.webp",
+          "width": 1600,
+          "height": 888,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Porto bathroom, photographed by Supreme Homes",
+          "alt": "Porto bathroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/porto/"
+        },
+        "bedroom": {
+          "src": "/models/porto/rooms/bedroom.webp",
+          "width": 1600,
+          "height": 928,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Porto bedroom, photographed by Supreme Homes",
+          "alt": "Porto bedroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/porto/"
+        }
+      }
+    },
+    "windsor-ct": {
+      "exterior": [
+        {
+          "src": "/models/windsor-ct/exterior.webp",
+          "width": 1483,
+          "height": 768,
+          "kind": "render",
+          "tier": "this-model",
+          "caption": "Windsor CT, Supreme Homes rendering from its spec sheet",
+          "alt": "Front of the Windsor CT (rendering)",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/windsor-ct/"
+        }
+      ],
+      "rooms": {}
+    },
+    "bordeaux-tr": {
+      "exterior": [
+        {
+          "src": "/models/bordeaux-tr/exterior.webp",
+          "width": 1920,
+          "height": 1080,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Bordeaux TR, photographed by Supreme Homes",
+          "alt": "Front of the Bordeaux TR",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/bordeaux-tr/"
+        },
+        {
+          "src": "/models/bordeaux-tr/exterior-2.webp",
+          "width": 1920,
+          "height": 1080,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Bordeaux TR, photographed by Supreme Homes",
+          "alt": "Front of the Bordeaux TR",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/bordeaux-tr/"
+        },
+        {
+          "src": "/models/bordeaux-tr/exterior-3.webp",
+          "width": 1920,
+          "height": 1080,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Bordeaux TR, photographed by Supreme Homes",
+          "alt": "The Bordeaux TR from the driveway",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/bordeaux-tr/"
+        }
+      ],
+      "rooms": {
+        "living": {
+          "src": "/models/bordeaux-tr/rooms/living.webp",
+          "width": 1600,
+          "height": 1373,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Bordeaux TR living room, photographed by Supreme Homes",
+          "alt": "Bordeaux TR living room",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/bordeaux-tr/"
+        },
+        "bath": {
+          "src": "/models/bordeaux-tr/rooms/bath.webp",
+          "width": 1600,
+          "height": 1066,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Bordeaux TR bathroom, photographed by Supreme Homes",
+          "alt": "Bordeaux TR bathroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/bordeaux-tr/"
+        },
+        "bedroom": {
+          "src": "/models/bordeaux-tr/rooms/bedroom.webp",
+          "width": 1600,
+          "height": 1066,
+          "kind": "photo",
+          "tier": "this-model",
+          "caption": "Bordeaux TR bedroom, photographed by Supreme Homes",
+          "alt": "Bordeaux TR bedroom",
+          "credit": "Supreme Homes",
+          "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+          "sourceUrl": "https://www.supremehomes.ca/model/bordeaux-tr/"
+        }
+      }
+    }
+  },
+  "showHome": {
+    "rooms": {
+      "kitchen": {
+        "src": "/models/show-home/rooms/kitchen.webp",
+        "width": 1600,
+        "height": 1070,
+        "kind": "photo",
+        "tier": "other-supreme-home",
+        "caption": "Kitchen in a Supreme Homes show home (a different model)",
+        "alt": "Kitchen in a Supreme Homes show home",
+        "credit": "Supreme Homes",
+        "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+        "sourceUrl": "https://www.supremehomes.ca/model/windsor-ct/"
+      },
+      "living": {
+        "src": "/models/show-home/rooms/living.webp",
+        "width": 1600,
+        "height": 1070,
+        "kind": "photo",
+        "tier": "other-supreme-home",
+        "caption": "Living room in a Supreme Homes show home (a different model)",
+        "alt": "Living room in a Supreme Homes show home",
+        "credit": "Supreme Homes",
+        "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+        "sourceUrl": "https://www.supremehomes.ca/model/windsor-ct/"
+      },
+      "bath": {
+        "src": "/models/show-home/rooms/bath.webp",
+        "width": 1600,
+        "height": 1070,
+        "kind": "photo",
+        "tier": "other-supreme-home",
+        "caption": "Bathroom in a Supreme Homes show home (a different model)",
+        "alt": "Bathroom in a Supreme Homes show home",
+        "credit": "Supreme Homes",
+        "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+        "sourceUrl": "https://www.supremehomes.ca/model/windsor-ct/"
+      },
+      "bedroom": {
+        "src": "/models/show-home/rooms/bedroom.webp",
+        "width": 1600,
+        "height": 1070,
+        "kind": "photo",
+        "tier": "other-supreme-home",
+        "caption": "Bedroom in a Supreme Homes show home (a different model)",
+        "alt": "Bedroom in a Supreme Homes show home",
+        "credit": "Supreme Homes",
+        "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+        "sourceUrl": "https://www.supremehomes.ca/model/windsor-ct/"
+      }
+    }
+  },
+  "options": {
+    "sidingStyle:horizontal": {
+      "src": "/options/sidingStyle/horizontal.webp",
+      "width": 800,
+      "height": 1200,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of horizontal lap siding",
+      "alt": "Horizontal lap siding",
+      "credit": "Photo: Tobias Hedtke on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/corner-of-a-building-with-horizontal-siding-4UW2V4tZ8Ws"
+    },
+    "sidingStyle:vertical": {
+      "src": "/options/sidingStyle/vertical.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of vertical board siding",
+      "alt": "Vertical board siding",
+      "credit": "Photo: Adrien Olichon on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/brown-wooden-house-UHi0HrLpmWM"
+    },
+    "sidingStyle:board-batten": {
+      "src": "/options/sidingStyle/board-batten.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of board and batten siding",
+      "alt": "Board and batten siding",
+      "credit": "Photo: GoodLifeConstruction on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/modern-garage-doors-on-a-white-house-3qRx6B4cT6g"
+    },
+    "sidingColor:white": {
+      "src": "/options/sidingColor/white.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of white siding on another home",
+      "alt": "White siding on another home",
+      "credit": "Photo: Ralph Florent on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/modern-suburban-house-with-a-green-lawn-and-trees-8raBQjkbTJA"
+    },
+    "sidingColor:cream": {
+      "src": "/options/sidingColor/cream.webp",
+      "width": 1200,
+      "height": 836,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of cream siding on another home",
+      "alt": "Cream siding on another home",
+      "credit": "Photo: Roger Starnes Sr on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/house-with-beige-siding-and-porch-KP6jM2TUz1g"
+    },
+    "sidingColor:warm-gray": {
+      "src": "/options/sidingColor/warm-gray.webp",
+      "width": 1200,
+      "height": 801,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of warm gray siding on another home",
+      "alt": "Warm gray siding on another home",
+      "credit": "Photo: Will Haddock on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/gray-house-with-multiple-windows-surrounded-by-green-trees-PQomej2fz4s"
+    },
+    "sidingColor:slate": {
+      "src": "/options/sidingColor/slate.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of slate siding on another home",
+      "alt": "Slate siding on another home",
+      "credit": "Photo: Osmany M Leyva Aldana on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-gray-house-with-black-shutters-and-windows-v7wc5_v_N2c"
+    },
+    "sidingColor:charcoal": {
+      "src": "/options/sidingColor/charcoal.webp",
+      "width": 960,
+      "height": 1200,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of charcoal siding on another home",
+      "alt": "Charcoal siding on another home",
+      "credit": "Photo: Sam Marquis on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-modern-home-with-dark-gray-siding-plsw7DXjTPs"
+    },
+    "sidingColor:navy": {
+      "src": "/options/sidingColor/navy.webp",
+      "width": 1200,
+      "height": 788,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of navy siding on another home",
+      "alt": "Navy siding on another home",
+      "credit": "Photo: Roger Starnes Sr on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-single-story-dark-blue-house-with-a-green-lawn-zTyh7iYi9yA"
+    },
+    "sidingColor:brick-red": {
+      "src": "/options/sidingColor/brick-red.webp",
+      "width": 1200,
+      "height": 861,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of brick red siding on another home",
+      "alt": "Brick red siding on another home",
+      "credit": "Photo: Roger Starnes Sr on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/red-building-with-yellow-door-ZhLb6FWyjx0"
+    },
+    "sidingColor:forest": {
+      "src": "/options/sidingColor/forest.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of forest green siding on another home",
+      "alt": "Forest green siding on another home",
+      "credit": "Photo: Allen Y on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/green-house-with-white-door-concrete-steps-and-lush-foliage-kbtPsNKZd5A"
+    },
+    "sidingColor:black": {
+      "src": "/options/sidingColor/black.webp",
+      "width": 1200,
+      "height": 799,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of black siding on another home",
+      "alt": "Black siding on another home",
+      "credit": "Photo: John Angel on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-black-house-with-a-white-door-and-windows-7wMh3VLuTlE"
+    },
+    "roofType:shingles": {
+      "src": "/options/roofType/shingles.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of an asphalt shingle roof",
+      "alt": "An asphalt shingle roof",
+      "credit": "Photo: Will Haddock on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-row-of-houses-with-brown-shingles-and-white-windows-rmIPODeK8WM"
+    },
+    "roofType:metal": {
+      "src": "/options/roofType/metal.webp",
+      "width": 1200,
+      "height": 927,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of a standing-seam metal roof",
+      "alt": "A standing-seam metal roof",
+      "credit": "Photo: Roger Starnes Sr on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/white-farmhouse-with-metal-roof-h6FH59G4Nlg"
+    },
+    "metalRoofColor:charcoal": {
+      "src": "/options/metalRoofColor/charcoal.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of a charcoal metal roof",
+      "alt": "A charcoal metal roof",
+      "credit": "Photo: Gavin Li on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-house-with-a-black-roof-and-a-white-building-QWWKvyaLXog"
+    },
+    "metalRoofColor:forest-green": {
+      "src": "/options/metalRoofColor/forest-green.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of a forest green metal roof",
+      "alt": "A forest green metal roof",
+      "credit": "Photo: Earl Wilcox on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-white-house-with-a-green-roof-and-a-tree--S4l2EsOQhc"
+    },
+    "metalRoofColor:barn-red": {
+      "src": "/options/metalRoofColor/barn-red.webp",
+      "width": 1200,
+      "height": 795,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of a barn red metal roof",
+      "alt": "A barn red metal roof",
+      "credit": "Photo: Roger Starnes Sr on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/white-farmhouse-with-red-roof-green-lawn-and-barn-vqtgig0MdJ0"
+    },
+    "porch:with": {
+      "src": "/models/sauvignon-ct-2/exterior.webp",
+      "width": 1050,
+      "height": 700,
+      "kind": "photo",
+      "tier": "other-supreme-home",
+      "model": "sauvignon-ct-2",
+      "caption": "Covered porch on a Supreme Sauvignon CT-2",
+      "alt": "Covered porch on a Supreme Sauvignon CT-2",
+      "credit": "Supreme Homes",
+      "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+      "sourceUrl": "https://www.supremehomes.ca/model/sauvignon-ct-2/"
+    },
+    "porch:without": {
+      "src": "/models/zenith-ct/exterior-3.webp",
+      "width": 630,
+      "height": 450,
+      "kind": "photo",
+      "tier": "other-supreme-home",
+      "model": "zenith-ct",
+      "caption": "Entry steps without a porch on a Supreme Zenith CT",
+      "alt": "Entry steps without a porch on a Supreme Zenith CT",
+      "credit": "Supreme Homes",
+      "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+      "sourceUrl": "https://www.supremehomes.ca/model/zenith-ct/"
+    },
+    "flooring:standard": {
+      "src": "/options/flooring/standard.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of laminate flooring in a living room",
+      "alt": "Laminate flooring in a living room",
+      "credit": "Photo: Tile Merchant Ireland on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-living-room-with-a-couch-and-coffee-table-WIIEiAC-CAg"
+    },
+    "flooring:hardwood": {
+      "src": "/options/flooring/hardwood.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of hardwood flooring",
+      "alt": "Hardwood flooring",
+      "credit": "Photo: Lotus Design N Print on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/gray-couch-on-brown-wooden-parquet-flooring-BAVam-y_9Wg"
+    },
+    "countertops:quartz": {
+      "src": "/options/countertops/quartz.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of quartz countertops",
+      "alt": "Quartz countertops",
+      "credit": "Photo: Point3D Commercial Imaging Ltd. on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-kitchen-with-white-cabinets-and-counter-tops-UjfhPIONgik"
+    },
+    "cabinetStyle:shaker": {
+      "src": "/options/cabinetStyle/shaker.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of white shaker cabinets",
+      "alt": "White shaker cabinets",
+      "credit": "Photo: Zac Gudakov on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-kitchen-with-white-cabinets-and-a-large-window-LC-6Dnwo6_g"
+    },
+    "paintPackage:builder-white": {
+      "src": "/options/paintPackage/builder-white.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of off-white walls",
+      "alt": "Off-white walls",
+      "credit": "Photo: Franco Debartolo on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-modern-living-room-with-neutral-tones-and-abstract-art-4IKsn-cgcck"
+    },
+    "paintPackage:warm-neutral": {
+      "src": "/options/paintPackage/warm-neutral.webp",
+      "width": 1200,
+      "height": 750,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of a neutral wall colour",
+      "alt": "A neutral wall colour",
+      "credit": "Photo: Prydumano Design on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-modern-living-room-with-a-large-window-vIbxvHj9m9g"
+    },
+    "paintPackage:premium-custom": {
+      "src": "/options/paintPackage/premium-custom.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of a custom wall colour",
+      "alt": "A custom wall colour",
+      "credit": "Photo: Clay Banks on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-bedroom-with-green-walls-and-white-bedding-Cf1G7WuutC8"
+    },
+    "lightingPackage:standard": {
+      "src": "/models/fancy-tr-2/rooms/kitchen.webp",
+      "width": 1600,
+      "height": 1200,
+      "kind": "photo",
+      "tier": "other-supreme-home",
+      "model": "fancy-tr-2",
+      "caption": "Pendant lights over the island in a Supreme Fancy TR-2",
+      "alt": "Pendant lights over the island in a Supreme Fancy TR-2",
+      "credit": "Supreme Homes",
+      "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+      "sourceUrl": "https://www.supremehomes.ca/model/fancy-tr-2/"
+    },
+    "lightingPackage:premium": {
+      "src": "/options/lightingPackage/premium.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of statement pendant lighting",
+      "alt": "Statement pendant lighting",
+      "credit": "Photo: Paul Yarnell on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-large-kitchen-with-a-center-island-and-a-chandelier-_N0UGMccKs0"
+    },
+    "hardwareFinish:brushed-nickel": {
+      "src": "/options/hardwareFinish/brushed-nickel.webp",
+      "width": 800,
+      "height": 1200,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of brushed nickel cabinet pulls",
+      "alt": "Brushed nickel cabinet pulls",
+      "credit": "Photo: Matt Adams on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/white-kitchen-cabinets-with-silver-handles--Z3vwqHW85E"
+    },
+    "hardwareFinish:matte-black": {
+      "src": "/options/hardwareFinish/matte-black.webp",
+      "width": 760,
+      "height": 1200,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of a matte black faucet",
+      "alt": "A matte black faucet",
+      "credit": "Photo: Callum Hill on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/black-metal-faucet-near-brown-wooden-chopping-board-yq32iG6F36w"
+    },
+    "insulation:standard": {
+      "src": "/options/insulation/standard.webp",
+      "width": 1200,
+      "height": 801,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of glass fibre batt insulation",
+      "alt": "Glass fibre batt insulation",
+      "credit": "Photo: Erik Mclean on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/person-installing-wiring-in-wall-insulation-aCshJn3y93s"
+    },
+    "insulation:premium": {
+      "src": "/options/insulation/premium.webp",
+      "width": 1200,
+      "height": 900,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of spray foam insulation",
+      "alt": "Spray foam insulation",
+      "credit": "Photo: Olek Buzunov on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/wooden-wall-section-with-spray-foam-insulation-nIlAoV8bZxo"
+    },
+    "fireplace:with": {
+      "src": "/models/sauvignon-ct-2/rooms/living.webp",
+      "width": 1050,
+      "height": 700,
+      "kind": "photo",
+      "tier": "other-supreme-home",
+      "model": "sauvignon-ct-2",
+      "caption": "Electric fireplace in a Supreme Sauvignon CT-2",
+      "alt": "Electric fireplace in a Supreme Sauvignon CT-2",
+      "credit": "Supreme Homes",
+      "licence": "© Supreme Homes. Used by an authorized Supreme Homes retailer; written permission requested.",
+      "sourceUrl": "https://www.supremehomes.ca/model/sauvignon-ct-2/"
+    }
+  },
+  "lots": {
+    "wooded": {
+      "src": "/lots/wooded.webp",
+      "width": 1200,
+      "height": 800,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of a wooded rural lot (not a listing)",
+      "alt": "Example of a wooded rural lot",
+      "credit": "Photo: Merih Tasli on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-dense-line-of-evergreen-trees-borders-a-grassy-field-YMHf4FJMEfY"
+    },
+    "meadow": {
+      "src": "/lots/meadow.webp",
+      "width": 800,
+      "height": 1200,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of an open meadow lot (not a listing)",
+      "alt": "Example of an open meadow lot",
+      "credit": "Photo: Sandra on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/green-field-with-a-wooden-fence-and-metal-gate-knExEIVJhCo"
+    },
+    "coastal": {
+      "src": "/lots/coastal.webp",
+      "width": 675,
+      "height": 1200,
+      "kind": "photo",
+      "tier": "example",
+      "caption": "Example of coastal land in Nova Scotia (not a listing)",
+      "alt": "Example of coastal land in Nova Scotia",
+      "credit": "Photo: Julia Or on Unsplash",
+      "licence": "Unsplash License",
+      "sourceUrl": "https://unsplash.com/photos/a-lone-tree-stands-on-a-rocky-shore-RJ8Qf4w69QY"
+    }
+  },
+  "gaps": [
+    "sidingColor:sage",
+    "metalRoofColor:slate-pewter",
+    "metalRoofColor:arctic-white",
+    "exteriorTrim:standard",
+    "exteriorTrim:craftsman",
+    "exteriorTrim:colonial",
+    "countertops:laminate",
+    "cabinetStyle:premium-shaker",
+    "interiorTrim:standard",
+    "interiorTrim:colonial",
+    "interiorTrim:craftsman",
+    "hardwareFinish:aged-bronze",
+    "insulation:enhanced",
+    "foundation:slab",
+    "foundation:crawlspace",
+    "foundation:basement",
+    "water:drilled",
+    "water:dug",
+    "water:municipal",
+    "sewer:septic",
+    "sewer:municipal",
+    "lots:town"
+  ]
+}
