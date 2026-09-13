@@ -26,7 +26,7 @@ photo of that room (a different model, and captioned that way); **none** = no ph
 |---|---|---|---|---|---|
 | Bali | 1 rendering | show home | show home | show home | show home |
 | Zen CT-2 | 1 photo, 1 rendering | own | own | own | own |
-| Zenith CT | 3 photos | own | own | own | own |
+| Zenith CT | 3 photos, 1 rendering | own | own | own | own |
 | FB-10 | 1 rendering | show home | show home | show home | show home |
 | Fancy TR-2 | 2 photos, 1 rendering | own | own | own | own |
 | Acadie CT | 1 rendering | show home | show home | show home | show home |
@@ -57,9 +57,10 @@ photo of that room (a different model, and captioned that way); **none** = no ph
 
 | Photo | Kind | Size | Caption | Source |
 |---|---|---|---|---|
-| Exterior (hero) | photo | 630×450 | Zenith CT, photographed by Supreme Homes | Supreme Homes |
+| Exterior (hero) | render | 1483×576 | Zenith CT, Supreme Homes rendering from its spec sheet | Supreme Homes |
 | Exterior 2 | photo | 630×450 | Zenith CT, photographed by Supreme Homes | Supreme Homes |
-| Exterior 3 | photo | 630×450 | Zenith CT entry steps, photographed by Supreme Homes | Supreme Homes |
+| Exterior 3 | photo | 630×450 | Zenith CT, photographed by Supreme Homes | Supreme Homes |
+| Exterior 4 | photo | 630×450 | Zenith CT entry steps, photographed by Supreme Homes | Supreme Homes |
 | Kitchen | photo | 630×450 | Zenith CT kitchen, photographed by Supreme Homes | Supreme Homes |
 | Living room | photo | 630×450 | Zenith CT living room, photographed by Supreme Homes | Supreme Homes |
 | Bathroom | photo | 630×450 | Zenith CT bathroom, photographed by Supreme Homes | Supreme Homes |
@@ -336,9 +337,9 @@ Lot cards show the example photo for their terrain. These are never photos of th
 These fill the stage and look soft on a large screen.
 
 - Zen CT-2 bathroom: 639×960
-- Zenith CT exterior (hero): 630×450
 - Zenith CT exterior 2: 630×450
 - Zenith CT exterior 3: 630×450
+- Zenith CT exterior 4: 630×450
 - Zenith CT kitchen: 630×450
 - Zenith CT living room: 630×450
 - Zenith CT bathroom: 630×450

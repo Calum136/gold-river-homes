@@ -66,7 +66,7 @@ export default function PhotoGallery({ title, photos, onClose }: PhotoGalleryPro
                     alt={photo.alt}
                     className="mx-auto h-auto max-h-[70dvh] w-auto max-w-full"
                   />
-                  <figcaption className="mx-auto mt-3 max-w-3xl text-center text-sm text-text-secondary">
+                  <figcaption className="mx-auto mt-3 max-w-3xl text-center text-caption text-text-secondary">
                     {photo.caption}
                     {credit && <span className="text-text-muted"> · {credit}</span>}
                   </figcaption>

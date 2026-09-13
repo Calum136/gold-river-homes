@@ -3,12 +3,12 @@ import type { ReactNode } from "react";
 import { formatCurrency } from "@/lib/calculator";
 import type { VisualAsset } from "@/lib/visual-assets";
 
-/** "Included" for no added cost, otherwise "+$1,200". */
+/** "Included" for no added cost, otherwise "+$1,200" set as a figure. */
 export function PriceDelta({ amount }: { amount: number }) {
   return amount === 0 ? (
-    <span className="text-text-muted">Included</span>
+    <span className="text-caption text-text-muted">Included</span>
   ) : (
-    <span className="text-text-primary">+{formatCurrency(amount)}</span>
+    <span className="font-accent text-figure-sm text-text-primary">+{formatCurrency(amount)}</span>
   );
 }
 
@@ -18,13 +18,17 @@ export function ChoiceGroup({
   children,
 }: {
   legend: string;
-  /** The screen heading usually names the group, so the legend is for screen readers unless asked. */
+  /** The screen's question usually names the group, so the legend is for screen readers unless asked. */
   showLegend?: boolean;
   children: ReactNode;
 }) {
   return (
     <fieldset className="min-w-0">
-      <legend className={showLegend ? "mb-3 text-sm font-medium uppercase tracking-widest text-text-muted" : "sr-only"}>
+      <legend
+        className={
+          showLegend ? "mb-3 text-eyebrow font-medium uppercase tracking-eyebrow text-text-muted" : "sr-only"
+        }
+      >
         {legend}
       </legend>
       <div className="flex flex-col gap-2">{children}</div>
@@ -48,14 +52,18 @@ export function RadioMark({ checked }: { checked: boolean }) {
   );
 }
 
-/** Row classes shared by every radio row and card: border states plus a visible keyboard focus ring. */
+/**
+ * Row classes shared by every radio row and card: border states plus a visible
+ * keyboard focus ring. `relative` contains the visually hidden (absolutely
+ * positioned) radio, so it can't widen the page or escape a scrolling panel.
+ */
 export function choiceRowClass(checked: boolean, disabled = false): string {
   const state = disabled
     ? "cursor-not-allowed border-border/50 opacity-50"
     : checked
     ? "cursor-pointer border-gold bg-gold/[0.06]"
     : "cursor-pointer border-border hover:border-white/25";
-  return `focus-ring-within border transition-colors duration-150 ${state}`;
+  return `focus-ring-within relative border transition-colors duration-150 ${state}`;
 }
 
 interface ChoiceRowProps {
@@ -102,7 +110,7 @@ export default function ChoiceRow({
   const showThumbSlot = reserveThumb || !!thumb || !!swatchHex;
 
   return (
-    <label className={`flex items-center gap-4 px-4 py-3 ${choiceRowClass(checked, disabled)}`}>
+    <label className={`flex items-center gap-4 px-4 py-3.5 ${choiceRowClass(checked, disabled)}`}>
       <input
         type="radio"
         name={name}
@@ -135,7 +143,7 @@ export default function ChoiceRow({
 
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-3">
-          <span className="flex min-w-0 items-center gap-2 font-medium text-text-primary">
+          <span className="flex min-w-0 items-center gap-2 text-body font-medium text-text-primary">
             {thumb && swatchHex && (
               <span
                 aria-hidden
@@ -145,9 +153,9 @@ export default function ChoiceRow({
             )}
             {label}
           </span>
-          {price && <span className="shrink-0 text-sm tabular-nums">{price}</span>}
+          {price && <span className="shrink-0 tabular-nums">{price}</span>}
         </span>
-        {description && <span className="mt-1 block text-sm leading-snug text-text-muted">{description}</span>}
+        {description && <span className="mt-1 block text-body-sm text-text-muted">{description}</span>}
         {paletteHexes && paletteHexes.length > 0 && (
           <span aria-hidden className="mt-2 flex gap-1">
             {paletteHexes.map((hex) => (
@@ -156,7 +164,7 @@ export default function ChoiceRow({
           </span>
         )}
         {consequence && <span className="mt-1 block">{consequence}</span>}
-        {disabled && <span className="mt-1 block text-sm text-text-muted">{disabledNote}</span>}
+        {disabled && <span className="mt-1 block text-caption text-text-muted">{disabledNote}</span>}
       </span>
     </label>
   );

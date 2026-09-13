@@ -26,11 +26,11 @@ export default function OptionExample({ example, className = "" }: { example: St
                 style={{ backgroundColor: choice.swatchHex }}
               />
             )}
-            <span className="font-display text-2xl text-text-primary">{choice.label}</span>
+            <span className="font-display text-title text-text-primary">{choice.label}</span>
           </div>
         )}
       </div>
-      <figcaption className="mt-2 min-h-[2.5rem] text-sm leading-snug text-text-muted">
+      <figcaption className="mt-2 min-h-[2.5rem] text-caption text-text-muted">
         {asset && (
           <>
             {asset.caption}

@@ -22,15 +22,15 @@ export default function StageChrome({ stage, model, className = "" }: StageChrom
   const credit = primary?.asset ? creditLine(primary.asset) : null;
 
   return (
-    <div className={`flex items-start justify-between gap-4 ${className}`}>
-      <div className="min-w-0 space-y-0.5">
+    <div className={`flex items-center justify-between gap-4 ${className}`}>
+      <div className="min-w-0">
         {primary && (
-          <p className="text-sm text-text-secondary">
+          <p className="text-caption text-text-secondary">
             {primary.caption}
             {credit && <span className="text-text-muted"> · {credit}</span>}
           </p>
         )}
-        <p className="text-sm text-text-muted">{stageNote}</p>
+        <p className="text-caption text-text-muted">{stageNote}</p>
       </div>
 
       {model && gallery.length > 1 && (
@@ -38,7 +38,7 @@ export default function StageChrome({ stage, model, className = "" }: StageChrom
           type="button"
           onClick={() => setGalleryOpen(true)}
           aria-haspopup="dialog"
-          className="focus-ring shrink-0 border border-border px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:border-white/30"
+          className="focus-ring shrink-0 border border-border px-4 py-2 text-body-sm font-medium text-text-primary transition-colors hover:border-white/30"
         >
           More photos <span className="tabular-nums text-text-muted">({gallery.length})</span>
         </button>

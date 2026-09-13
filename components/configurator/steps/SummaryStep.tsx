@@ -22,11 +22,6 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-white text-2xl mb-1">Your Price Summary</h2>
-        <p className="text-text-muted text-sm">All costs are estimates. A Gold River Homes rep will confirm final pricing.</p>
-      </div>
-
       {/* Bundle banner */}
       {isBundlePricing && lot && (
         <div className="bg-gold-dark border border-gold/40 px-4 py-3 flex items-center gap-3">
@@ -47,7 +42,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
       {/* Line items */}
       <div className="border border-border">
         <div className="px-4 py-3 bg-bg-elevated border-b border-border">
-          <h3 className="text-white font-medium text-sm">Cost Breakdown</h3>
+          <h2 className="text-white font-medium text-sm">Cost Breakdown</h2>
         </div>
         <div className="divide-y divide-border/50">
           {items.map((item, i) => (
@@ -69,7 +64,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
       {/* Mortgage estimator */}
       <div className="border border-border">
         <div className="px-4 py-3 bg-bg-elevated border-b border-border">
-          <h3 className="text-white font-medium text-sm">Mortgage Estimate</h3>
+          <h2 className="text-white font-medium text-sm">Mortgage Estimate</h2>
         </div>
         <div className="p-4 space-y-4 bg-bg-secondary">
           <div className="grid grid-cols-3 gap-3">
@@ -182,7 +177,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
       {/* CTA */}
       <div className="border border-border bg-bg-elevated p-6 text-center space-y-4">
         <div>
-          <h3 className="font-display text-white text-xl mb-1">Ready to build?</h3>
+          <h2 className="font-display text-white text-xl mb-1">Ready to build?</h2>
           <p className="text-text-muted text-sm">Reach out to our team and we&apos;ll turn this estimate into a real quote.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

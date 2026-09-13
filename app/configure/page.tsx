@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { defaultState, calculateConfiguratorPrice } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
@@ -43,7 +43,7 @@ const STORAGE_KEY = "grh-configurator-v2";
 interface ScreenDef {
   id: string;
   phase: number; // 1..6, indexes STEP_LABELS
-  title?: string;
+  title: string;
   subtitle?: string;
 }
 
@@ -67,20 +67,30 @@ const SITE_SCREENS: Array<ScreenDef & { id: SiteSection }> = [
 ];
 
 const SCREENS: ScreenDef[] = [
-  { id: "land", phase: 1 },
-  { id: "model", phase: 2 },
+  { id: "land", phase: 1, title: "Your Land", subtitle: "Browse our available lots or use your own property." },
+  {
+    id: "model",
+    phase: 2,
+    title: "Choose Your Home",
+    subtitle: "Select the model that fits your lifestyle. All prices are base — you'll customize finishes next.",
+  },
   ...EXTERIOR_SCREENS,
   ...INTERIOR_SCREENS,
   ...SITE_SCREENS,
-  { id: "summary", phase: 6 },
+  {
+    id: "summary",
+    phase: 6,
+    title: "Your Price Summary",
+    subtitle: "All costs are estimates. A Gold River Homes rep will confirm final pricing.",
+  },
 ];
 
 const EXTERIOR_IDS = new Set<string>(EXTERIOR_SCREENS.map((s) => s.id));
 const INTERIOR_IDS = new Set<string>(INTERIOR_SCREENS.map((s) => s.id));
 const SITE_IDS = new Set<string>(SITE_SCREENS.map((s) => s.id));
 
-// One line per decision the buyer has already made — shown under the visualizer
-// as clickable chips that jump back to that screen.
+// One line per decision the buyer has already made — listed at the foot of the
+// decision panel as buttons that jump back to that screen.
 function selectionValue(state: ConfiguratorState, screenId: string): { label: string; value: string; swatchHex?: string } | null {
   const optLabel = (groupId: string, optId: string) =>
     [...exteriorGroups, ...interiorGroups].find((g) => g.id === groupId)?.options.find((o) => o.id === optId)?.label;
@@ -157,6 +167,7 @@ function canAdvance(state: ConfiguratorState, screenId: string): boolean {
 
 export default function ConfigurePage() {
   const [state, setState] = useState<ConfiguratorState>(defaultState);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // A refresh shouldn't cost the buyer their whole configuration.
   useEffect(() => {
@@ -189,7 +200,10 @@ export default function ConfigurePage() {
 
   function goToScreen(screen: number) {
     setState((prev) => ({ ...prev, step: screen }));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Each new question starts at the top: the page on phones, the panel on desktop.
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    panelRef.current?.scrollTo({ top: 0 });
   }
 
   const screenIndex = Math.min(Math.max(1, state.step), SCREENS.length);
@@ -230,97 +244,117 @@ export default function ConfigurePage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary">
-      {/* Minimal header */}
-      <header className="border-b border-border bg-bg-secondary sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            <Link href="/" className="font-display text-gold text-lg font-bold tracking-wide">
-              Gold River Homes
-            </Link>
-            <a href="tel:9022733033" className="text-text-muted text-sm hover:text-gold transition-colors hidden sm:block">
-              902-273-3033
-            </a>
+    // Desktop: the configurator is exactly one viewport tall. The stage photo
+    // never scrolls; the decision panel scrolls on its own. Phone: one column
+    // (photo, its caption bar, the panel) with navigation stuck to the bottom.
+    <div className="flex min-h-dvh flex-col bg-bg-primary lg:h-dvh lg:overflow-hidden">
+      {/* Slim header */}
+      <header className="shrink-0 border-b border-border bg-bg-secondary">
+        <div className="flex h-14 items-center gap-3 px-4 lg:gap-6 lg:px-6">
+          <Link href="/" className="focus-ring shrink-0 font-display text-base font-bold tracking-wide text-gold sm:text-lg">
+            Gold River Homes
+          </Link>
+          <div className="flex min-w-0 flex-1 justify-end lg:justify-center">
+            <StepNav
+              currentStep={screen.phase}
+              totalSteps={STEP_LABELS.length}
+              labels={STEP_LABELS}
+              onStepClick={onPhaseClick}
+            />
           </div>
+          <a
+            href="tel:9022733033"
+            className="focus-ring hidden shrink-0 text-caption text-text-muted transition-colors hover:text-gold sm:block lg:hidden xl:block"
+          >
+            902-273-3033
+          </a>
         </div>
       </header>
 
-      {/* Phase nav */}
-      <div className="border-b border-border bg-bg-secondary sticky top-14 z-20">
-        <div className="max-w-7xl mx-auto px-4">
-          <StepNav
-            currentStep={screen.phase}
-            totalSteps={STEP_LABELS.length}
-            labels={STEP_LABELS}
-            onStepClick={onPhaseClick}
+      <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
+        {/* The stage: the home photo with nothing on it, its chrome underneath */}
+        <section aria-label="Home photo" className="flex shrink-0 flex-col lg:w-[64%]">
+          <div className="relative aspect-[4/3] w-full sm:aspect-[16/10] lg:aspect-auto lg:min-h-0 lg:flex-1">
+            <HomeVisualizer stage={stage} />
+          </div>
+          <StageChrome
+            stage={stage}
+            model={model}
+            className="border-b border-border px-4 py-3 lg:border-b-0 lg:px-6"
           />
-        </div>
-      </div>
+        </section>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* The home is the hero: ~60% visual, ~40% one decision at a time */}
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* The decision panel */}
+        <section aria-labelledby="decision-question" className="flex flex-1 flex-col lg:min-h-0 lg:border-l lg:border-border">
+          <div ref={panelRef} className="relative flex-1 lg:overflow-y-auto">
+            <div className="mx-auto w-full max-w-2xl px-4 pb-10 pt-8 sm:px-6 lg:px-10 lg:pt-10">
+              <header className="mb-8">
+                {/* Chapter slot: the phase name today; named chapters replace it in a later workstream. */}
+                <p className="text-eyebrow font-medium uppercase tracking-eyebrow text-text-muted">
+                  {STEP_LABELS[screen.phase - 1]}
+                </p>
+                <h1 id="decision-question" className="mt-3 font-display text-display text-text-primary">
+                  {screen.title}
+                </h1>
+                {screen.subtitle && <p className="mt-3 text-body text-text-secondary">{screen.subtitle}</p>}
+              </header>
 
-          {/* Stage — sticky on desktop, inline on mobile */}
-          <div className="w-full lg:w-[60%] lg:sticky lg:top-[112px]">
-            <div className="relative w-full aspect-[16/9]">
-              <HomeVisualizer stage={stage} />
-            </div>
-            <StageChrome stage={stage} model={model} className="mt-3" />
+              {stage.example && <OptionExample example={stage.example} className="mb-8" />}
 
-            {/* Running price pill */}
-            {priceResult && (
-              <div className="mt-3 flex items-center justify-between bg-bg-elevated border border-border px-4 py-3">
-                <span className="text-text-muted text-sm">Estimated Total</span>
-                <span className="text-gold font-bold text-lg tabular-nums">
-                  {formatCurrency(priceResult.totalCost)}
-                </span>
-              </div>
-            )}
+              {renderScreen()}
 
-            {/* Decisions so far — desktop only; on mobile it would push the current decision down */}
-            <div className="hidden lg:block">
-              <SelectionsSummary items={selectionItems} onJump={goToScreen} />
+              {screen.id === "land" && (
+                <p className="mt-4 text-caption text-text-muted">
+                  Don&apos;t have land yet? Browse our available lots above.
+                </p>
+              )}
+
+              <SelectionsSummary items={selectionItems} onJump={goToScreen} className="mt-12" />
             </div>
           </div>
 
-          {/* One decision per screen */}
-          <div className="w-full lg:flex-1 min-w-0">
-            {screen.title && (
-              <div className="mb-4">
-                <h2 className="font-display text-white text-2xl mb-1">{screen.title}</h2>
-                {screen.subtitle && <p className="text-text-muted text-sm">{screen.subtitle}</p>}
-              </div>
-            )}
-            {stage.example && <OptionExample example={stage.example} className="mb-4" />}
-            {renderScreen()}
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
+          <nav
+            aria-label="Step navigation"
+            className="sticky bottom-0 z-10 shrink-0 border-t border-border bg-bg-primary lg:static"
+          >
+            <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-10 lg:py-4">
               <button
+                type="button"
                 onClick={back}
                 disabled={screenIndex === 1}
-                className={`px-5 py-2.5 border text-sm font-medium transition-colors ${
+                className={`focus-ring shrink-0 border px-4 py-2.5 text-body-sm font-medium transition-colors ${
                   screenIndex === 1
-                    ? "border-border/30 text-text-muted/30 cursor-not-allowed"
+                    ? "cursor-not-allowed border-border/40 text-text-muted/50"
                     : "border-border text-text-secondary hover:border-white/30 hover:text-white"
                 }`}
               >
                 ← Back
               </button>
 
-              <span className="text-text-muted/40 text-xs tabular-nums">
-                {screenIndex} of {SCREENS.length}
-              </span>
+              <div className="min-w-0 text-center">
+                {priceResult && (
+                  <p className="whitespace-nowrap">
+                    <span className="text-caption text-text-muted">
+                      <span className="sm:hidden">Est. total </span>
+                      <span className="hidden sm:inline">Estimated total </span>
+                    </span>
+                    <span className="font-accent text-figure tabular-nums text-text-primary">
+                      {formatCurrency(priceResult.totalCost)}
+                    </span>
+                  </p>
+                )}
+                <p className="text-caption tabular-nums text-text-muted">
+                  {screenIndex} of {SCREENS.length}
+                </p>
+              </div>
 
               {!isLast ? (
                 <button
+                  type="button"
                   onClick={advance}
                   disabled={!ready}
-                  className={`px-8 py-2.5 text-sm font-semibold transition-colors ${
-                    ready
-                      ? "bg-gold text-white hover:bg-gold-bright"
-                      : "bg-gold/30 text-white/40 cursor-not-allowed"
+                  className={`focus-ring shrink-0 px-5 py-2.5 text-body-sm font-semibold transition-colors sm:px-8 ${
+                    ready ? "bg-gold text-white hover:bg-gold-bright" : "cursor-not-allowed bg-gold/30 text-white/50"
                   }`}
                 >
                   Next →
@@ -328,22 +362,20 @@ export default function ConfigurePage() {
               ) : (
                 <a
                   href="mailto:info@goldriverhomes.ca?subject=Home%20Quote%20Request"
-                  className="px-6 py-2.5 text-sm font-semibold bg-gold text-white hover:bg-gold-bright transition-colors"
+                  className="focus-ring shrink-0 bg-gold px-5 py-2.5 text-body-sm font-semibold text-white transition-colors hover:bg-gold-bright sm:px-6"
                 >
                   Get a Quote
                 </a>
               )}
             </div>
-
-            {/* Screen 1 hint */}
-            {screen.id === "land" && (
-              <p className="text-text-muted/40 text-xs text-center mt-3">
-                Don&apos;t have land yet? Browse our available lots above.
-              </p>
-            )}
-          </div>
-        </div>
+          </nav>
+        </section>
       </div>
+
+      {/* Focus stays on Next so the buyer can keep going; screen readers hear the new question. */}
+      <p aria-live="polite" className="sr-only">
+        {screen.title}
+      </p>
     </div>
   );
 }

@@ -5,28 +5,35 @@ interface StepNavProps {
   onStepClick: (step: number) => void;
 }
 
+// The six phases, compact enough for the slim header: numbered marks on phones
+// and tablets, marks with labels on desktop. Completed phases are links back.
 export default function StepNav({ currentStep, totalSteps, labels, onStepClick }: StepNavProps) {
   return (
-    <nav className="flex items-center gap-0 overflow-x-auto">
+    <nav aria-label="Configurator sections" className="flex items-center gap-1 overflow-x-auto lg:gap-2">
       {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => {
         const done = step < currentStep;
         const active = step === currentStep;
+        const label = labels[step - 1];
         return (
           <button
             key={step}
+            type="button"
             onClick={() => done && onStepClick(step)}
             disabled={!done}
-            className={`flex items-center gap-2 shrink-0 px-3 py-2 text-xs font-medium transition-colors duration-150 ${
+            aria-current={active ? "step" : undefined}
+            aria-label={label}
+            className={`focus-ring flex shrink-0 items-center gap-2 px-0.5 py-2 text-caption font-medium transition-colors duration-150 lg:px-2 ${
               done ? "cursor-pointer hover:text-gold" : "cursor-default"
-            } ${active ? "text-gold" : done ? "text-text-secondary" : "text-text-muted/40"}`}
+            } ${active ? "text-gold" : done ? "text-text-secondary" : "text-text-muted"}`}
           >
             <span
-              className={`w-6 h-6 rounded-full border flex items-center justify-center text-[11px] font-bold transition-colors ${
+              aria-hidden
+              className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold transition-colors ${
                 active
-                  ? "bg-gold border-gold text-white"
+                  ? "border-gold bg-gold text-white"
                   : done
-                  ? "bg-gold/20 border-gold/50 text-gold"
-                  : "border-border text-text-muted/40"
+                  ? "border-gold/50 bg-gold/20 text-gold"
+                  : "border-border text-text-muted"
               }`}
             >
               {done ? (
@@ -37,7 +44,9 @@ export default function StepNav({ currentStep, totalSteps, labels, onStepClick }
                 step
               )}
             </span>
-            <span className="hidden sm:inline">{labels[step - 1]}</span>
+            <span aria-hidden className="hidden lg:inline">
+              {label}
+            </span>
           </button>
         );
       })}

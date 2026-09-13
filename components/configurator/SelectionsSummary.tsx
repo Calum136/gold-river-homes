@@ -4,47 +4,50 @@ export interface SelectionItem {
   label: string;
   value: string;
   swatchHex?: string;
-  /** 1-based screen index this decision lives on — clicking the chip jumps there. */
+  /** 1-based screen index this decision lives on — selecting it jumps there. */
   screenIndex: number;
 }
 
 interface SelectionsSummaryProps {
   items: SelectionItem[];
   onJump: (screenIndex: number) => void;
+  className?: string;
 }
 
-// Fills the space under the visualizer with the buyer's decisions so far.
-// Every chip is a shortcut back to its decision screen — review and edit
-// anything without stepping back through the whole flow.
-export default function SelectionsSummary({ items, onJump }: SelectionsSummaryProps) {
+// The buyer's decisions so far, at the foot of the decision panel on every
+// screen size. Each one is a shortcut back to its decision screen.
+export default function SelectionsSummary({ items, onJump, className = "" }: SelectionsSummaryProps) {
   if (items.length === 0) return null;
   return (
-    <div className="mt-3">
-      <p className="text-text-muted/60 text-[10px] uppercase tracking-widest font-medium mb-2">
+    <section aria-labelledby="selections-heading" className={className}>
+      <h2 id="selections-heading" className="text-eyebrow font-medium uppercase tracking-eyebrow text-text-muted">
         Your selections — click any to change
-      </p>
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-1.5">
+      </h2>
+      <ul className="mt-3 grid grid-cols-2 gap-2">
         {items.map((item) => (
-          <button
-            key={`${item.label}-${item.screenIndex}`}
-            onClick={() => onJump(item.screenIndex)}
-            className="text-left bg-bg-elevated border border-border hover:border-gold/50 transition-colors px-2.5 py-1.5 group"
-          >
-            <p className="text-text-muted/50 text-[9px] uppercase tracking-wider">{item.label}</p>
-            <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-              {item.swatchHex && (
-                <span
-                  className="w-2.5 h-2.5 rounded-full border border-white/15 shrink-0"
-                  style={{ backgroundColor: item.swatchHex }}
-                />
-              )}
-              <p className="text-white/90 group-hover:text-gold text-[11px] font-medium leading-tight truncate transition-colors">
-                {item.value}
-              </p>
-            </div>
-          </button>
+          <li key={`${item.label}-${item.screenIndex}`}>
+            <button
+              type="button"
+              onClick={() => onJump(item.screenIndex)}
+              className="focus-ring group h-full w-full border border-border px-3 py-2 text-left transition-colors hover:border-white/25"
+            >
+              <span className="block text-eyebrow text-text-muted">{item.label}</span>
+              <span className="mt-0.5 flex min-w-0 items-center gap-2">
+                {item.swatchHex && (
+                  <span
+                    aria-hidden
+                    className="h-3 w-3 shrink-0 rounded-full border border-white/15"
+                    style={{ backgroundColor: item.swatchHex }}
+                  />
+                )}
+                <span className="truncate text-body-sm text-text-primary transition-colors group-hover:text-gold">
+                  {item.value}
+                </span>
+              </span>
+            </button>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }
