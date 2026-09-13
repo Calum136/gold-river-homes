@@ -42,8 +42,6 @@ export interface LotOption {
   depthFt: number;
   price: number;
   terrain: LotTerrain;
-  /** Real lot photo — wins over the illustrated backdrop when present. See docs/visualization/02-lot-visuals.md */
-  photoUrl?: string;
   description: string;
   availableServices: string[];
   preselectedWater?: Exclude<WaterType, null>;
@@ -153,12 +151,6 @@ export interface HomeModel {
   specSource: string;
   garage?: { lengthFt: number; widthFt: number; sqft: number };
   description?: string;
-  photoUrl?: string;
-  /** What the photo shows — interiors get an honest "Interior shown" tag on model cards. */
-  photoKind?: "exterior" | "interior";
-  /** Static photoreal render shown in the visualizer (Phase 7 demo). The caption
-   *  states which options the render depicts, since it doesn't react to clicks yet. */
-  demoRender?: { url: string; caption: string };
   /** Owner-approved sentence explaining why this model matters / what it offers. */
   whyItMatters?: string;
 }
@@ -242,7 +234,6 @@ export const homeCategories: HomeCategoryDef[] = [
 export const homeModels: HomeModel[] = [
   {
     // Specs from the Supreme Homes BALI web sheet (Casita Series, 74'-0" × 16'-0").
-    // The render demo uses Supreme's own archviz from that sheet — public/models/bali/exterior.webp.
     id: "bali",
     name: "Bali",
     price: 219000,
@@ -260,12 +251,6 @@ export const homeModels: HomeModel[] = [
     sections: "single",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2025/10/BALI-NEW-TEMPLATE-WEB-SHEET-EN.pdf",
     description: "Casita Series flagship — three bedrooms and two full baths in a single 74-foot section, with a striking board & batten entry gable.",
-    photoUrl: "/models/bali/exterior.webp",
-    photoKind: "exterior",
-    demoRender: {
-      url: "/models/bali/exterior.webp",
-      caption: "Shown: slate-blue board & batten entry, cedar-shake gable, white lap wings, architectural shingles",
-    },
     whyItMatters: "Three bedrooms and two bathrooms on one floor in a single 16-foot-wide section, with a bump-out living room.",
   },
   {
@@ -286,8 +271,6 @@ export const homeModels: HomeModel[] = [
     sections: "single",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/06/EN-Zen-CT-2-WS.pdf",
     description: "Minimalist 2-bedroom cottage — high ceilings, generous windows, open-concept living in a compact footprint.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/ZEN-2.jpeg",
-    photoKind: "exterior",
     whyItMatters: "The smallest home here: two bedrooms and one bathroom in 864 square feet, suited to a couple or someone downsizing.",
   },
   {
@@ -308,8 +291,6 @@ export const homeModels: HomeModel[] = [
     sections: "single",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/06/EN-Zenith-CT-WS.pdf",
     description: "Three bedrooms, two full baths, fireplace in the living room, and a master suite with walk-in closet.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/06/01-1.png",
-    photoKind: "interior",
     whyItMatters: "Three bedrooms and two bathrooms in a single 16 by 74 foot section, sized for a small family.",
   },
   {
@@ -330,8 +311,6 @@ export const homeModels: HomeModel[] = [
     sections: "single",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2023/09/FB10-WEB-SHEET-EN-1.pdf",
     description: "Traditional mini home with three bedrooms in a compact footprint — ideal for small families.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-20.jpg",
-    photoKind: "interior",
     whyItMatters: "Three bedrooms and two bathrooms in a single 16 by 74 foot section, with a traditional exterior.",
   },
   {
@@ -352,8 +331,6 @@ export const homeModels: HomeModel[] = [
     sections: "single",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2022/04/FANCY-TR-2-WEB-SHEET-EN-1.pdf",
     description: "Well-appointed traditional mini home with two full baths and a stylish interior package.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/Copy-of-10-scaled.jpg",
-    photoKind: "interior",
     whyItMatters: "The same 16 by 74 foot, three-bedroom footprint as the FB-10, with its own traditional exterior styling.",
   },
   {
@@ -374,8 +351,6 @@ export const homeModels: HomeModel[] = [
     sections: "multi",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/05/EN-Acadie-CT-WS.pdf",
     description: "Closed entry vestibule, open-concept kitchen and living, master suite with walk-in closet. A proven layout.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-30.jpg",
-    photoKind: "interior",
     whyItMatters: "At 32 by 46 feet, it's shaped more like a traditional house than a long single section, with three bedrooms and two bathrooms.",
   },
   {
@@ -396,8 +371,6 @@ export const homeModels: HomeModel[] = [
     sections: "multi",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/06/EN-Sauvignon-CT-2-WS.pdf",
     description: "The house that has it all — covered porch, walk-in pantry, kitchen island, fireplace, and a luxury master ensuite.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/06/ONLINE_SUPREME_Truro_18_3981-1.jpg",
-    photoKind: "interior",
     whyItMatters: "One of the largest single-storey plans here, 34 by 74 feet, with three bedrooms and two bathrooms.",
   },
   {
@@ -418,8 +391,6 @@ export const homeModels: HomeModel[] = [
     sections: "multi",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/05/EN-Acadie-CR-WS.pdf",
     description: "A winning plan — craftsman exterior with efficient open-concept interior and a generous entry walk-in closet.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-23.jpg",
-    photoKind: "interior",
     whyItMatters: "The same 32 by 46 foot plan as the Acadie CT, dressed in a craftsman-style exterior.",
   },
   {
@@ -440,8 +411,6 @@ export const homeModels: HomeModel[] = [
     sections: "multi",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/05/porto-english-websheet-1.pdf",
     description: "Standout craftsman curb appeal with a wide covered porch, vaulted ceilings, and a well-appointed open kitchen.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/10/Porto33-1.jpg",
-    photoKind: "interior",
     whyItMatters: "A 34 by 54 foot craftsman-style plan with three bedrooms and two bathrooms on one level.",
   },
   {
@@ -462,8 +431,6 @@ export const homeModels: HomeModel[] = [
     sections: "multi",
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/06/EN-Windsor-CT-WS.pdf",
     description: "Two-storey contemporary with 2½ baths. Grand master bedroom with walk-in closet and ensuite. Laundry on the main floor.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/DSC_8122-scaled.jpg",
-    photoKind: "interior",
     whyItMatters: "Two storeys on a compact 30 by 34 foot footprint give three bedrooms and two and a half bathrooms.",
   },
   {
@@ -485,8 +452,6 @@ export const homeModels: HomeModel[] = [
     specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes_EN_091115.pdf",
     garage: { lengthFt: 29, widthFt: 27, sqft: 824 },
     description: "Traditional single-storey design with three bedrooms and two full baths — a large kitchen with a walk-in pantry, a master ensuite, and an attached two-car garage.",
-    photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-32.jpg",
-    photoKind: "interior",
     whyItMatters: "The only model here with an attached two-car garage, plus three bedrooms and two bathrooms on one level.",
   },
 ];
@@ -503,7 +468,6 @@ export interface OptionItem {
   perSqftId?: string;
   swatchHex?: string;
   paletteHexes?: string[];
-  imageUrl?: string;
   isDefault?: boolean;
   /** When set, this option is only offered on the listed model IDs.
    *  Populate from Supreme's factory options matrix (Phase 7 reliability layer). */
@@ -862,22 +826,6 @@ export const interiorGroups: OptionGroup[] = [
       },
     ],
   },
-];
-
-// --- Room → finish map (Phase 5: which selections affect which room) ---
-
-export interface RoomDef {
-  id: "kitchen" | "living" | "bath" | "bedroom";
-  label: string;
-  /** ConfiguratorState keys whose selections are visible in this room */
-  finishKeys: string[];
-}
-
-export const roomFinishMap: RoomDef[] = [
-  { id: "kitchen", label: "Kitchen", finishKeys: ["flooringId", "countertopsId", "cabinetStyleId", "hardwareFinishId", "lightingPackageId"] },
-  { id: "living", label: "Living Room", finishKeys: ["flooringId", "paintPackageId", "interiorTrimId", "lightingPackageId", "hasFireplace"] },
-  { id: "bath", label: "Bathroom", finishKeys: ["flooringId", "countertopsId", "cabinetStyleId", "hardwareFinishId"] },
-  { id: "bedroom", label: "Bedroom", finishKeys: ["flooringId", "paintPackageId", "interiorTrimId"] },
 ];
 
 // --- Site costs ---

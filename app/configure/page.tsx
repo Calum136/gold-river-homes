@@ -5,6 +5,7 @@ import Link from "next/link";
 import { defaultState, calculateConfiguratorPrice } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { sanitizeState } from "@/lib/state";
+import { resolveStage } from "@/lib/stage";
 import { formatCurrency } from "@/lib/calculator";
 import {
   interiorGroups,
@@ -19,6 +20,8 @@ import {
 } from "@/lib/defaults";
 
 import HomeVisualizer from "@/components/configurator/HomeVisualizer";
+import StageChrome from "@/components/configurator/StageChrome";
+import OptionExample from "@/components/configurator/OptionExample";
 import SelectionsSummary from "@/components/configurator/SelectionsSummary";
 import type { SelectionItem } from "@/components/configurator/SelectionsSummary";
 import StepNav from "@/components/configurator/StepNav";
@@ -46,7 +49,7 @@ interface ScreenDef {
 
 const EXTERIOR_SCREENS: Array<ScreenDef & { id: ExteriorSection }> = [
   { id: "sidingStyle", phase: 3, title: "Siding Style", subtitle: "Choose the profile of your exterior cladding." },
-  { id: "sidingColor", phase: 3, title: "Siding Color", subtitle: "Pick the color of your home's exterior — watch it change live." },
+  { id: "sidingColor", phase: 3, title: "Siding Color", subtitle: "Pick the color of your home's exterior." },
   { id: "roofType", phase: 3, title: "Roofing", subtitle: "Shingles are industry standard; metal adds decades of life." },
   { id: "porch", phase: 3, title: "Front Porch", subtitle: "Add a covered porch to the front of your home?" },
   { id: "exteriorTrim", phase: 3, title: "Window & Door Trim", subtitle: "The casing style around your windows and doors." },
@@ -193,6 +196,8 @@ export default function ConfigurePage() {
   const screen = SCREENS[screenIndex - 1];
   const isLast = screenIndex === SCREENS.length;
   const ready = canAdvance(state, screen.id);
+  const model = homeModels.find((m) => m.id === state.modelId) ?? null;
+  const stage = resolveStage(state, screen.id);
 
   function advance() {
     if (!isLast && ready) goToScreen(screenIndex + 1);
@@ -256,9 +261,12 @@ export default function ConfigurePage() {
         {/* The home is the hero: ~60% visual, ~40% one decision at a time */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-          {/* Visualizer — sticky on desktop, inline on mobile */}
+          {/* Stage — sticky on desktop, inline on mobile */}
           <div className="w-full lg:w-[60%] lg:sticky lg:top-[112px]">
-            <HomeVisualizer state={state} view={screen.phase === 4 ? "interior" : "exterior"} />
+            <div className="relative w-full aspect-[16/9]">
+              <HomeVisualizer stage={stage} />
+            </div>
+            <StageChrome stage={stage} model={model} className="mt-3" />
 
             {/* Running price pill */}
             {priceResult && (
@@ -274,11 +282,6 @@ export default function ConfigurePage() {
             <div className="hidden lg:block">
               <SelectionsSummary items={selectionItems} onJump={goToScreen} />
             </div>
-
-            <p className="text-text-muted/40 text-[11px] mt-3 leading-snug">
-              Illustrative preview. Photorealistic renderings of each model and finish — built
-              from Supreme Homes product files — are in production and will appear here.
-            </p>
           </div>
 
           {/* One decision per screen */}
@@ -289,6 +292,7 @@ export default function ConfigurePage() {
                 {screen.subtitle && <p className="text-text-muted text-sm">{screen.subtitle}</p>}
               </div>
             )}
+            {stage.example && <OptionExample example={stage.example} className="mb-4" />}
             {renderScreen()}
 
             {/* Navigation */}

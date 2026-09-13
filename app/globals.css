@@ -50,6 +50,33 @@ body {
   font-family: var(--font-body);
 }
 
+/* Keyboard focus: one visible ring everywhere. focus-ring-within goes on a
+   row or card that wraps a visually hidden native input. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--gold-bright);
+    outline-offset: 2px;
+  }
+}
+
+@utility focus-ring-within {
+  &:has(:focus-visible) {
+    outline: 2px solid var(--gold-bright);
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion: no transitions or animations anywhere, photo crossfades included. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

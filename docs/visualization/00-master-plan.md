@@ -5,7 +5,7 @@
 > self-contained build spec for one phase. Build them in order unless a phase's
 > "Dependencies" section says otherwise.
 
-Last updated: Jun 9, 2026
+Last updated: Sep 13, 2026
 Owner decision record: Calum (Nine Roads), on behalf of Gold River Homes.
 
 ---
@@ -23,6 +23,8 @@ beat flashiness every time.
 These were decided explicitly with Calum. Future sessions must follow them:
 
 1. **Hybrid rendering: live 2D parametric + pre-generated AI hero renders.**
+   *Superseded Sep 2026 by amendment 8: real photography is the main visual and the
+   drawings are retired.*
    - The *live* preview (updates on every click) is a deterministic, code-drawn
      parametric illustration (`ParametricHouse`). Instant, free, always consistent.
    - *Photorealistic* AI renders are generated **at build time by a local script**,
@@ -36,7 +38,7 @@ These were decided explicitly with Calum. Future sessions must follow them:
    (see [03-asset-pipeline.md](./03-asset-pipeline.md) for the exact request list).
    Every visual component must accept a real asset when it exists and fall back to
    the parametric/illustrated version when it doesn't. **Asset-first, illustration-fallback**
-   is the universal pattern.
+   is the universal pattern. *The illustration fallback is superseded by amendment 10.*
 4. **Interior depth = room-level finish preview.** Not just a static floor plan:
    clicking a room (kitchen, living, bath, bedroom) shows that room with the buyer's
    chosen flooring/counters/cabinets/paint applied. See [05-interior-rooms.md](./05-interior-rooms.md).
@@ -53,9 +55,43 @@ These were decided explicitly with Calum. Future sessions must follow them:
    real product materials, batch-rendered aligned layers, client-side compositing.
    The parametric house (Phase 1) stays as the instant-feedback layer and permanent
    fallback. AI editing (Phase 4) is now a *stopgap track*, not the goal.
+   *The parametric fallback is retired by amendment 8; the render-stack destination stands.*
 7. **Uploaded-lot visualization is dropped.** "Use my own land" stays for pricing
    only. Lot visuals exist only for Gold River/Supreme lots, where we control photo
    quality and perspective. Reliability beats a gimmick that half-works.
+
+### Amendments — Sep 12–13, 2026 (Calum)
+
+Photo-first replaces the drawn visuals. These amendments supersede decision 1, the
+illustration fallback in decision 3, the parametric fallback in amendment 6, and
+Workstream A of `docs/handoff-premium-experience.md`.
+
+8. **Photo-first: the main visual is real photography, and the drawings are retired.**
+   `ParametricHouse`, `RoomVisualizer`, `LotBackdrop`, the Bali photo compositor, the
+   CSS-drawn material thumbnails (`lib/option-thumbs.ts`), the colour-tinted photo
+   preview and the SVG house, porch and fireplace silhouettes are deleted. Calum's
+   verdict on the drawings: they "look like a child's drawing".
+9. **Photos are never edited, tinted or overlaid.** Nothing is drawn on a photo. The
+   buyer's current selection is shown as a second, captioned real photo of that option.
+   No photo is described as showing the buyer's selections unless it is an exact render
+   of them (the dormant Phase 7 render stack).
+10. **Gaps are filled only with free-licence stock** (Unsplash, Pexels, CC0, CC BY,
+    CC BY-SA), captioned as examples on other homes. A choice with no approved photo
+    shows just the choice: its name, its colour swatch if it has one, and its price.
+    No placeholder imagery.
+11. **Stage layout.** The home photo fills most of the screen with nothing on top of it:
+    about the left two thirds on desktop, on top on a phone. A side panel holds the
+    question, a captioned photo of the option being decided, the choices and navigation.
+    The caption, "More photos" and the single photo-source note sit in one quiet bar
+    under the photo.
+12. **The asset manifest and the gap report are the system.** `lib/visual-assets.json`
+    lists every approved photo with its source, licence, tier (this model, another
+    Supreme home, or a stock example) and caption. `lib/stage.ts` picks the photo for
+    each screen: exact render stack, then this model's photo, then the Supreme show
+    home, then nothing. `npm run assets:report` checks the manifest against
+    `lib/defaults.ts` and writes [asset-coverage.md](./asset-coverage.md), the list of
+    photos still to request. Decision 5 still holds: a new photo is a manifest entry,
+    not a component change.
 
 ## Standing constraints (from project CLAUDE.md — apply to all phases)
 
@@ -72,16 +108,18 @@ These were decided explicitly with Calum. Future sessions must follow them:
 
 | # | Doc | What it delivers | Status | Depends on |
 |---|-----|------------------|--------|------------|
-| 1 | [01-parametric-exterior.md](./01-parametric-exterior.md) | Live SVG house reacting to every exterior option | ✅ Built Jun 9, 2026 | — |
-| 2 | [02-lot-visuals.md](./02-lot-visuals.md) | Illustrated NS lot backdrops; real-photo standards | ✅ Backdrops built Jun 9, 2026 · real photos pending owner | — |
-| 3 | [03-asset-pipeline.md](./03-asset-pipeline.md) | Supreme Homes asset request, naming conventions, directory layout | 📋 Spec ready — blocked on owner request to Supreme Homes | — |
+| 1 | [01-parametric-exterior.md](./01-parametric-exterior.md) | Live SVG house reacting to every exterior option | Retired Sep 2026 (photo-first) | — |
+| 2 | [02-lot-visuals.md](./02-lot-visuals.md) | Illustrated NS lot backdrops; real-photo standards | Retired Sep 2026 (photo-first) | — |
+| 3 | [03-asset-pipeline.md](./03-asset-pipeline.md) | Supreme Homes asset request, naming conventions, directory layout | In progress: approved photo set, data request drafted | — |
+| 3a | [asset-coverage.md](./asset-coverage.md) | Photo provenance system: `lib/visual-assets.json` manifest (source, licence, tier, caption per photo), `lib/stage.ts` resolver, captions on every photo, `npm run assets:report` gap report | Built Sep 13, 2026 | 3 |
 | 4 | [04-ai-render-library.md](./04-ai-render-library.md) | Build-time photoreal exterior render library + runtime resolver | 📋 Spec ready | 1 (fallback), 3 (reference photos improve quality) |
 | 5 | [05-interior-rooms.md](./05-interior-rooms.md) | Room-level interior finish preview | 📋 Spec ready | 3 or 7 (needs room imagery) |
 | 6 | [06-floor-plans.md](./06-floor-plans.md) | Floor plan viewer with room hotspots | 📋 Spec ready | 3 (plan drawings), 5 (room views to link to) |
 | 7 | [07-photoreal-pipeline.md](./07-photoreal-pipeline.md) | **The destination:** 3D render-stack → exact photoreal configurator | 📋 Spec ready — first action is asking Supreme for 3D files | 3 (product codes, swatches) |
 
-**Build order rationale:** 1 and 2 make the live preview honest and responsive with zero
-assets (done). 3 is a human task (email Supreme Homes) that should start immediately —
+**Build order rationale:** 1 and 2 made the live preview responsive with zero assets, and
+were retired in Sep 2026 once real photography was approved (amendments 8–12). 3 is a
+human task (email Supreme Homes) that should start immediately —
 **the email should now include the Phase 7 ask: do they have 3D model files or archviz
 render sources?** 7 is the destination; pilot it on one flagship model as soon as a 3D
 source exists. 4 is a stopgap if photoreal-ish visuals are wanted before the 3D pilot
@@ -95,7 +133,9 @@ interiors together.
    must match what's actually there (they were verified Jun 9, 2026; re-verify).
 3. Check the phase doc's **Acceptance criteria** section. Build until all pass.
 4. Verify in the browser (dev server config in `.claude/launch.json`, port 3001).
-5. Update the Status column in this file's phase index, update `docs/MASTER.md`
+5. After changing `lib/visual-assets.json`, run `npm run assets:report` and commit the
+   regenerated [asset-coverage.md](./asset-coverage.md).
+6. Update the Status column in this file's phase index, update `docs/MASTER.md`
    if you add docs, and note the session in project `CLAUDE.md` Session Notes.
 
 ## Out of scope (full project vision, not this system)

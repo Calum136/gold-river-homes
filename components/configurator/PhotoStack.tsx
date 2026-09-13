@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { RenderStack } from "@/lib/renders";
 
 // Composites pre-rendered photoreal layers (Phase 7). All layers share one
@@ -11,12 +12,13 @@ export default function PhotoStack({ stack, alt }: { stack: RenderStack; alt: st
   return (
     <div className="absolute inset-0">
       {layers.map((src, i) => (
-        <img
+        <Image
           key={src}
           src={src}
           alt={i === 0 ? alt : ""}
+          fill
           draggable={false}
-          className="absolute inset-0 w-full h-full object-contain select-none"
+          className="select-none object-contain"
         />
       ))}
     </div>
