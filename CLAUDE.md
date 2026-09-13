@@ -1,11 +1,11 @@
 # Gold River Homes — Total Cost Calculator
-# Last updated: Apr 13, 2026
+# Last updated: Sep 13, 2026
 
 @AGENTS.md
 
-## Status: ACTIVE — POC complete, pushed to GitHub, ready for Netlify deploy. Awaiting owner feedback.
-## Next: Deploy to Netlify, share with owner, iterate based on feedback.
-## Completion: ~30% (POC phase — full vision includes AI images, MLS integration, guided walkthrough)
+## Status: ACTIVE — Premium configurator overhaul pushed to GitHub `main` on Sep 13, 2026 (b1f9432): photo-first stage, named chapters, price + monthly payment + reason on every choice.
+## Next: (1) Label the five made-up lots as examples and mark model/option prices as estimates; fix the porch + metal roof price row (C2b). The lots still read like real listings. (2) Review-and-refine page, share link, printable spec sheet, full enquiry email (B4/B5). (3) Owner sends the Supreme data request, including written permission for Supreme's photos (`docs/visualization/03-asset-pipeline.md`).
+## Completion: ~70% of the premium handoff (D, A (photo-first), B1–B3, C1 done; B4, B5, C2b outstanding)
 
 - **Client:** Gold River Homes (Supreme Homes retailer)
 - **Location:** 219 NS-12, Chester Basin, NS B0J 1K0
@@ -16,7 +16,7 @@
 ## Project Scope
 POC modular/mini home total cost calculator. Owner's ask: "build a modular/mini home mortgage calculator that encompasses the servicing costs, well, septic, municipal hookup, land purchases and etc."
 
-Full vision (from PDF brief) includes AI-generated home visuals, MLS land data integration, and a guided "Grandma-friendly" walkthrough — but POC comes first.
+Full vision (from PDF brief) includes AI-generated home visuals, MLS land data integration, and a guided "Grandma-friendly" walkthrough — but POC comes first. (Sep 2026: visuals are real photography, not AI or drawings; see Session Notes.)
 
 ## Tech Stack
 | Tech | Role |
@@ -35,19 +35,27 @@ Full vision (from PDF brief) includes AI-generated home visuals, MLS land data i
 ```
 app/
 ├── page.tsx              # Landing page
-├── calculator/page.tsx   # Main calculator (question-driven flow)
+├── configure/page.tsx    # The configurator: chapters, stage photo, decision panel
+├── calculator/page.tsx   # Legacy calculator (redirects to /configure; must keep building)
 components/
-├── calculator/           # ChoiceCard, QuestionCard, CostLineItem, MortgageInputs, ResultsPanel, CostBreakdownChart
+├── configurator/         # HomeVisualizer, StageChrome, OptionExample, PhotoGallery, StepNav, SelectionsSummary, steps/*, ui/ChoiceRow
+├── calculator/           # Legacy calculator components
 ├── layout/               # Navbar, Footer
 lib/
-├── calculator.ts         # Mortgage math
-├── defaults.ts           # Cost estimates with low/mid/high ranges
+├── defaults.ts           # Models (Supreme web sheet specs), options (Supreme 2026 standard specs), site costs with low/mid/high
+├── pricing.ts            # Price engine, per-choice price and monthly deltas
+├── calculator.ts         # Canadian mortgage math (semi-annual compounding, minimum down, CMHC)
+├── copy.ts               # Approved chapter openers, estimate statement, stage note, land/porch/fireplace reasons
+├── state.ts              # sanitizeState(): validates saved configurations
+├── stage.ts              # Stage resolver: which real photo shows, and the option example beside it
+├── visual-assets.json/.ts # Photo manifest with source, licence, credit, tier and caption for every image
+├── renders.ts            # Phase 7 render-stack resolver (intentionally dormant until 3D renders exist)
+public/models|options|lots/ # Approved WebP photos (see docs/visualization/asset-coverage.md)
+scripts/asset-coverage.mjs  # `npm run assets:report`: photo coverage and gaps
 docs/
 ├── MASTER.md             # Doc index
-├── design-tokens.md      # Colors, fonts, spacing
-├── architecture.md       # File structure, component hierarchy
-├── calculator-logic.md   # Cost categories, formulas, defaults
-├── decisions.md          # Key decisions and rationale
+├── handoff-premium-experience.md # Sep 12, 2026 brief (Workstream A superseded by photo-first)
+├── visualization/        # Master plan (with Sep 2026 amendments), asset pipeline + data request email, coverage report
 ├── business-context.md   # Client info, models, service area
 ```
 
@@ -60,8 +68,27 @@ docs/
 3. Design must match supremehomes.ca dark/gold aesthetic
 4. Keep POC scope tight — owner will steer direction for Phase 2+
 5. Docs in `docs/` folder — update MASTER.md index when adding new docs
+6. Visuals are real photos only: no drawings, and photos are never tinted or edited. Every image goes in `lib/visual-assets.json` with source, licence and a caption that says exactly what it shows. Choices without an approved photo show just the choice.
+7. Never present a price or lot as real: model and option prices are estimates and the lots are examples until Gold River supplies real data.
+8. Calum reviews UI himself at the localhost link; don't send screenshots.
 
 ## Session Notes
+- **Sep 12–13, 2026 (premium configurator overhaul, pushed to main b1f9432):** Worked from `docs/handoff-premium-experience.md`, with Calum deciding at each step through questions.
+  - **Direction change.** Calum rejected the handoff's drawn-elevation plan ("the drawings look like a child's drawing"), so the main visual is now real photography, never tinted or edited.
+  - **Photo system.** 81 approved photos with a provenance manifest (`lib/visual-assets.json`): Supreme exteriors and rooms, cropped from web sheets where needed, plus Unsplash examples for options and example lots. A resolver (`lib/stage.ts`) picks the stage photo and the captioned option example. Deleted ParametricHouse, RoomVisualizer, LotBackdrop, BaliPhotoConfigurator, option-thumbs and the siding tint.
+  - **Layout and walkthrough.** Stage-as-page layout (home photo about 64% with nothing on it; decision panel beside it; phone: photo on top), display typography, named chapters with approved openers, plain question titles, and the "N of 20" counter retired. Every choice shows its price, monthly payment change and an approved Nova Scotia reason (`lib/copy.ts`, `whyItMatters`).
+  - **Data truth.**
+    - Model specs from Supreme web sheets: Zen CT-2 is 864 sq ft, 16×54; FB-10 and Fancy TR-2 are 3 bed, 1,184 sq ft; Bordeaux TR is single-storey 3/2, 1,724 sq ft plus garage.
+    - Roof and wall areas derived from real dimensions.
+    - Option menu matched to Supreme's 2026 standard spec sheets: shaker soft-close cabinets, flat trim, vinyl tile plus laminate, pendants and R-24/R-28 walls are standard. Duplicate "upgrades" removed.
+    - Canadian mortgage math: semi-annual compounding, minimum down payment, CMHC.
+  - **Housekeeping.** `.gitattributes` (LF), stray manifest removed, render-stack path marked dormant, project registered in project memory.
+  - **Findings.**
+    - Supreme's site reuses galleries: the FB-10 and Acadie pages show Bordeaux photos, and Bali's page shows a 2021 show-home gallery.
+    - Supreme's images are "All rights reserved". Written permission is requested in the data-request email but not yet received.
+    - Zenith CT's real photos are only 630 px, so its main photo is its spec-sheet rendering.
+    - `npm run assets:report` lists 22 photo gaps.
+  - **Not done.** Calum chose to push live before the final stage was built. Still outstanding: B4 (review-and-refine page), B5 (named save, share link, printable spec sheet, full mailto body) and C2b (example-lot and estimate labelling, exact porch plus metal-roof price delta). The lots still read like listings. Netlify deploy status couldn't be confirmed from here (no Netlify link on this machine and no GitHub status reported).
 - **Jun 11, 2026 (Bali render demo):** Added the **Bali** (Casita Series, 3BR/2BA, 1,440 sqft, 74'×16', $219k placeholder) as the photoreal showcase model. Source: owner-provided web sheet `C:\Users\Calum\OneDrive\Desktop\AI\BALI-NEW-TEMPLATE-WEB-SHEET-EN.pdf` — its hero image is Supreme Homes' own archviz render; extracted to `public/models/bali/exterior.webp` (1923×905). New `HomeModel.demoRender` field: visualizer shows the static photoreal render (with "Photorealistic render" badge + caption of depicted options, siding/roof chips hidden) when no option-reactive render stack exists. Fallback chain: renderStack > demoRender > ParametricHouse. This is the owner-demo contrast: Bali = photoreal destination, other models = live illustration. No image-gen API key on this machine — AI "photorealization" wasn't needed since the manufacturer render IS photoreal; future option-reactive renders still follow docs/visualization/07. Same day (space/scroll pass per Calum's hint): visualizer 16/7→16/8, new `SelectionsSummary.tsx` under the price pill — clickable chips of every decision made so far, each jumps to its screen (`selectionValue()` in configure/page.tsx maps screen id → label/value/swatch; desktop only); model + lot cards compacted to horizontal list rows (thumb left, line-clamped description) so the Home and Land screens scroll far less.
 - **Jun 9, 2026 (MVP polish):** Built owner-demo MVP. Photoreal infra without assets: `lib/renders.ts` + `renders-manifest.json` + `PhotoStack.tsx` (Phase 7 runtime, falls back to ParametricHouse), `isOptionAvailable`/`availableForModels` compatibility mechanism, `roomFinishMap`, visualizer Exterior/Interior mode with interior selections board, "renders in production from Supreme Homes files" footnote under visualizer. Dropped uploaded-lot photo UI (own-land = pricing only). Full Chrome UX audit + fixes: removed double header on /configure (Navbar returns null there; nav now says "Design & Price" → /configure), **price-truth fix** (`displayedOptionDelta` — per-sqft options like vertical siding/metal roof/flooring now show the real charged delta, not fake flat labels; porch toggle shows its price), SiteStep auto-cost rows now read from `siteEstimates` (were contradicting totals), "Interior shown" tags on model cards (`photoKind` field; only Zen CT-2 has an exterior photo), landing contact form now composes a real mailto (was faking "Message Sent!"), configurator state persists in localStorage. Then restructured per Calum's feedback to **one decision per screen**: flow flattened to 20 single-choice screens (`SCREENS` array in `app/configure/page.tsx`; `only` prop on Exterior/Interior/Site step components renders one section standalone), visualizer widened to 60% of the page, Next/Back buttons + "N of 20" counter, StepNav shows the 6 macro phases derived from the current screen. `state.step` is now a screen index (storage key bumped to `grh-configurator-v2`).
 - **Jun 9, 2026:** Visualization overhaul. Calum rated lot photos + home render 2/10; decided (via Q&A) on hybrid strategy: live 2D parametric preview + build-time AI hero renders, $0 runtime, owner to request Supreme Homes dealer assets, room-level interior previews as the end goal. Wrote phased build plan in `docs/visualization/` (00-master-plan is the entry point — READ IT before visualization work). Built Phase 1 (`ParametricHouse.tsx` — live SVG house reacting to siding color/style, roof type/color, trim, porch, fireplace chimney, per-category silhouettes) and Phase 2a (`LotBackdrop.tsx` illustrated NS scenes; deleted Unsplash stock; `LotOption.photoUrl` now optional with `terrain` field). Verified in browser. NOTE: the 5 listed lots are placeholder data — owner must verify/replace. Same evening: Calum confirmed photoreal is the destination (he can source images of every home/finish/option) → wrote `docs/visualization/07-photoreal-pipeline.md` (3D render-stack: model per home, real product materials, batch-rendered layers, client compositing; AI editing demoted to stopgap). Uploaded-lot visualization dropped from scope — own-land stays for pricing only. First action: owner asks Supreme Homes whether 3D model files / archviz render sources exist for their catalog.
