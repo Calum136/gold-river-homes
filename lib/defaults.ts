@@ -11,6 +11,15 @@ export type LandSituation = "gold-river" | "own" | null;
 export type LotTerrain = "wooded" | "meadow" | "coastal" | "town";
 export type HomeCategory = "mini" | "modular" | "traditional" | "multistory";
 
+// Supreme Homes 2026 standard spec sheets (revised 2026-02-13), transcribed by the
+// lead from the images below. These are the source for every "Supreme's standard"
+// option and description in this file.
+export const SUPREME_SPEC_SOURCES = {
+  modular: "https://www.supremehomes.ca/wp-content/uploads/2023/11/2026-Modular-Specs_EN-1-of-1.png",
+  mini: "https://www.supremehomes.ca/wp-content/uploads/2023/11/2026-MiniHome-Specs_EN-1-of-1.png",
+  revised: "2026-02-13",
+};
+
 // --- Cost estimates ---
 
 export interface CostEstimate {
@@ -150,6 +159,8 @@ export interface HomeModel {
   /** Static photoreal render shown in the visualizer (Phase 7 demo). The caption
    *  states which options the render depicts, since it doesn't react to clicks yet. */
   demoRender?: { url: string; caption: string };
+  /** Owner-approved sentence explaining why this model matters / what it offers. */
+  whyItMatters?: string;
 }
 
 // --- Roof / wall area estimates ---
@@ -172,20 +183,25 @@ function estimateRoofSqft(
 }
 
 /**
- * Wall area = 2 × (length + width) × 8 ft wall height × storeys, plus the
- * garage's own perimeter × 8 ft when present, rounded. This is gross wall
- * area — openings (doors/windows) aren't deducted, and gable-end wall area
- * (which this formula also omits) roughly offsets that. It's an estimate,
- * not a real takeoff.
+ * Wall area = 2 × (length + width) × wall height × storeys, plus the
+ * garage's own perimeter × wall height when present, rounded. This is gross
+ * wall area — openings (doors/windows) aren't deducted, and gable-end wall
+ * area (which this formula also omits) roughly offsets that. It's an
+ * estimate, not a real takeoff.
+ *
+ * Wall height per Supreme Homes' 2026 spec sheets (revised 2026-02-13, see
+ * SUPREME_SPEC_SOURCES): mini homes (single-section) are built to 7'6" wall
+ * height, modular homes (multi-section) to 8'0".
  */
 function estimateWallSqft(
   lengthFt: number,
   widthFt: number,
   storeys: number,
+  wallHeightFt: number,
   garage?: { lengthFt: number; widthFt: number }
 ): number {
-  const homeWalls = 2 * (lengthFt + widthFt) * 8 * storeys;
-  const garageWalls = garage ? 2 * (garage.lengthFt + garage.widthFt) * 8 : 0;
+  const homeWalls = 2 * (lengthFt + widthFt) * wallHeightFt * storeys;
+  const garageWalls = garage ? 2 * (garage.lengthFt + garage.widthFt) * wallHeightFt : 0;
   return Math.round(homeWalls + garageWalls);
 }
 
@@ -234,7 +250,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1440,
     roofSqft: estimateRoofSqft(74, 16),
-    wallSqft: estimateWallSqft(74, 16, 1),
+    wallSqft: estimateWallSqft(74, 16, 1, 7.5),
     hasFireplace: false,
     type: "Mini",
     category: "mini",
@@ -250,6 +266,7 @@ export const homeModels: HomeModel[] = [
       url: "/models/bali/exterior.webp",
       caption: "Shown: slate-blue board & batten entry, cedar-shake gable, white lap wings, architectural shingles",
     },
+    whyItMatters: "Three bedrooms and two bathrooms on one floor in a single 16-foot-wide section, with a bump-out living room.",
   },
   {
     id: "zen-ct-2",
@@ -259,7 +276,7 @@ export const homeModels: HomeModel[] = [
     baths: 1,
     sqft: 864,
     roofSqft: estimateRoofSqft(54, 16),
-    wallSqft: estimateWallSqft(54, 16, 1),
+    wallSqft: estimateWallSqft(54, 16, 1, 7.5),
     hasFireplace: false,
     type: "Mini",
     category: "mini",
@@ -271,6 +288,7 @@ export const homeModels: HomeModel[] = [
     description: "Minimalist 2-bedroom cottage — high ceilings, generous windows, open-concept living in a compact footprint.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/ZEN-2.jpeg",
     photoKind: "exterior",
+    whyItMatters: "The smallest home here: two bedrooms and one bathroom in 864 square feet, suited to a couple or someone downsizing.",
   },
   {
     id: "zenith-ct",
@@ -280,7 +298,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1184,
     roofSqft: estimateRoofSqft(74, 16),
-    wallSqft: estimateWallSqft(74, 16, 1),
+    wallSqft: estimateWallSqft(74, 16, 1, 7.5),
     hasFireplace: true,
     type: "Mini",
     category: "mini",
@@ -292,6 +310,7 @@ export const homeModels: HomeModel[] = [
     description: "Three bedrooms, two full baths, fireplace in the living room, and a master suite with walk-in closet.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/06/01-1.png",
     photoKind: "interior",
+    whyItMatters: "Three bedrooms and two bathrooms in a single 16 by 74 foot section, sized for a small family.",
   },
   {
     id: "fb10",
@@ -301,7 +320,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1184,
     roofSqft: estimateRoofSqft(74, 16),
-    wallSqft: estimateWallSqft(74, 16, 1),
+    wallSqft: estimateWallSqft(74, 16, 1, 7.5),
     hasFireplace: false,
     type: "Mini",
     category: "mini",
@@ -313,6 +332,7 @@ export const homeModels: HomeModel[] = [
     description: "Traditional mini home with three bedrooms in a compact footprint — ideal for small families.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-20.jpg",
     photoKind: "interior",
+    whyItMatters: "Three bedrooms and two bathrooms in a single 16 by 74 foot section, with a traditional exterior.",
   },
   {
     id: "fancy-tr-2",
@@ -322,7 +342,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1184,
     roofSqft: estimateRoofSqft(74, 16),
-    wallSqft: estimateWallSqft(74, 16, 1),
+    wallSqft: estimateWallSqft(74, 16, 1, 7.5),
     hasFireplace: false,
     type: "Mini",
     category: "mini",
@@ -334,6 +354,7 @@ export const homeModels: HomeModel[] = [
     description: "Well-appointed traditional mini home with two full baths and a stylish interior package.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/Copy-of-10-scaled.jpg",
     photoKind: "interior",
+    whyItMatters: "The same 16 by 74 foot, three-bedroom footprint as the FB-10, with its own traditional exterior styling.",
   },
   {
     id: "acadie-ct",
@@ -343,7 +364,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1366,
     roofSqft: estimateRoofSqft(46, 32),
-    wallSqft: estimateWallSqft(46, 32, 1),
+    wallSqft: estimateWallSqft(46, 32, 1, 8),
     hasFireplace: false,
     type: "Contemporary",
     category: "modular",
@@ -355,6 +376,7 @@ export const homeModels: HomeModel[] = [
     description: "Closed entry vestibule, open-concept kitchen and living, master suite with walk-in closet. A proven layout.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-30.jpg",
     photoKind: "interior",
+    whyItMatters: "At 32 by 46 feet, it's shaped more like a traditional house than a long single section, with three bedrooms and two bathrooms.",
   },
   {
     id: "sauvignon-ct-2",
@@ -364,7 +386,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1672,
     roofSqft: estimateRoofSqft(74, 34),
-    wallSqft: estimateWallSqft(74, 34, 1),
+    wallSqft: estimateWallSqft(74, 34, 1, 8),
     hasFireplace: true,
     type: "Contemporary",
     category: "modular",
@@ -376,6 +398,7 @@ export const homeModels: HomeModel[] = [
     description: "The house that has it all — covered porch, walk-in pantry, kitchen island, fireplace, and a luxury master ensuite.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/06/ONLINE_SUPREME_Truro_18_3981-1.jpg",
     photoKind: "interior",
+    whyItMatters: "One of the largest single-storey plans here, 34 by 74 feet, with three bedrooms and two bathrooms.",
   },
   {
     id: "acadie-cr",
@@ -385,7 +408,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1366,
     roofSqft: estimateRoofSqft(46, 32),
-    wallSqft: estimateWallSqft(46, 32, 1),
+    wallSqft: estimateWallSqft(46, 32, 1, 8),
     hasFireplace: false,
     type: "Craftsman",
     category: "traditional",
@@ -397,6 +420,7 @@ export const homeModels: HomeModel[] = [
     description: "A winning plan — craftsman exterior with efficient open-concept interior and a generous entry walk-in closet.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-23.jpg",
     photoKind: "interior",
+    whyItMatters: "The same 32 by 46 foot plan as the Acadie CT, dressed in a craftsman-style exterior.",
   },
   {
     id: "porto",
@@ -406,7 +430,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1530,
     roofSqft: estimateRoofSqft(54, 34),
-    wallSqft: estimateWallSqft(54, 34, 1),
+    wallSqft: estimateWallSqft(54, 34, 1, 8),
     hasFireplace: true,
     type: "Craftsman",
     category: "traditional",
@@ -418,6 +442,7 @@ export const homeModels: HomeModel[] = [
     description: "Standout craftsman curb appeal with a wide covered porch, vaulted ceilings, and a well-appointed open kitchen.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/10/Porto33-1.jpg",
     photoKind: "interior",
+    whyItMatters: "A 34 by 54 foot craftsman-style plan with three bedrooms and two bathrooms on one level.",
   },
   {
     id: "windsor-ct",
@@ -427,7 +452,7 @@ export const homeModels: HomeModel[] = [
     baths: 2.5,
     sqft: 1936,
     roofSqft: estimateRoofSqft(34, 30),
-    wallSqft: estimateWallSqft(34, 30, 2),
+    wallSqft: estimateWallSqft(34, 30, 2, 8),
     hasFireplace: false,
     type: "Multi-Story",
     category: "multistory",
@@ -439,6 +464,7 @@ export const homeModels: HomeModel[] = [
     description: "Two-storey contemporary with 2½ baths. Grand master bedroom with walk-in closet and ensuite. Laundry on the main floor.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/DSC_8122-scaled.jpg",
     photoKind: "interior",
+    whyItMatters: "Two storeys on a compact 30 by 34 foot footprint give three bedrooms and two and a half bathrooms.",
   },
   {
     id: "bordeaux-tr",
@@ -448,7 +474,7 @@ export const homeModels: HomeModel[] = [
     baths: 2,
     sqft: 1724,
     roofSqft: estimateRoofSqft(76.5, 44, { lengthFt: 29, widthFt: 27 }),
-    wallSqft: estimateWallSqft(76.5, 44, 1, { lengthFt: 29, widthFt: 27 }),
+    wallSqft: estimateWallSqft(76.5, 44, 1, 8, { lengthFt: 29, widthFt: 27 }),
     hasFireplace: true,
     type: "Traditional",
     category: "multistory",
@@ -461,6 +487,7 @@ export const homeModels: HomeModel[] = [
     description: "Traditional single-storey design with three bedrooms and two full baths — a large kitchen with a walk-in pantry, a master ensuite, and an attached two-car garage.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-32.jpg",
     photoKind: "interior",
+    whyItMatters: "The only model here with an attached two-car garage, plus three bedrooms and two bathrooms on one level.",
   },
 ];
 
@@ -481,6 +508,8 @@ export interface OptionItem {
   /** When set, this option is only offered on the listed model IDs.
    *  Populate from Supreme's factory options matrix (Phase 7 reliability layer). */
   availableForModels?: string[];
+  /** Owner-approved sentence explaining why this choice matters. Shown next to the option. */
+  whyItMatters?: string;
 }
 
 /** True when an option can be ordered on the given model. No list = available everywhere. */
@@ -500,24 +529,24 @@ export interface OptionGroup {
 // --- Siding colors ---
 
 export const sidingColors: OptionItem[] = [
-  { id: "white", label: "White", priceDelta: 0, swatchHex: "#F2EDE3", isDefault: true },
-  { id: "cream", label: "Cream", priceDelta: 0, swatchHex: "#DED0A8" },
-  { id: "warm-gray", label: "Warm Gray", priceDelta: 0, swatchHex: "#A09890" },
-  { id: "slate", label: "Slate", priceDelta: 0, swatchHex: "#7A8898" },
-  { id: "charcoal", label: "Charcoal", priceDelta: 0, swatchHex: "#3C434A" },
-  { id: "navy", label: "Navy", priceDelta: 0, swatchHex: "#1D3050" },
-  { id: "sage", label: "Sage Green", priceDelta: 0, swatchHex: "#6A8468" },
-  { id: "brick-red", label: "Brick Red", priceDelta: 0, swatchHex: "#8C3A2A" },
-  { id: "forest", label: "Forest Green", priceDelta: 0, swatchHex: "#2D4A30" },
-  { id: "black", label: "Black", priceDelta: 0, swatchHex: "#1A1D20" },
+  { id: "white", label: "White", priceDelta: 0, swatchHex: "#F2EDE3", isDefault: true, whyItMatters: "White stays cool in summer sun and won't show fading as visibly as darker siding over time." },
+  { id: "cream", label: "Cream", priceDelta: 0, swatchHex: "#DED0A8", whyItMatters: "A soft, warm neutral that stays cool in the sun like white, with a little more warmth in the tone." },
+  { id: "warm-gray", label: "Warm Gray", priceDelta: 0, swatchHex: "#A09890", whyItMatters: "A versatile mid-tone gray that works with most trim colours and reads as neither too light nor too dark." },
+  { id: "slate", label: "Slate", priceDelta: 0, swatchHex: "#7A8898", whyItMatters: "A cool blue-gray that reads as contemporary without the upkeep concerns of a very dark colour." },
+  { id: "charcoal", label: "Charcoal", priceDelta: 0, swatchHex: "#3C434A", whyItMatters: "A dark charcoal will absorb more summer heat and may show fading sooner than lighter colours." },
+  { id: "navy", label: "Navy", priceDelta: 0, swatchHex: "#1D3050", whyItMatters: "A deep navy will absorb more heat in summer sun and may show fading sooner than lighter tones." },
+  { id: "sage", label: "Sage Green", priceDelta: 0, swatchHex: "#6A8468", whyItMatters: "A muted sage green that blends naturally with trees and rural surroundings year-round." },
+  { id: "brick-red", label: "Brick Red", priceDelta: 0, swatchHex: "#8C3A2A", whyItMatters: "A warm, earthy red that adds a traditional, classic look to your home's exterior." },
+  { id: "forest", label: "Forest Green", priceDelta: 0, swatchHex: "#2D4A30", whyItMatters: "A deep forest green will absorb more heat in summer and may fade sooner than lighter siding colours." },
+  { id: "black", label: "Black", priceDelta: 0, swatchHex: "#1A1D20", whyItMatters: "Black absorbs the most heat of any colour here and will show fading sooner than lighter siding." },
 ];
 
 export const metalRoofColors: OptionItem[] = [
-  { id: "charcoal", label: "Charcoal", priceDelta: 0, swatchHex: "#3C434A", isDefault: true },
-  { id: "slate-pewter", label: "Slate Pewter", priceDelta: 0, swatchHex: "#6B7280" },
-  { id: "forest-green", label: "Forest Green", priceDelta: 0, swatchHex: "#2D4A30" },
-  { id: "barn-red", label: "Barn Red", priceDelta: 0, swatchHex: "#7A2020" },
-  { id: "arctic-white", label: "Arctic White", priceDelta: 0, swatchHex: "#E8EAF0" },
+  { id: "charcoal", label: "Charcoal", priceDelta: 0, swatchHex: "#3C434A", isDefault: true, whyItMatters: "A dark charcoal metal roof will run warmer in summer sun and may show fading sooner than lighter finishes." },
+  { id: "slate-pewter", label: "Slate Pewter", priceDelta: 0, swatchHex: "#6B7280", whyItMatters: "A mid-tone gray that pairs with most siding colours without drawing much attention to itself." },
+  { id: "forest-green", label: "Forest Green", priceDelta: 0, swatchHex: "#2D4A30", whyItMatters: "A dark forest green roof will run warmer in the sun and may fade sooner than lighter roof colours." },
+  { id: "barn-red", label: "Barn Red", priceDelta: 0, swatchHex: "#7A2020", whyItMatters: "A dark barn red will run warmer in the sun and may show fading sooner than lighter roof finishes." },
+  { id: "arctic-white", label: "Arctic White", priceDelta: 0, swatchHex: "#E8EAF0", whyItMatters: "A light roof stays cooler in summer sun and shows fading less than a dark metal finish." },
 ];
 
 // --- Exterior option groups ---
@@ -532,21 +561,24 @@ export const exteriorGroups: OptionGroup[] = [
       {
         id: "horizontal",
         label: "Horizontal Lap",
-        description: "Classic horizontal clapboard. Durable, timeless, and low-maintenance.",
+        description: "Horizontal vinyl lap siding with house wrap. Supreme's standard.",
         priceDelta: 0,
         isDefault: true,
+        whyItMatters: "The most common siding profile on Nova Scotia homes, so it suits almost any street or rural setting.",
       },
       {
         id: "vertical",
         label: "Vertical Board",
         description: "Clean board and batten vertical profile. Modern look that photographs beautifully.",
         priceDelta: 1500,
+        whyItMatters: "Vertical board and batten gives a clean, modern look if you want your home to stand out from the classic clapboard nearby.",
       },
       {
         id: "board-batten",
         label: "Premium Board & Batten",
         description: "Wide-profile board & batten with an upgraded trim package. A standout exterior.",
         priceDelta: 3000,
+        whyItMatters: "The wide-profile boards and upgraded trim create a more custom, standout exterior than the standard profiles.",
       },
     ],
   },
@@ -558,18 +590,20 @@ export const exteriorGroups: OptionGroup[] = [
     options: [
       {
         id: "shingles",
-        label: "Architectural Shingles",
-        description: "30-year rated asphalt shingles. Reliable, attractive, and industry standard.",
+        label: "Fibreglass Shingles",
+        description: "Fibreglass asphalt shingles with extra tar adhesive and a limited lifetime warranty. Supreme's standard.",
         priceDelta: 0,
         isDefault: true,
         perSqftId: "shingles",
+        whyItMatters: "Asphalt shingles are the standard, reliable option and hold up well through our freeze-thaw winters when properly installed.",
       },
       {
         id: "metal",
         label: "Metal Roof",
-        description: "50+ year standing seam metal. Higher upfront cost, lower lifetime cost, superior in heavy NS snow.",
+        description: "Standing-seam metal roofing in your choice of colour.",
         priceDelta: 0,
         perSqftId: "metal",
+        whyItMatters: "Snow slides off metal more readily than shingles, so less sits on the roof; plan for where it lands near doors and walkways.",
       },
     ],
   },
@@ -585,18 +619,21 @@ export const exteriorGroups: OptionGroup[] = [
         description: "Clean flat casing with a contemporary profile. Included.",
         priceDelta: 0,
         isDefault: true,
+        whyItMatters: "A clean, flat casing gives your windows and doors a simple, contemporary look.",
       },
       {
         id: "craftsman",
         label: "Craftsman",
         description: "Wide flat casing with corner block accents. Arts & Crafts heritage.",
         priceDelta: 800,
+        whyItMatters: "Wider casing with corner block accents gives your home's exterior a traditional Arts and Crafts character.",
       },
       {
         id: "colonial",
         label: "Colonial",
         description: "Stepped profile casing with traditional moulded detail.",
         priceDelta: 1200,
+        whyItMatters: "Stepped, moulded casing adds a traditional detail to your windows and doors.",
       },
     ],
   },
@@ -612,26 +649,21 @@ export const interiorGroups: OptionGroup[] = [
     displayType: "tiles",
     options: [
       {
-        id: "lvp",
-        label: "Standard Vinyl Plank",
-        description: "Durable, waterproof LVP throughout. Easy to clean and maintain.",
+        id: "standard",
+        label: "Vinyl Tile & Laminate",
+        description: "Waterproof 6.5 mm vinyl tile in the kitchen, dining room and bathrooms, with 12 mm laminate in living areas, bedrooms and halls. Supreme's standard.",
         priceDelta: 0,
         isDefault: true,
-        perSqftId: "flooring-lvp",
-      },
-      {
-        id: "laminate",
-        label: "Upgraded Laminate",
-        description: "Thicker planks with a more authentic wood appearance and a softer underfoot feel.",
-        priceDelta: 2500,
-        perSqftId: "flooring-laminate",
+        perSqftId: "flooring-standard",
+        whyItMatters: "Waterproof vinyl tile where water and wet boots land, and laminate floors in living areas and bedrooms.",
       },
       {
         id: "hardwood",
         label: "Engineered Hardwood",
-        description: "Real wood veneer over plywood core. Warm, premium aesthetic that adds resale value.",
+        description: "Real wood veneer over a plywood core in living areas, bedrooms and halls, in place of the standard laminate.",
         priceDelta: 6000,
         perSqftId: "flooring-hardwood",
+        whyItMatters: "A real wood veneer gives a warmer, more premium look than the standard laminate in living areas.",
       },
     ],
   },
@@ -644,15 +676,17 @@ export const interiorGroups: OptionGroup[] = [
       {
         id: "laminate",
         label: "Laminate",
-        description: "Clean laminate counters in a range of colours. Practical and affordable.",
+        description: "Post-formed laminate kitchen and vanity counters. Supreme's standard.",
         priceDelta: 0,
         isDefault: true,
+        whyItMatters: "Laminate counters come in a range of colours and are easy to keep clean day to day.",
       },
       {
         id: "quartz",
         label: "Quartz",
         description: "Engineered stone with a high-end look, excellent durability, and zero maintenance.",
         priceDelta: 3500,
+        whyItMatters: "Engineered quartz resists scratches and stains and holds up with very little day-to-day upkeep.",
       },
     ],
   },
@@ -663,23 +697,19 @@ export const interiorGroups: OptionGroup[] = [
     displayType: "tiles",
     options: [
       {
-        id: "standard",
-        label: "Standard",
-        description: "Flat-panel thermofoil cabinets in a clean white or light grey finish.",
-        priceDelta: 0,
-        isDefault: true,
-      },
-      {
         id: "shaker",
         label: "Shaker",
-        description: "Classic 5-piece shaker door style. Clean, versatile, and adds perceived value.",
-        priceDelta: 2000,
+        description: "MDF shaker-style doors with soft-close hinges and drawers and white melamine interiors. Supreme's standard.",
+        priceDelta: 0,
+        isDefault: true,
+        whyItMatters: "Shaker-style doors with soft-close hinges and drawers come standard, a clean look that suits most kitchens.",
       },
       {
         id: "premium-shaker",
-        label: "Premium Shaker",
-        description: "Solid wood shaker with soft-close hinges, dovetail drawers, and crown moulding.",
+        label: "Solid Wood Shaker",
+        description: "Solid wood shaker doors and boxes with dovetail drawers and crown moulding.",
         priceDelta: 4500,
+        whyItMatters: "Solid wood boxes and dovetail drawers hold up to years of daily use.",
       },
     ],
   },
@@ -692,10 +722,11 @@ export const interiorGroups: OptionGroup[] = [
       {
         id: "builder-white",
         label: "Builder White",
-        description: "Standard off-white throughout. Clean, neutral, and easy to personalize later.",
+        description: "Off-white walls throughout. Supreme paints mini home walls at the factory; modular home walls arrive primed and are painted on site.",
         priceDelta: 0,
         paletteHexes: ["#F5F2ED", "#F0EDE8", "#EAE6E0"],
         isDefault: true,
+        whyItMatters: "A neutral off-white throughout makes it simple to add your own colour later without repainting everything first.",
       },
       {
         id: "warm-neutral",
@@ -703,6 +734,7 @@ export const interiorGroups: OptionGroup[] = [
         description: "A coordinated palette of warm greiges, soft taupes, and creamy whites — ready to live in.",
         priceDelta: 800,
         paletteHexes: ["#D9C9B0", "#C4B090", "#A89070"],
+        whyItMatters: "A coordinated palette of warm greiges and taupes is chosen for you, so it looks finished from day one.",
       },
       {
         id: "premium-custom",
@@ -710,6 +742,7 @@ export const interiorGroups: OptionGroup[] = [
         description: "Work with our design consultant to select a fully personalized palette for every room.",
         priceDelta: 1800,
         paletteHexes: ["#8B9E8C", "#C4A882", "#6B7D8E"],
+        whyItMatters: "You work with a design consultant to choose colours room by room, tailored to your taste.",
       },
     ],
   },
@@ -721,22 +754,25 @@ export const interiorGroups: OptionGroup[] = [
     options: [
       {
         id: "standard",
-        label: "Standard Flat",
-        description: "Clean 3¼\" flat baseboard and simple door casings. Contemporary and low-profile.",
+        label: "Flat Trim",
+        description: "5¼-inch flat baseboards, 3¾-inch flat casings and 5½-inch flat headers over doors and windows. Supreme's standard.",
         priceDelta: 0,
         isDefault: true,
+        whyItMatters: "Wide flat baseboards and flat headers over doors and windows come standard, a clean traditional look.",
       },
       {
         id: "colonial",
         label: "Colonial",
-        description: "Stepped casing profile with 4\" baseboard. Traditional character throughout.",
+        description: "Stepped, moulded casings and baseboards in place of the standard flat trim.",
         priceDelta: 1500,
+        whyItMatters: "Stepped, moulded casings add a more traditional detail to doors and windows.",
       },
       {
         id: "craftsman",
         label: "Craftsman",
-        description: "Wide 5¼\" flat baseboard with corner blocks and picture-frame door surround.",
+        description: "Corner blocks and picture-frame door surrounds added to wide flat trim.",
         priceDelta: 2500,
+        whyItMatters: "Corner blocks and picture-frame door surrounds give a more substantial, custom-built look.",
       },
     ],
   },
@@ -749,21 +785,17 @@ export const interiorGroups: OptionGroup[] = [
       {
         id: "standard",
         label: "Standard",
-        description: "Builder-grade flush-mount ceiling fixtures and basic pot lights.",
+        description: "Quality fixtures throughout, pendant lights over the kitchen sink and island, exterior pot lights over doors and LED bulbs. Supreme's standard.",
         priceDelta: 0,
         isDefault: true,
-      },
-      {
-        id: "mid-range",
-        label: "Mid-Range",
-        description: "Pendant lights over islands, upgraded flush-mounts, and dimmable pot lights throughout.",
-        priceDelta: 2000,
+        whyItMatters: "Standard fixtures include pendant lights over the kitchen sink and island, with LED bulbs throughout.",
       },
       {
         id: "premium",
         label: "Premium",
-        description: "Statement entry fixture, under-cabinet LEDs, smart dimmers, and curated fixtures in every room.",
+        description: "Adds under-cabinet LED lighting, smart dimmers and a statement entry fixture.",
         priceDelta: 4500,
+        whyItMatters: "Under-cabinet lighting, smart dimmers and a statement entry fixture add function and style through long winter evenings.",
       },
     ],
   },
@@ -776,10 +808,11 @@ export const interiorGroups: OptionGroup[] = [
       {
         id: "brushed-nickel",
         label: "Brushed Nickel",
-        description: "Warm silver tone. Timeless and versatile.",
+        description: "Brushed nickel door handles and hinges. Supreme's standard.",
         priceDelta: 0,
         swatchHex: "#C0C0B8",
         isDefault: true,
+        whyItMatters: "A warm silver tone that's easy to match with almost any fixture or cabinet colour.",
       },
       {
         id: "matte-black",
@@ -787,6 +820,7 @@ export const interiorGroups: OptionGroup[] = [
         description: "Bold, modern, and sophisticated.",
         priceDelta: 300,
         swatchHex: "#2A2A2A",
+        whyItMatters: "A bold, dark finish that gives a modern, more dramatic look than brushed nickel.",
       },
       {
         id: "aged-bronze",
@@ -794,6 +828,7 @@ export const interiorGroups: OptionGroup[] = [
         description: "Warm antique tone with rich depth.",
         priceDelta: 300,
         swatchHex: "#6B4A28",
+        whyItMatters: "A warm, antique-looking bronze tone that suits a more traditional or rustic style.",
       },
     ],
   },
@@ -806,21 +841,24 @@ export const interiorGroups: OptionGroup[] = [
       {
         id: "standard",
         label: "Standard",
-        description: "Code-minimum insulation. Adequate for milder seasons.",
+        description: "R-28 walls on modular homes and R-24 on mini homes, with R-52 in the roof. Supreme's standard.",
         priceDelta: 0,
         isDefault: true,
+        whyItMatters: "Standard walls are insulated to R-24 to R-28 depending on the model, with R-52 in the roof.",
       },
       {
         id: "enhanced",
         label: "Enhanced",
-        description: "Upgraded batt insulation in walls and attic. Noticeably warmer winters and lower heating bills.",
+        description: "Upgraded insulation in the walls and attic beyond Supreme's standard.",
         priceDelta: 3000,
+        whyItMatters: "More insulation in the walls and attic means less heat escaping over Nova Scotia's long heating season.",
       },
       {
         id: "premium",
         label: "Premium",
-        description: "Spray foam + high-R batts with full air sealing. Best possible energy performance.",
+        description: "Spray foam with high-R batts and full air sealing.",
         priceDelta: 6000,
+        whyItMatters: "Spray foam also seals air gaps, which batts alone don't, so it cuts drafts as well as heat loss.",
       },
     ],
   },
@@ -851,7 +889,7 @@ export const waterCosts: Record<Exclude<WaterType, null>, CostEstimate> = {
     high: 18000,
     label: "Drilled Well",
     description: "Most common in rural NS. Drilled 100–250 ft, includes pump, pressure tank, and water testing.",
-    whyItMatters: "Well depth varies by location — deeper means higher cost. Most of our service area requires a drilled well.",
+    whyItMatters: "Most rural properties in our service area rely on a drilled well, since municipal water often isn't available.",
   },
   dug: {
     low: 3000,
@@ -859,7 +897,7 @@ export const waterCosts: Record<Exclude<WaterType, null>, CostEstimate> = {
     high: 9000,
     label: "Dug Well",
     description: "Shallower hand-dug well, typically 15–30 ft. Lower cost but lower yield and more susceptible to contamination.",
-    whyItMatters: "Only suitable on certain lots with high water tables. Ask us if your property is a candidate.",
+    whyItMatters: "Only suits lots with a high water table, and a dug well is more likely to run low in a dry summer.",
   },
   municipal: {
     low: 3000,
@@ -867,7 +905,7 @@ export const waterCosts: Record<Exclude<WaterType, null>, CostEstimate> = {
     high: 10000,
     label: "Municipal Water",
     description: "Connection fee and trenching from the property line to your home. Available in towns like Chester Basin, Bridgewater, and Liverpool.",
-    whyItMatters: "Municipal water means no well maintenance, but you'll have a monthly water bill.",
+    whyItMatters: "Municipal water means you won't maintain a well yourself, though it's only available in certain towns and comes with an ongoing bill.",
   },
 };
 
@@ -878,7 +916,7 @@ export const sewerCosts: Record<Exclude<SewerType, null>, CostEstimate> = {
     high: 30000,
     label: "Septic System",
     description: "Includes percolation test, septic tank, distribution box, and drain field installation. Required for most rural properties.",
-    whyItMatters: "Soil conditions determine system type and cost. Clay-heavy soil may need an engineered system.",
+    whyItMatters: "Most rural properties need a septic system, and your soil conditions determine what type and size it has to be.",
   },
   municipal: {
     low: 3000,
@@ -886,7 +924,7 @@ export const sewerCosts: Record<Exclude<SewerType, null>, CostEstimate> = {
     high: 10000,
     label: "Municipal Sewer",
     description: "Connection fee and trenching to the municipal sewer line. Only available within town boundaries.",
-    whyItMatters: "Municipal sewer means no septic maintenance, but you'll have a monthly sewer charge.",
+    whyItMatters: "Municipal sewer means no septic tank to maintain, though it's only available within town boundaries and comes with its own charge.",
   },
 };
 
@@ -897,7 +935,7 @@ export const foundationCosts: Record<FoundationType, CostEstimate> = {
     high: 22000,
     label: "Concrete Slab",
     description: "A flat concrete pad poured directly on prepared ground. The most affordable foundation option.",
-    whyItMatters: "Great for flat lots. No crawlspace or basement storage, but lowest cost and fastest to build.",
+    whyItMatters: "A flat concrete pad works well on level ground but gives you no crawlspace or basement storage underneath.",
   },
   crawlspace: {
     low: 12000,
@@ -905,7 +943,7 @@ export const foundationCosts: Record<FoundationType, CostEstimate> = {
     high: 30000,
     label: "Crawlspace",
     description: "Elevated foundation with access underneath for plumbing and utilities. Good balance of cost and practicality.",
-    whyItMatters: "Easier access for repairs and protects against ground moisture. Most popular choice for modular homes in NS.",
+    whyItMatters: "Raising the home off the ground gives easier access to plumbing and helps keep ground moisture away from the floor.",
   },
   basement: {
     low: 25000,
@@ -913,7 +951,7 @@ export const foundationCosts: Record<FoundationType, CostEstimate> = {
     high: 60000,
     label: "Full Basement",
     description: "A full below-grade basement adds livable/storage space. Significant additional cost but adds value to the home.",
-    whyItMatters: "Adds usable square footage and increases resale value, but is the most expensive foundation option.",
+    whyItMatters: "Adds storage or future living space under the whole home; on wet sites it needs good drainage to stay dry.",
   },
 };
 

@@ -28,8 +28,7 @@ export interface PricingSheet {
     "board-batten": { perSqft: number };
   };
   flooring: {
-    lvp: { perSqft: number };
-    laminate: { perSqft: number };
+    standard: { perSqft: number };
     hardwood: { perSqft: number };
   };
   extensions: {
@@ -50,8 +49,7 @@ export const PRICING_SHEET: PricingSheet = {
     "board-batten": { perSqft: 3.60 },
   },
   flooring: {
-    lvp: { perSqft: 4.50 },
-    laminate: { perSqft: 6.50 },
+    standard: { perSqft: 4.50 },
     hardwood: { perSqft: 10.00 },
   },
   extensions: {
@@ -122,9 +120,9 @@ export function defaultState(): ConfiguratorState {
     metalRoofColorId: "charcoal",
     hasFrontPorch: false,
     exteriorTrimId: "standard",
-    flooringId: "lvp",
+    flooringId: "standard",
     countertopsId: "laminate",
-    cabinetStyleId: "standard",
+    cabinetStyleId: "shaker",
     paintPackageId: "builder-white",
     interiorTrimId: "standard",
     lightingPackageId: "standard",
@@ -171,7 +169,7 @@ export function displayedOptionDelta(
   if (groupId === "flooring") {
     const rate = PRICING_SHEET.flooring[optionId as keyof PricingSheet["flooring"]];
     if (!rate) return flatDelta;
-    return Math.round(model.sqft * (rate.perSqft - PRICING_SHEET.flooring.lvp.perSqft));
+    return Math.round(model.sqft * (rate.perSqft - PRICING_SHEET.flooring.standard.perSqft));
   }
   return flatDelta;
 }
@@ -261,7 +259,7 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
   }
 
   // Interior: flooring (per sqft)
-  const flooringRate = PRICING_SHEET.flooring[state.flooringId as keyof PricingSheet["flooring"]] ?? { perSqft: PRICING_SHEET.flooring.lvp.perSqft };
+  const flooringRate = PRICING_SHEET.flooring[state.flooringId as keyof PricingSheet["flooring"]] ?? { perSqft: PRICING_SHEET.flooring.standard.perSqft };
   const flooringCost = Math.round(homeSqft * flooringRate.perSqft);
   const flooringOption = interiorGroups.find((g) => g.id === "flooring")?.options.find((o) => o.id === state.flooringId);
   items.push({ label: flooringOption?.label ?? "Flooring", amount: flooringCost, desc: `${homeSqft} sqft × $${flooringRate.perSqft.toFixed(2)}/sqft` });

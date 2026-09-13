@@ -13,26 +13,64 @@ dramatically better with them.
 
 ## The request (ready to send)
 
-Email for the owner to send to their Supreme Homes dealer rep — per model carried
-(Zen CT-2, Zenith CT, FB-10, Fancy TR-2, Acadie CT, Sauvignon CT-2, Acadie CR, Porto,
-Windsor CT, Bordeaux TR):
+Plain-language email for the owner to send to their Supreme Homes dealer rep — per
+model carried (Zen CT-2, Zenith CT, FB-10, Fancy TR-2, Acadie CT, Sauvignon CT-2,
+Acadie CR, Porto, Windsor CT, Bordeaux TR):
 
-> We're building an online configurator for our customers and need dealer marketing
-> assets for the models we carry. Could you send us, for each model:
-> 1. **Floor plan drawing** (PDF or image, with room labels and dimensions)
-> 2. **Front elevation drawing or rendering** (the straight-on exterior view)
-> 3. **Exterior photos** — front-facing, full house in frame, highest resolution available
-> 4. **Interior photos** — kitchen, living room, primary bath, primary bedroom
-> 5. **Finish/options catalog** — available siding profiles & colors, roofing colors,
->    cabinet door styles & colors, countertop options, flooring options, with product
->    photos or swatches
-> 6. Confirmation we're licensed to use these on our website
+> Hi [rep name],
 >
-> Web resolution is fine (1600px+). PDFs welcome — we can extract what we need.
+> We're building an online configurator for our customers and want to make sure we're
+> using your materials properly and showing buyers accurate, up-to-date information. A
+> few things would help a lot:
+>
+> 1. **Written permission to use your photos and renderings.** Your website marks
+>    images "All rights reserved" — could you confirm in writing that we're allowed to
+>    use Supreme's model photos and renderings in our website configurator?
+>
+> 2. **Current photos and floor plans for each model.** For each model we carry, could
+>    you send a high-resolution front exterior photo or rendering, interior photos
+>    (kitchen, living room, primary bath, primary bedroom), and the floor plan? A few of
+>    your own model pages look out of date — the FB-10, Acadie CT and Acadie CR pages
+>    currently show Bordeaux photos, and the Bali page shows an older 2021 gallery — so
+>    if you have newer photos for those specific models, we'd love to use them instead.
+>
+> 3. **The factory options list with prices**, showing which siding profiles and
+>    colours, roof options (including metal), and cabinet, countertop, flooring, trim,
+>    lighting and insulation upgrades are offered on each model.
+>
+> 4. **Photos or swatches of each option**, so our buyers can see what they're picking
+>    before they order.
+>
+> 5. **Confirmation of the current Bordeaux TR specs.** Your live page links a 2015
+>    spec sheet showing a single-storey 3 bed / 2 bath home, 1,724 sq ft, plus a garage
+>    — can you confirm that's still accurate, or send the current sheet if it's changed
+>    since then?
+>
+> 6. **Whether 3D model files or architectural render sources exist** for any of these
+>    models — that would help us build a more realistic configurator down the road.
+>
+> Web resolution is fine (1600px+) for photos, and PDFs are welcome for specs and
+> options — we can extract what we need. Happy to hop on a call if that's easier.
+>
+> Thanks so much!
 
-Also worth asking: do they have a **factory options/price list** for the option deltas
-currently guessed in `lib/pricing.ts` `PRICING_SHEET`? Real numbers would fix pricing
-accuracy in the same shipment.
+### From Gold River (not Supreme)
+
+Information Gold River needs to gather itself — the dealer rep won't have this:
+
+- Current lot inventory (the lots in `lib/defaults.ts` are placeholders pending
+  Calum's real inventory).
+- Retail base price for each model.
+- Which upgrades Gold River itself sells on top of Supreme's factory options, and
+  their prices.
+- Whether Gold River paints modular home walls on site, or leaves that to the buyer
+  (Supreme's 2026 spec sheets show modular home walls leave the factory primed only).
+- A short two-sentence permission request template to send past customers, asking to
+  use photos of their delivered homes:
+
+  > We loved building your home and would love to feature a photo of it on our website
+  > and in our configurator. Would you be comfortable with us using one or two photos,
+  > with no personal details shown?
 
 ## Directory layout (create as assets arrive)
 
@@ -84,6 +122,8 @@ what lets components resolve assets by convention with zero mapping tables.
 ## Acceptance criteria
 
 - [ ] Request email sent by owner (log the date in project CLAUDE.md Session Notes).
+- [ ] Written permission to use Supreme's model photos/renderings received before any
+      of their images are used in the live configurator.
 - [ ] Assets stored under the layout above, named by ID, WebP-compressed.
 - [ ] No more hotlinks to supremehomes.ca anywhere in `defaults.ts`.
 - [ ] Option arrays reconciled against the real factory options catalog.

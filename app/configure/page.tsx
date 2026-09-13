@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { defaultState, calculateConfiguratorPrice } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
+import { sanitizeState } from "@/lib/state";
 import { formatCurrency } from "@/lib/calculator";
 import {
   interiorGroups,
@@ -158,8 +160,12 @@ export default function ConfigurePage() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = { ...defaultState(), ...JSON.parse(saved) };
+        const parsed = sanitizeState(JSON.parse(saved));
         parsed.step = Math.min(Math.max(1, parsed.step), SCREENS.length);
+        // One-time hydration from localStorage on mount (empty dep array — this
+        // doesn't cascade). localStorage isn't available during server rendering,
+        // so this can't run during the initial render without a hydration mismatch.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setState(parsed);
       }
     } catch {
@@ -224,9 +230,9 @@ export default function ConfigurePage() {
       <header className="border-b border-border bg-bg-secondary sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-14">
-            <a href="/" className="font-display text-gold text-lg font-bold tracking-wide">
+            <Link href="/" className="font-display text-gold text-lg font-bold tracking-wide">
               Gold River Homes
-            </a>
+            </Link>
             <a href="tel:9022733033" className="text-text-muted text-sm hover:text-gold transition-colors hidden sm:block">
               902-273-3033
             </a>
@@ -328,7 +334,7 @@ export default function ConfigurePage() {
             {/* Screen 1 hint */}
             {screen.id === "land" && (
               <p className="text-text-muted/40 text-xs text-center mt-3">
-                Don't have land yet? Browse our available lots above.
+                Don&apos;t have land yet? Browse our available lots above.
               </p>
             )}
           </div>
