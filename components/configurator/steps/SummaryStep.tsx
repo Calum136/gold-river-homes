@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCurrency } from "@/lib/calculator";
+import { calculateMortgage, formatCurrency } from "@/lib/calculator";
 import { calculateConfiguratorPrice } from "@/lib/pricing";
 import { lotOptions } from "@/lib/defaults";
 import type { ConfiguratorState } from "@/lib/pricing";
@@ -8,14 +8,6 @@ import type { ConfiguratorState } from "@/lib/pricing";
 interface SummaryStepProps {
   state: ConfiguratorState;
   onChange: (patch: Partial<ConfiguratorState>) => void;
-}
-
-function calculateMonthlyPayment(principal: number, annualRate: number, years: number): number {
-  if (principal <= 0) return 0;
-  const r = annualRate / 100 / 12;
-  const n = years * 12;
-  if (r === 0) return principal / n;
-  return (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 }
 
 export default function SummaryStep({ state, onChange }: SummaryStepProps) {
@@ -26,9 +18,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
     ? lotOptions.find((l) => l.id === state.selectedLotId)
     : null;
 
-  const downPaymentAmount = Math.round(totalCost * (state.mortgage.downPaymentPercent / 100));
-  const loanAmount = totalCost - downPaymentAmount;
-  const monthly = calculateMonthlyPayment(loanAmount, state.mortgage.interestRate, state.mortgage.amortizationYears);
+  const mortgage = calculateMortgage(totalCost, state.mortgage);
 
   return (
     <div className="space-y-6">
@@ -152,18 +142,36 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
 
           <div className="border border-border bg-bg-elevated divide-y divide-border">
             <div className="flex justify-between px-4 py-3">
-              <span className="text-text-secondary text-sm">Down payment ({state.mortgage.downPaymentPercent}%)</span>
-              <span className="text-white text-sm tabular-nums">{formatCurrency(downPaymentAmount)}</span>
+              <span className="text-text-secondary text-sm">
+                Down payment ({mortgage.effectiveDownPaymentPercent.toFixed(1)}%)
+              </span>
+              <span className="text-white text-sm tabular-nums">{formatCurrency(mortgage.downPayment)}</span>
             </div>
+            {mortgage.cmhcPremium > 0 && (
+              <div className="flex justify-between px-4 py-3">
+                <span className="text-text-secondary text-sm">
+                  CMHC Insurance Premium ({(mortgage.cmhcPremiumRate * 100).toFixed(2)}%)
+                </span>
+                <span className="text-white text-sm tabular-nums">{formatCurrency(mortgage.cmhcPremium)}</span>
+              </div>
+            )}
             <div className="flex justify-between px-4 py-3">
-              <span className="text-text-secondary text-sm">Loan amount</span>
-              <span className="text-white text-sm tabular-nums">{formatCurrency(loanAmount)}</span>
+              <span className="text-text-secondary text-sm">
+                Loan amount{mortgage.cmhcPremium > 0 ? " (incl. CMHC premium)" : ""}
+              </span>
+              <span className="text-white text-sm tabular-nums">{formatCurrency(mortgage.principal)}</span>
             </div>
             <div className="flex justify-between px-4 py-3">
               <span className="text-gold font-semibold text-sm">Estimated monthly payment</span>
-              <span className="text-gold font-bold tabular-nums">{formatCurrency(Math.round(monthly))}/mo</span>
+              <span className="text-gold font-bold tabular-nums">{formatCurrency(Math.round(mortgage.monthlyPayment))}/mo</span>
             </div>
           </div>
+
+          {mortgage.downPaymentRaisedToMinimum && (
+            <p className="text-text-muted/50 text-xs">
+              Minimum down payment on this total is {formatCurrency(mortgage.minimumDownPayment)} — your down payment has been raised to meet it.
+            </p>
+          )}
 
           <p className="text-text-muted/40 text-xs">
             Estimates only. Speak with a mortgage specialist for your actual rate and qualification.
@@ -175,7 +183,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
       <div className="border border-border bg-bg-elevated p-6 text-center space-y-4">
         <div>
           <h3 className="font-display text-white text-xl mb-1">Ready to build?</h3>
-          <p className="text-text-muted text-sm">Reach out to our team and we'll turn this estimate into a real quote.</p>
+          <p className="text-text-muted text-sm">Reach out to our team and we&apos;ll turn this estimate into a real quote.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <a

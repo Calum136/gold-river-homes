@@ -20,11 +20,13 @@ Counties in Nova Scotia:
 ## Current In-Stock Models
 | Model | Type | Beds/Baths | Dimensions | Sq Ft |
 |-------|------|------------|------------|-------|
-| Fancy TR-2 | Mini | 2 bed / 2 bath | 16' x 69' | 1,104 |
-| Zen CT-2 | Mini | 2 bed / 1 bath | 15' x 65' | 975 |
-| Zenith CT | Mini | 2 bed / 2 bath | 16' x 74' | 1,184 |
-| FB10 | Mini | 3 bed / 2 bath | 16' x 69' | 1,104 |
+| Fancy TR-2 | Mini | 3 bed / 2 bath | 16' x 74' | 1,184 |
+| Zen CT-2 | Mini | 2 bed / 1 bath | 16' x 54' | 864 |
+| Zenith CT | Mini | 3 bed / 2 bath | 16' x 74' | 1,184 |
+| FB10 | Mini | 3 bed / 2 bath | 16' x 74' | 1,184 |
 | Shiraz CR | Craftsman | — | — | — |
+
+Specs verified against Supreme Homes web sheets, Sep 12, 2026.
 
 ## Parent Company
 - **Supreme Homes** (Tracadie-Sheila, NB)

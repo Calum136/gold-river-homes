@@ -45,13 +45,32 @@ export default function ResultsPanel({ result }: ResultsPanelProps) {
           </span>
         </div>
         <div className="flex justify-between items-center py-2 border-b border-border/50">
-          <span className="text-text-muted text-sm">Down Payment</span>
+          <span className="text-text-muted text-sm">
+            Down Payment
+            {result.downPaymentRaisedToMinimum && (
+              <span className="block text-text-muted/50 text-xs mt-0.5">
+                Raised to the minimum required ({formatCurrency(result.minimumDownPayment)})
+              </span>
+            )}
+          </span>
           <span className="text-text-secondary text-sm font-medium tabular-nums">
             {formatCurrency(result.downPayment)}
           </span>
         </div>
+        {result.cmhcPremium > 0 && (
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+            <span className="text-text-muted text-sm">
+              CMHC Insurance Premium ({(result.cmhcPremiumRate * 100).toFixed(2)}%)
+            </span>
+            <span className="text-text-secondary text-sm font-medium tabular-nums">
+              {formatCurrency(result.cmhcPremium)}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between items-center py-2 border-b border-border/50">
-          <span className="text-text-muted text-sm">Mortgage Principal</span>
+          <span className="text-text-muted text-sm">
+            Mortgage Principal{result.cmhcPremium > 0 ? " (incl. CMHC premium)" : ""}
+          </span>
           <span className="text-text-secondary text-sm font-medium tabular-nums">
             {formatCurrency(result.principal)}
           </span>

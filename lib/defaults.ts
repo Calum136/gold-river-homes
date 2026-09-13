@@ -135,6 +135,14 @@ export interface HomeModel {
   hasFireplace: boolean;
   type: string;
   category: HomeCategory;
+  /** Overall dimensions as stated on the Supreme web sheet (per floor for two-storey models). */
+  lengthFt: number;
+  widthFt: number;
+  storeys: 1 | 2;
+  sections: "single" | "multi";
+  /** The Supreme Homes web sheet this model's specs were sourced from. */
+  specSource: string;
+  garage?: { lengthFt: number; widthFt: number; sqft: number };
   description?: string;
   photoUrl?: string;
   /** What the photo shows — interiors get an honest "Interior shown" tag on model cards. */
@@ -142,6 +150,43 @@ export interface HomeModel {
   /** Static photoreal render shown in the visualizer (Phase 7 demo). The caption
    *  states which options the render depicts, since it doesn't react to clicks yet. */
   demoRender?: { url: string; caption: string };
+}
+
+// --- Roof / wall area estimates ---
+// Supreme's web sheets don't publish roof or wall takeoffs, only overall
+// dimensions. These helpers derive rough-but-documented estimates from the
+// real footprint instead of the unsourced numbers that used to sit here.
+
+/**
+ * Roof area = top-floor footprint (home + any attached garage) × 1.15,
+ * rounded. The 1.15 multiplier is an estimate covering a typical
+ * low-to-moderate roof pitch plus eave/gable overhangs — not a real takeoff.
+ */
+function estimateRoofSqft(
+  lengthFt: number,
+  widthFt: number,
+  garage?: { lengthFt: number; widthFt: number }
+): number {
+  const footprint = lengthFt * widthFt + (garage ? garage.lengthFt * garage.widthFt : 0);
+  return Math.round(footprint * 1.15);
+}
+
+/**
+ * Wall area = 2 × (length + width) × 8 ft wall height × storeys, plus the
+ * garage's own perimeter × 8 ft when present, rounded. This is gross wall
+ * area — openings (doors/windows) aren't deducted, and gable-end wall area
+ * (which this formula also omits) roughly offsets that. It's an estimate,
+ * not a real takeoff.
+ */
+function estimateWallSqft(
+  lengthFt: number,
+  widthFt: number,
+  storeys: number,
+  garage?: { lengthFt: number; widthFt: number }
+): number {
+  const homeWalls = 2 * (lengthFt + widthFt) * 8 * storeys;
+  const garageWalls = garage ? 2 * (garage.lengthFt + garage.widthFt) * 8 : 0;
+  return Math.round(homeWalls + garageWalls);
 }
 
 export interface HomeCategoryDef {
@@ -172,8 +217,8 @@ export const homeCategories: HomeCategoryDef[] = [
   },
   {
     id: "multistory",
-    label: "Multi-Story",
-    description: "Two-storey and large-footprint builds for families who need maximum space. Our most premium models.",
+    label: "Family Homes",
+    description: "Two-storey and large-footprint homes for families who need the most room.",
     priceRange: "$330k – $450k",
   },
 ];
@@ -188,11 +233,16 @@ export const homeModels: HomeModel[] = [
     beds: 3,
     baths: 2,
     sqft: 1440,
-    roofSqft: 1360,
-    wallSqft: 1620,
+    roofSqft: estimateRoofSqft(74, 16),
+    wallSqft: estimateWallSqft(74, 16, 1),
     hasFireplace: false,
     type: "Mini",
     category: "mini",
+    lengthFt: 74,
+    widthFt: 16,
+    storeys: 1,
+    sections: "single",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2025/10/BALI-NEW-TEMPLATE-WEB-SHEET-EN.pdf",
     description: "Casita Series flagship — three bedrooms and two full baths in a single 74-foot section, with a striking board & batten entry gable.",
     photoUrl: "/models/bali/exterior.webp",
     photoKind: "exterior",
@@ -207,12 +257,17 @@ export const homeModels: HomeModel[] = [
     price: 165000,
     beds: 2,
     baths: 1,
-    sqft: 975,
-    roofSqft: 800,
-    wallSqft: 1050,
+    sqft: 864,
+    roofSqft: estimateRoofSqft(54, 16),
+    wallSqft: estimateWallSqft(54, 16, 1),
     hasFireplace: false,
     type: "Mini",
     category: "mini",
+    lengthFt: 54,
+    widthFt: 16,
+    storeys: 1,
+    sections: "single",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/06/EN-Zen-CT-2-WS.pdf",
     description: "Minimalist 2-bedroom cottage — high ceilings, generous windows, open-concept living in a compact footprint.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/ZEN-2.jpeg",
     photoKind: "exterior",
@@ -224,11 +279,16 @@ export const homeModels: HomeModel[] = [
     beds: 3,
     baths: 2,
     sqft: 1184,
-    roofSqft: 960,
-    wallSqft: 1250,
+    roofSqft: estimateRoofSqft(74, 16),
+    wallSqft: estimateWallSqft(74, 16, 1),
     hasFireplace: true,
     type: "Mini",
     category: "mini",
+    lengthFt: 74,
+    widthFt: 16,
+    storeys: 1,
+    sections: "single",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/06/EN-Zenith-CT-WS.pdf",
     description: "Three bedrooms, two full baths, fireplace in the living room, and a master suite with walk-in closet.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/06/01-1.png",
     photoKind: "interior",
@@ -239,12 +299,17 @@ export const homeModels: HomeModel[] = [
     price: 210000,
     beds: 3,
     baths: 2,
-    sqft: 1104,
-    roofSqft: 900,
-    wallSqft: 1180,
+    sqft: 1184,
+    roofSqft: estimateRoofSqft(74, 16),
+    wallSqft: estimateWallSqft(74, 16, 1),
     hasFireplace: false,
     type: "Mini",
     category: "mini",
+    lengthFt: 74,
+    widthFt: 16,
+    storeys: 1,
+    sections: "single",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2023/09/FB10-WEB-SHEET-EN-1.pdf",
     description: "Traditional mini home with three bedrooms in a compact footprint — ideal for small families.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-20.jpg",
     photoKind: "interior",
@@ -253,14 +318,19 @@ export const homeModels: HomeModel[] = [
     id: "fancy-tr-2",
     name: "Fancy TR-2",
     price: 185000,
-    beds: 2,
+    beds: 3,
     baths: 2,
-    sqft: 1104,
-    roofSqft: 910,
-    wallSqft: 1200,
+    sqft: 1184,
+    roofSqft: estimateRoofSqft(74, 16),
+    wallSqft: estimateWallSqft(74, 16, 1),
     hasFireplace: false,
     type: "Mini",
     category: "mini",
+    lengthFt: 74,
+    widthFt: 16,
+    storeys: 1,
+    sections: "single",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2022/04/FANCY-TR-2-WEB-SHEET-EN-1.pdf",
     description: "Well-appointed traditional mini home with two full baths and a stylish interior package.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/Copy-of-10-scaled.jpg",
     photoKind: "interior",
@@ -271,12 +341,17 @@ export const homeModels: HomeModel[] = [
     price: 235000,
     beds: 3,
     baths: 2,
-    sqft: 1250,
-    roofSqft: 1440,
-    wallSqft: 1260,
+    sqft: 1366,
+    roofSqft: estimateRoofSqft(46, 32),
+    wallSqft: estimateWallSqft(46, 32, 1),
     hasFireplace: false,
     type: "Contemporary",
     category: "modular",
+    lengthFt: 46,
+    widthFt: 32,
+    storeys: 1,
+    sections: "multi",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/05/EN-Acadie-CT-WS.pdf",
     description: "Closed entry vestibule, open-concept kitchen and living, master suite with walk-in closet. A proven layout.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-30.jpg",
     photoKind: "interior",
@@ -288,11 +363,16 @@ export const homeModels: HomeModel[] = [
     beds: 3,
     baths: 2,
     sqft: 1672,
-    roofSqft: 1925,
-    wallSqft: 1476,
+    roofSqft: estimateRoofSqft(74, 34),
+    wallSqft: estimateWallSqft(74, 34, 1),
     hasFireplace: true,
     type: "Contemporary",
     category: "modular",
+    lengthFt: 74,
+    widthFt: 34,
+    storeys: 1,
+    sections: "multi",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/06/EN-Sauvignon-CT-2-WS.pdf",
     description: "The house that has it all — covered porch, walk-in pantry, kitchen island, fireplace, and a luxury master ensuite.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/06/ONLINE_SUPREME_Truro_18_3981-1.jpg",
     photoKind: "interior",
@@ -303,12 +383,17 @@ export const homeModels: HomeModel[] = [
     price: 260000,
     beds: 3,
     baths: 2,
-    sqft: 1350,
-    roofSqft: 1555,
-    wallSqft: 1332,
+    sqft: 1366,
+    roofSqft: estimateRoofSqft(46, 32),
+    wallSqft: estimateWallSqft(46, 32, 1),
     hasFireplace: false,
     type: "Craftsman",
     category: "traditional",
+    lengthFt: 46,
+    widthFt: 32,
+    storeys: 1,
+    sections: "multi",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/05/EN-Acadie-CR-WS.pdf",
     description: "A winning plan — craftsman exterior with efficient open-concept interior and a generous entry walk-in closet.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-23.jpg",
     photoKind: "interior",
@@ -319,12 +404,17 @@ export const homeModels: HomeModel[] = [
     price: 310000,
     beds: 3,
     baths: 2,
-    sqft: 1500,
-    roofSqft: 1730,
-    wallSqft: 1400,
+    sqft: 1530,
+    roofSqft: estimateRoofSqft(54, 34),
+    wallSqft: estimateWallSqft(54, 34, 1),
     hasFireplace: true,
     type: "Craftsman",
     category: "traditional",
+    lengthFt: 54,
+    widthFt: 34,
+    storeys: 1,
+    sections: "multi",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/05/porto-english-websheet-1.pdf",
     description: "Standout craftsman curb appeal with a wide covered porch, vaulted ceilings, and a well-appointed open kitchen.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/10/Porto33-1.jpg",
     photoKind: "interior",
@@ -334,13 +424,18 @@ export const homeModels: HomeModel[] = [
     name: "Windsor CT",
     price: 355000,
     beds: 3,
-    baths: 2,
-    sqft: 1600,
-    roofSqft: 1000,
-    wallSqft: 2016,
+    baths: 2.5,
+    sqft: 1936,
+    roofSqft: estimateRoofSqft(34, 30),
+    wallSqft: estimateWallSqft(34, 30, 2),
     hasFireplace: false,
     type: "Multi-Story",
     category: "multistory",
+    lengthFt: 34,
+    widthFt: 30,
+    storeys: 2,
+    sections: "multi",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/06/EN-Windsor-CT-WS.pdf",
     description: "Two-storey contemporary with 2½ baths. Grand master bedroom with walk-in closet and ensuite. Laundry on the main floor.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/05/DSC_8122-scaled.jpg",
     photoKind: "interior",
@@ -349,15 +444,21 @@ export const homeModels: HomeModel[] = [
     id: "bordeaux-tr",
     name: "Bordeaux TR",
     price: 420000,
-    beds: 4,
+    beds: 3,
     baths: 2,
-    sqft: 2000,
-    roofSqft: 1250,
-    wallSqft: 2304,
+    sqft: 1724,
+    roofSqft: estimateRoofSqft(76.5, 44, { lengthFt: 29, widthFt: 27 }),
+    wallSqft: estimateWallSqft(76.5, 44, 1, { lengthFt: 29, widthFt: 27 }),
     hasFireplace: true,
-    type: "Multi-Story",
+    type: "Traditional",
     category: "multistory",
-    description: "Majestic traditional exterior — large kitchen with walk-in pantry, master ensuite, and optional multi-car garage.",
+    lengthFt: 76.5,
+    widthFt: 44,
+    storeys: 1,
+    sections: "multi",
+    specSource: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes_EN_091115.pdf",
+    garage: { lengthFt: 29, widthFt: 27, sqft: 824 },
+    description: "Traditional single-storey design with three bedrooms and two full baths — a large kitchen with a walk-in pantry, a master ensuite, and an attached two-car garage.",
     photoUrl: "https://www.supremehomes.ca/wp-content/uploads/2021/04/Bordeaux_SupremeHomes-32.jpg",
     photoKind: "interior",
   },
