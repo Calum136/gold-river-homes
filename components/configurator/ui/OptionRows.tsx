@@ -2,11 +2,9 @@ import { isOptionAvailable } from "@/lib/defaults";
 import type { OptionItem } from "@/lib/defaults";
 import { priceDeltaFor, monthlyDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
+import { isSupremeStandard } from "@/lib/selections";
 import { getOptionAsset } from "@/lib/visual-assets";
 import ChoiceRow, { ChoiceGroup, PriceDelta } from "./ChoiceRow";
-
-/** True for the options transcribed from Supreme's 2026 standard spec sheets. */
-const isSupremeStandard = (opt: OptionItem) => opt.description?.endsWith("Supreme's standard.") ?? false;
 
 /** State fields that hold the id of one option from a data group. */
 export type OptionStateKey =

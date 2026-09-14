@@ -1,4 +1,4 @@
-import type { FoundationType, WaterType, SewerType } from "./defaults";
+import type { CostEstimate, FoundationType, WaterType, SewerType } from "./defaults";
 import {
   homeModels,
   lotOptions,
@@ -227,15 +227,28 @@ function getOptionDelta(groups: typeof exteriorGroups, groupId: string, selected
 
 export interface PriceBreakdownItem {
   label: string;
+  /** What the total charges for this line: the mid estimate where the data has a range. */
   amount: number;
+  /**
+   * Low and high ends, set only on lines whose data has a range: the site costs,
+   * and the contingency, which follows them. Model and option lines are single
+   * estimate figures.
+   */
+  low?: number;
+  high?: number;
   desc?: string;
-  /** True for the one row whose amount is an unsourced estimate figure — shown as "Est. $X". */
-  isEstimate?: boolean;
+  /** True for the example lot's price, shown as an example price, never as a listing. */
+  isExample?: boolean;
 }
 
 export interface ConfiguratorPriceResult {
   items: PriceBreakdownItem[];
+  /** The mid estimate: every ranged line at its mid. The monthly payment uses this. */
   totalCost: number;
+  /** Every ranged line at its low end, contingency included. */
+  totalLow: number;
+  /** Every ranged line at its high end, contingency included. */
+  totalHigh: number;
   landIncluded: boolean;
   landPrice: number;
   isBundlePricing: boolean;
@@ -252,7 +265,7 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
   const items: PriceBreakdownItem[] = [];
 
   // Base home price
-  items.push({ label: "Home — " + (model?.name ?? "Selected Model"), amount: basePrice, isEstimate: true });
+  items.push({ label: "Home — " + (model?.name ?? "Selected Model"), amount: basePrice });
 
   // Roof cost (per sqft)
   const porchRoofAdded = state.hasFrontPorch ? (PRICING_SHEET.extensions["front-porch"].addedRoofSqft) : 0;
@@ -261,8 +274,9 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
     ? PRICING_SHEET.roof.metal.perSqft
     : PRICING_SHEET.roof.shingles.perSqft;
   const roofCost = Math.round(totalRoofSqft * roofRate);
+  const roofOption = exteriorGroups.find((g) => g.id === "roofType")?.options.find((o) => o.id === state.roofTypeId);
   items.push({
-    label: state.roofTypeId === "metal" ? "Metal Roof" : "Architectural Shingles",
+    label: roofOption?.label ?? "Roof",
     amount: roofCost,
     desc: `${totalRoofSqft} sqft × $${roofRate.toFixed(2)}/sqft`,
   });
@@ -329,33 +343,51 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
   const isBundlePricing = state.landSituation === "gold-river" && !!lot;
 
   if (lot) {
-    items.push({ label: `Land — ${lot.name}`, amount: lot.price, desc: lot.location });
+    items.push({ label: `Land — ${lot.name}`, amount: lot.price, desc: lot.location, isExample: true });
   }
 
-  // Site costs
+  // Site costs: ranged estimates. The total charges each line's mid; the low
+  // and high ends give the total's range.
+  const siteLines: CostEstimate[] = [
+    foundationCosts[state.foundationType],
+    waterCosts[state.waterType],
+    sewerCosts[state.sewerType],
+    siteEstimates.clearing,
+    siteEstimates.driveway,
+    siteEstimates.electrical,
+    siteEstimates.delivery,
+    siteEstimates.permits,
+  ];
+  for (const line of siteLines) {
+    items.push({ label: line.label, amount: line.mid, low: line.low, high: line.high });
+  }
+  const foundCost = foundationCosts[state.foundationType].mid;
   const waterCost = waterCosts[state.waterType].mid;
   const sewerCost = sewerCosts[state.sewerType].mid;
-  const foundCost = foundationCosts[state.foundationType].mid;
   const clearingCost = siteEstimates.clearing.mid;
   const drivewayCost = siteEstimates.driveway.mid;
   const electricalCost = siteEstimates.electrical.mid;
   const deliveryCost = siteEstimates.delivery.mid;
   const permitsCost = siteEstimates.permits.mid;
 
-  items.push({ label: foundationCosts[state.foundationType].label, amount: foundCost });
-  items.push({ label: waterCosts[state.waterType].label, amount: waterCost });
-  items.push({ label: sewerCosts[state.sewerType].label, amount: sewerCost });
-  items.push({ label: "Land Clearing & Grading", amount: clearingCost });
-  items.push({ label: "Driveway", amount: drivewayCost });
-  items.push({ label: "Electrical Service", amount: electricalCost });
-  items.push({ label: "Home Delivery & Setup", amount: deliveryCost });
-  items.push({ label: "Permits & Inspections", amount: permitsCost });
-
-  const subtotal = items.reduce((s, i) => s + i.amount, 0);
+  const sum = (pick: (item: PriceBreakdownItem) => number) => items.reduce((s, i) => s + pick(i), 0);
+  const subtotal = sum((i) => i.amount);
+  const subtotalLow = sum((i) => i.low ?? i.amount);
+  const subtotalHigh = sum((i) => i.high ?? i.amount);
   const contingency = Math.round(subtotal * 0.1);
-  items.push({ label: "Contingency (10%)", amount: contingency, desc: "Buffer for unexpected costs" });
+  const contingencyLow = Math.round(subtotalLow * 0.1);
+  const contingencyHigh = Math.round(subtotalHigh * 0.1);
+  items.push({
+    label: "Contingency (10%)",
+    amount: contingency,
+    low: contingencyLow,
+    high: contingencyHigh,
+    desc: "Buffer for unexpected costs",
+  });
 
   const totalCost = subtotal + contingency;
+  const totalLow = subtotalLow + contingencyLow;
+  const totalHigh = subtotalHigh + contingencyHigh;
 
   const upgrades = 0;
   const costs: CostBreakdown = {
@@ -371,5 +403,5 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
     upgrades,
   };
 
-  return { items, totalCost, landIncluded, landPrice, isBundlePricing, costs };
+  return { items, totalCost, totalLow, totalHigh, landIncluded, landPrice, isBundlePricing, costs };
 }

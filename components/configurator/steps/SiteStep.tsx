@@ -15,6 +15,8 @@ interface SiteStepProps {
   onChange: (patch: Partial<ConfiguratorState>) => void;
   /** The one site decision this screen shows. */
   only: SiteSection;
+  /** Show the automatic site estimates under the wastewater choice. Off on the review page, whose cost breakdown lists them. */
+  showSiteEstimates?: boolean;
 }
 
 // The choices in the order they're offered. Each row's label, price range and
@@ -77,7 +79,7 @@ function SiteRows<K extends string>({
   );
 }
 
-export default function SiteStep({ state, onChange, only }: SiteStepProps) {
+export default function SiteStep({ state, onChange, only, showSiteEstimates = true }: SiteStepProps) {
   const preSelectedFromLot = state.landSituation === "gold-river" && state.selectedLotId !== null;
 
   return (
@@ -126,25 +128,29 @@ export default function SiteStep({ state, onChange, only }: SiteStepProps) {
           />
 
           {/* Auto-estimated costs, included with the final site decision */}
-          <div className="border border-border">
-            <div className="border-b border-border px-4 py-3">
-              <h2 className="text-body font-medium text-text-primary">Additional Site Costs</h2>
-              <p className="mt-0.5 text-body-sm text-text-muted">These are estimated automatically — included in your total</p>
-            </div>
-            <dl className="divide-y divide-border">
-              {AUTO_SITE_ITEMS.map((item) => (
-                <div key={item.label} className="flex items-baseline justify-between gap-3 px-4 py-3">
-                  <dt className="text-body-sm text-text-secondary">{item.label}</dt>
-                  <dd className="shrink-0 font-accent text-figure-sm text-text-primary">{range(item)}</dd>
+          {showSiteEstimates && (
+            <>
+              <div className="border border-border">
+                <div className="border-b border-border px-4 py-3">
+                  <h2 className="text-body font-medium text-text-primary">Additional Site Costs</h2>
+                  <p className="mt-0.5 text-body-sm text-text-muted">These are estimated automatically — included in your total</p>
                 </div>
-              ))}
-            </dl>
-          </div>
+                <dl className="divide-y divide-border">
+                  {AUTO_SITE_ITEMS.map((item) => (
+                    <div key={item.label} className="flex items-baseline justify-between gap-3 px-4 py-3">
+                      <dt className="text-body-sm text-text-secondary">{item.label}</dt>
+                      <dd className="shrink-0 font-accent text-figure-sm text-text-primary">{range(item)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
 
-          <p className="text-caption text-text-muted">
-            All site estimates reflect typical costs in Lunenburg, Queens, Shelburne, Annapolis, Digby, and Yarmouth counties.
-            Final costs vary by soil conditions, slope, access road, and distance to utilities.
-          </p>
+              <p className="text-caption text-text-muted">
+                All site estimates reflect typical costs in Lunenburg, Queens, Shelburne, Annapolis, Digby, and Yarmouth counties.
+                Final costs vary by soil conditions, slope, access road, and distance to utilities.
+              </p>
+            </>
+          )}
         </>
       )}
     </div>

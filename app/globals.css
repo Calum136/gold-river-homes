@@ -67,6 +67,8 @@
   --text-figure-sm--line-height: 1.1;
   --text-figure: 1.5rem;
   --text-figure--line-height: 1.1;
+  --text-figure-lg: 2.5rem;
+  --text-figure-lg--line-height: 1;
   --tracking-eyebrow: 0.18em;
 }
 

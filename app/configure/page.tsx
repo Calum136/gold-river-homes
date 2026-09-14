@@ -2,24 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { defaultState, runningEstimate } from "@/lib/pricing";
+import { calculateConfiguratorPrice, defaultState, runningEstimate } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { sanitizeState } from "@/lib/state";
 import { resolveStage } from "@/lib/stage";
 import { formatCurrency } from "@/lib/calculator";
 import { stageNote } from "@/lib/copy";
 import { SCREENS, chapterForScreen } from "@/lib/screens";
-import {
-  interiorGroups,
-  exteriorGroups,
-  sidingColors,
-  metalRoofColors,
-  lotOptions,
-  homeModels,
-  foundationCosts,
-  waterCosts,
-  sewerCosts,
-} from "@/lib/defaults";
+import { selectionFor } from "@/lib/selections";
+import { homeModels } from "@/lib/defaults";
 
 import HomeVisualizer from "@/components/configurator/HomeVisualizer";
 import StageChrome from "@/components/configurator/StageChrome";
@@ -27,81 +18,13 @@ import OptionExample from "@/components/configurator/OptionExample";
 import SelectionsSummary from "@/components/configurator/SelectionsSummary";
 import type { SelectionItem } from "@/components/configurator/SelectionsSummary";
 import ChapterNav from "@/components/configurator/ChapterNav";
-import LotStep from "@/components/configurator/steps/LotStep";
-import ModelStep from "@/components/configurator/steps/ModelStep";
-import ExteriorStep from "@/components/configurator/steps/ExteriorStep";
-import type { ExteriorSection } from "@/components/configurator/steps/ExteriorStep";
-import InteriorStep from "@/components/configurator/steps/InteriorStep";
-import SiteStep from "@/components/configurator/steps/SiteStep";
-import type { SiteSection } from "@/components/configurator/steps/SiteStep";
+import DecisionChoices from "@/components/configurator/DecisionChoices";
 import SummaryStep from "@/components/configurator/steps/SummaryStep";
 
 // state.step is a SCREEN index (1-based) into SCREENS (lib/screens.ts): one
 // decision per screen. Bump the version whenever ConfiguratorState changes
 // shape or screens reorder.
 const STORAGE_KEY = "grh-configurator-v2";
-
-// One line per decision the buyer has already made — listed at the foot of the
-// decision panel as buttons that jump back to that screen.
-function selectionValue(state: ConfiguratorState, screenId: string): { label: string; value: string; swatchHex?: string } | null {
-  const optLabel = (groupId: string, optId: string) =>
-    [...exteriorGroups, ...interiorGroups].find((g) => g.id === groupId)?.options.find((o) => o.id === optId)?.label;
-
-  switch (screenId) {
-    case "land": {
-      if (state.landSituation === "own") return { label: "Land", value: "Your own land" };
-      const lot = lotOptions.find((l) => l.id === state.selectedLotId);
-      return lot ? { label: "Land", value: lot.name } : null;
-    }
-    case "model": {
-      const model = homeModels.find((m) => m.id === state.modelId);
-      return model ? { label: "Model", value: model.name } : null;
-    }
-    case "sidingStyle":
-      return { label: "Siding", value: optLabel("sidingStyle", state.sidingStyleId) ?? "—" };
-    case "sidingColor": {
-      const c = sidingColors.find((c) => c.id === state.sidingColorId);
-      return c ? { label: "Siding Color", value: c.label, swatchHex: c.swatchHex } : null;
-    }
-    case "roofType": {
-      if (state.roofTypeId !== "metal") return { label: "Roof", value: "Shingles" };
-      const c = metalRoofColors.find((c) => c.id === state.metalRoofColorId);
-      return { label: "Roof", value: `Metal — ${c?.label ?? ""}`, swatchHex: c?.swatchHex };
-    }
-    case "porch":
-      return { label: "Front Porch", value: state.hasFrontPorch ? "Included" : "None" };
-    case "exteriorTrim":
-      return { label: "Ext. Trim", value: optLabel("exteriorTrim", state.exteriorTrimId) ?? "—" };
-    case "flooring":
-      return { label: "Flooring", value: optLabel("flooring", state.flooringId) ?? "—" };
-    case "countertops":
-      return { label: "Counters", value: optLabel("countertops", state.countertopsId) ?? "—" };
-    case "cabinetStyle":
-      return { label: "Cabinets", value: optLabel("cabinetStyle", state.cabinetStyleId) ?? "—" };
-    case "paintPackage":
-      return { label: "Paint", value: optLabel("paintPackage", state.paintPackageId) ?? "—" };
-    case "interiorTrim":
-      return { label: "Int. Trim", value: optLabel("interiorTrim", state.interiorTrimId) ?? "—" };
-    case "lightingPackage":
-      return { label: "Lighting", value: optLabel("lightingPackage", state.lightingPackageId) ?? "—" };
-    case "hardwareFinish": {
-      const opt = interiorGroups.find((g) => g.id === "hardwareFinish")?.options.find((o) => o.id === state.hardwareFinishId);
-      return opt ? { label: "Hardware", value: opt.label, swatchHex: opt.swatchHex } : null;
-    }
-    case "insulation":
-      return { label: "Insulation", value: optLabel("insulation", state.insulationId) ?? "—" };
-    case "fireplace":
-      return { label: "Fireplace", value: state.hasFireplace ? "Included" : "None" };
-    case "foundation":
-      return { label: "Foundation", value: foundationCosts[state.foundationType].label };
-    case "water":
-      return state.waterType ? { label: "Water", value: waterCosts[state.waterType].label } : null;
-    case "sewer":
-      return state.sewerType ? { label: "Sewer", value: sewerCosts[state.sewerType].label } : null;
-    default:
-      return null;
-  }
-}
 
 function canAdvance(state: ConfiguratorState, screenId: string): boolean {
   switch (screenId) {
@@ -123,6 +46,8 @@ export default function ConfigurePage() {
   // through stay one click away after going back. A reload starts from the
   // saved screen.
   const [furthestScreen, setFurthestScreen] = useState(1);
+  // On the review page, the decision open for editing. The stage shows it.
+  const [openDecision, setOpenDecision] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // A refresh shouldn't cost the buyer their whole configuration.
@@ -163,10 +88,12 @@ export default function ConfigurePage() {
   // Chapters ahead stay out of reach until this screen's decision is made.
   const reachedScreen = ready ? Math.max(furthestScreen, screenIndex) : screenIndex;
   const model = homeModels.find((m) => m.id === state.modelId) ?? null;
-  const stage = resolveStage(state, screen.id);
+  // The review page's stage follows the decision open for editing.
+  const stage = resolveStage(state, isLast && openDecision ? openDecision : screen.id);
 
   function goToScreen(target: number) {
     setFurthestScreen((prev) => Math.max(prev, screenIndex, target));
+    setOpenDecision(null);
     setState((prev) => ({ ...prev, step: target }));
     // Each new question starts at the top: the page on phones, the panel on desktop.
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -182,29 +109,30 @@ export default function ConfigurePage() {
 
   const estimate = runningEstimate(state);
 
-  // Decisions from screens the buyer has already completed (all of them on the summary).
-  const decidedScreens = SCREENS.slice(0, screenIndex - 1);
-  const selectionItems: SelectionItem[] = decidedScreens.flatMap((s, i) => {
-    const v = selectionValue(state, s.id);
-    return v ? [{ ...v, screenIndex: i + 1 }] : [];
-  });
+  // Decisions from screens the buyer has already completed, as shortcuts back.
+  // The review page lists and edits every decision itself.
+  const currentTotal = calculateConfiguratorPrice(state).totalCost;
+  const selectionItems: SelectionItem[] = isLast
+    ? []
+    : SCREENS.slice(0, screenIndex - 1).flatMap((s, i) => {
+        const selection = selectionFor(state, s.id, currentTotal);
+        return selection
+          ? [{ label: selection.label, value: selection.value, swatchHex: selection.swatchHex, screenIndex: i + 1 }]
+          : [];
+      });
 
-  const renderScreen = () => {
-    switch (screen.chapter) {
-      case "land":
-        return <LotStep state={state} onChange={patch} />;
-      case "home":
-        return <ModelStep state={state} onChange={patch} />;
-      case "outside":
-        return <ExteriorStep state={state} onChange={patch} only={screen.id as ExteriorSection} />;
-      case "inside":
-        return <InteriorStep state={state} onChange={patch} only={screen.id} />;
-      case "ready":
-        return <SiteStep state={state} onChange={patch} only={screen.id as SiteSection} />;
-      case "cost":
-        return <SummaryStep state={state} onChange={patch} />;
-    }
-  };
+  const renderScreen = () =>
+    screen.chapter === "cost" ? (
+      <SummaryStep
+        state={state}
+        onChange={patch}
+        openDecision={openDecision}
+        onOpenDecision={setOpenDecision}
+        example={openDecision ? stage.example : null}
+      />
+    ) : (
+      <DecisionChoices screenId={screen.id} chapter={screen.chapter} state={state} onChange={patch} />
+    );
 
   return (
     // Desktop: the configurator is exactly one viewport tall. The stage photo
@@ -272,7 +200,8 @@ export default function ConfigurePage() {
                 )}
               </header>
 
-              {stage.example && <OptionExample example={stage.example} className="mb-8" />}
+              {/* The review page shows an open decision's example inside that decision. */}
+              {!isLast && stage.example && <OptionExample example={stage.example} className="mb-8" />}
 
               {renderScreen()}
 
