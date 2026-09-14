@@ -146,45 +146,26 @@ export function defaultState(): ConfiguratorState {
 // Displayed option deltas
 // ============================================
 
-// Per-sqft options (siding style, roof, flooring) are charged by area, so the
-// price shown on their tiles must be computed from the selected model — a flat
-// "+$1,500" label that doesn't match the charged amount destroys trust.
-export function displayedOptionDelta(
-  groupId: string,
-  optionId: string,
-  modelId: string | null,
-  flatDelta: number
-): number {
-  const model = homeModels.find((m) => m.id === modelId);
-  if (!model) return flatDelta;
-
-  if (groupId === "sidingStyle") {
-    const rate = PRICING_SHEET.siding[optionId as keyof PricingSheet["siding"]];
-    if (!rate) return flatDelta;
-    return Math.round(model.wallSqft * (rate.perSqft - PRICING_SHEET.siding.horizontal.perSqft));
-  }
-  if (groupId === "roofType") {
-    if (optionId !== "metal") return 0;
-    return Math.round(model.roofSqft * (PRICING_SHEET.roof.metal.perSqft - PRICING_SHEET.roof.shingles.perSqft));
-  }
-  if (groupId === "flooring") {
-    const rate = PRICING_SHEET.flooring[optionId as keyof PricingSheet["flooring"]];
-    if (!rate) return flatDelta;
-    return Math.round(model.sqft * (rate.perSqft - PRICING_SHEET.flooring.standard.perSqft));
-  }
-  return flatDelta;
+/**
+ * Returns a function giving the exact change in total cost if `patch` (exactly
+ * what selecting a choice applies) were applied to the buyer's current
+ * selections: calculateConfiguratorPrice on the patched state minus
+ * calculateConfiguratorPrice on the current state, contingency included since
+ * that's what the total charges. This is the only correct way to show an
+ * option row's "+$X" — a flat or per-sqft-only figure computed independently
+ * of the total (as this used to be) drifts from what the total actually
+ * changes by, e.g. by omitting the 10% contingency on the added amount.
+ *
+ * 0 when the patch doesn't change the total, which includes the choice
+ * already selected (its own patch reproduces the current state exactly), so
+ * that row shows "Included" with no arithmetic to keep in sync.
+ */
+export function priceDeltaFor(state: ConfiguratorState): (patch: Partial<ConfiguratorState>) => number {
+  const currentTotal = calculateConfiguratorPrice(state).totalCost;
+  return (patch) => calculateConfiguratorPrice({ ...state, ...patch }).totalCost - currentTotal;
 }
 
-/** Total added cost of the front porch: flat build cost + its added roof area. */
-export function porchDelta(state: ConfiguratorState): number {
-  const porchExt = extensionOptions.find((e) => e.id === "front-porch");
-  const roofRate = state.roofTypeId === "metal"
-    ? PRICING_SHEET.roof.metal.perSqft
-    : PRICING_SHEET.roof.shingles.perSqft;
-  return (porchExt?.mid ?? 18000) + Math.round(PRICING_SHEET.extensions["front-porch"].addedRoofSqft * roofRate);
-}
-
-/** The electric fireplace insert: one flat line item in the total, and the price its choice shows. */
+/** The electric fireplace insert: one flat line item in the total. */
 export const FIREPLACE_PRICE = 4500;
 
 // ============================================
@@ -248,6 +229,8 @@ export interface PriceBreakdownItem {
   label: string;
   amount: number;
   desc?: string;
+  /** True for the one row whose amount is an unsourced estimate figure — shown as "Est. $X". */
+  isEstimate?: boolean;
 }
 
 export interface ConfiguratorPriceResult {
@@ -269,7 +252,7 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
   const items: PriceBreakdownItem[] = [];
 
   // Base home price
-  items.push({ label: "Home — " + (model?.name ?? "Selected Model"), amount: basePrice });
+  items.push({ label: "Home — " + (model?.name ?? "Selected Model"), amount: basePrice, isEstimate: true });
 
   // Roof cost (per sqft)
   const porchRoofAdded = state.hasFrontPorch ? (PRICING_SHEET.extensions["front-porch"].addedRoofSqft) : 0;

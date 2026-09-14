@@ -1,7 +1,7 @@
 "use client";
 
 import { interiorGroups } from "@/lib/defaults";
-import { FIREPLACE_PRICE, monthlyDeltaFor } from "@/lib/pricing";
+import { monthlyDeltaFor, priceDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { fireplaceCopy } from "@/lib/copy";
 import { FIREPLACE_LABELS } from "@/lib/stage";
@@ -36,6 +36,7 @@ function FireplaceChoice({ state, onChange }: Pick<InteriorStepProps, "state" | 
   const withInsert = getOptionAsset("fireplace:with");
   const reserveThumb = !!(without || withInsert);
   const monthlyDelta = monthlyDeltaFor(state);
+  const priceDelta = priceDeltaFor(state);
   return (
     <ChoiceGroup legend="Fireplace">
       <ChoiceRow
@@ -43,7 +44,7 @@ function FireplaceChoice({ state, onChange }: Pick<InteriorStepProps, "state" | 
         value="without"
         label={FIREPLACE_LABELS.without}
         reason={fireplaceCopy.without}
-        price={<PriceDelta amount={0} />}
+        price={<PriceDelta amount={priceDelta({ hasFireplace: false })} />}
         monthlyDelta={monthlyDelta({ hasFireplace: false })}
         checked={!state.hasFireplace}
         onSelect={() => onChange({ hasFireplace: false })}
@@ -55,7 +56,7 @@ function FireplaceChoice({ state, onChange }: Pick<InteriorStepProps, "state" | 
         value="with"
         label={FIREPLACE_LABELS.with}
         reason={fireplaceCopy.with}
-        price={<PriceDelta amount={FIREPLACE_PRICE} />}
+        price={<PriceDelta amount={priceDelta({ hasFireplace: true })} />}
         monthlyDelta={monthlyDelta({ hasFireplace: true })}
         checked={state.hasFireplace}
         onSelect={() => onChange({ hasFireplace: true })}

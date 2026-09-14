@@ -4,6 +4,7 @@ import { calculateMortgage, formatCurrency } from "@/lib/calculator";
 import { calculateConfiguratorPrice } from "@/lib/pricing";
 import { lotOptions } from "@/lib/defaults";
 import type { ConfiguratorState } from "@/lib/pricing";
+import { estimateStatement } from "@/lib/copy";
 
 interface SummaryStepProps {
   state: ConfiguratorState;
@@ -33,7 +34,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
           </div>
           <div>
             <p className="text-gold font-semibold text-sm">Land + Home Bundle</p>
-            <p className="text-text-muted/70 text-xs">{lot.name} included · {lot.location}</p>
+            <p className="text-text-muted/70 text-xs">Includes {lot.name} · {lot.location}</p>
           </div>
           <p className="ml-auto font-bold text-gold text-lg tabular-nums">{formatCurrency(totalCost)}</p>
         </div>
@@ -51,7 +52,10 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
                 <p className="text-text-secondary text-sm">{item.label}</p>
                 {item.desc && <p className="text-text-muted/50 text-xs mt-0.5">{item.desc}</p>}
               </div>
-              <span className="text-white font-medium tabular-nums shrink-0">{formatCurrency(item.amount)}</span>
+              <span className="text-white font-medium tabular-nums shrink-0">
+                {item.isEstimate && "Est. "}
+                {formatCurrency(item.amount)}
+              </span>
             </div>
           ))}
         </div>
@@ -59,6 +63,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
           <span className="text-white font-bold">Total Estimated Cost</span>
           <span className="text-gold font-bold text-xl tabular-nums">{formatCurrency(totalCost)}</span>
         </div>
+        <p className="border-t border-border px-4 py-3 text-xs text-text-muted/70">{estimateStatement}</p>
       </div>
 
       {/* Mortgage estimator */}
@@ -70,7 +75,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-text-muted text-xs mb-1.5 block">Down Payment %</label>
-              <div className="flex items-center border border-border bg-input-bg">
+              <div className="focus-ring-within flex items-center border border-border bg-input-bg">
                 <input
                   type="number"
                   min={5}
@@ -91,7 +96,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
             </div>
             <div>
               <label className="text-text-muted text-xs mb-1.5 block">Interest Rate</label>
-              <div className="flex items-center border border-border bg-input-bg">
+              <div className="focus-ring-within flex items-center border border-border bg-input-bg">
                 <input
                   type="number"
                   min={1}
@@ -113,7 +118,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
             </div>
             <div>
               <label className="text-text-muted text-xs mb-1.5 block">Amortization</label>
-              <div className="flex items-center border border-border bg-input-bg">
+              <div className="focus-ring-within flex items-center border border-border bg-input-bg">
                 <input
                   type="number"
                   min={5}
@@ -167,10 +172,6 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
               Minimum down payment on this total is {formatCurrency(mortgage.minimumDownPayment)} — your down payment has been raised to meet it.
             </p>
           )}
-
-          <p className="text-text-muted/40 text-xs">
-            Estimates only. Speak with a mortgage specialist for your actual rate and qualification.
-          </p>
         </div>
       </div>
 
@@ -178,7 +179,7 @@ export default function SummaryStep({ state, onChange }: SummaryStepProps) {
       <div className="border border-border bg-bg-elevated p-6 text-center space-y-4">
         <div>
           <h2 className="font-display text-white text-xl mb-1">Ready to build?</h2>
-          <p className="text-text-muted text-sm">Reach out to our team and we&apos;ll turn this estimate into a real quote.</p>
+          <p className="text-text-muted text-sm">Reach out to our team and we&apos;ll help you plan the next step.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <a

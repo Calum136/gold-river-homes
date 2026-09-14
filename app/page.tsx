@@ -197,7 +197,7 @@ export default function Home() {
               {
                 step: "01",
                 title: "Choose Your Home",
-                desc: "Browse our model categories — mini, modular, traditional, or multi-story — and select the home that fits your lifestyle and budget.",
+                desc: "See our model categories — mini, modular, traditional, or multi-story — and select the home that fits your lifestyle and budget.",
               },
               {
                 step: "02",

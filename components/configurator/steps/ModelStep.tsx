@@ -32,10 +32,7 @@ export default function ModelStep({ state, onChange }: ModelStepProps) {
         const modelsInCat = homeModels.filter((m) => m.category === cat.id);
         return (
           <div key={cat.id}>
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className="font-display text-title text-text-primary">{cat.label}</h2>
-              <span className="shrink-0 font-accent text-figure-sm text-text-secondary">{cat.priceRange}</span>
-            </div>
+            <h2 className="font-display text-title text-text-primary">{cat.label}</h2>
             <p className="mb-4 mt-1 text-body-sm text-text-muted">{cat.description}</p>
 
             <div className="flex flex-col gap-2">
@@ -70,7 +67,8 @@ export default function ModelStep({ state, onChange }: ModelStepProps) {
                         <span className="text-body font-medium text-text-primary">{model.name}</span>
                         <RadioMark checked={selected} />
                       </span>
-                      <span className="flex flex-wrap items-baseline gap-x-3">
+                      <span className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-caption text-text-muted">Est.</span>
                         <span className="font-accent text-figure text-text-primary">{formatCurrency(model.price)}</span>
                         <MonthlyDelta amount={monthlyDelta(patch)} />
                       </span>

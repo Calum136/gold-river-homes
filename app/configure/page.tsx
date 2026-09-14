@@ -245,7 +245,10 @@ export default function ConfigurePage() {
         {/* The decision panel */}
         <section aria-labelledby="decision-question" className="flex flex-1 flex-col lg:min-h-0 lg:border-l lg:border-border">
           <div ref={panelRef} className="relative flex-1 lg:overflow-y-auto">
-            <div className="mx-auto w-full max-w-2xl px-4 pb-10 pt-8 sm:px-6 lg:px-10 lg:pt-10">
+            {/* Below lg the step nav is sticky, not part of the flex layout, so it
+                can cover the tail of this content unless padding reserves at least
+                its own height (about 88px) plus the iOS home-indicator inset. */}
+            <div className="mx-auto w-full max-w-2xl px-4 pb-[calc(88px+env(safe-area-inset-bottom)+1rem)] pt-8 sm:px-6 lg:px-10 lg:pb-10 lg:pt-10">
               <header className="mb-8">
                 {isChapterOpening ? (
                   // Where a chapter opens: its name large, its opener, then the question.

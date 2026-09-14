@@ -3,12 +3,22 @@ import type { ReactNode } from "react";
 import { formatCurrency } from "@/lib/calculator";
 import type { VisualAsset } from "@/lib/visual-assets";
 
-/** "Included" for no added cost, otherwise "+$1,200" set as a figure. */
+/**
+ * "Included" for no added cost (the choice already selected shows this, since
+ * its own delta is 0). Otherwise the exact change in the total this choice
+ * would cause — "+$1,200" or "−$1,200" — with a quiet "est." marker, since
+ * every figure here is an estimate, not a quote.
+ */
 export function PriceDelta({ amount }: { amount: number }) {
-  return amount === 0 ? (
-    <span className="text-caption text-text-muted">Included</span>
-  ) : (
-    <span className="font-accent text-figure-sm text-text-primary">+{formatCurrency(amount)}</span>
+  if (amount === 0) {
+    return <span className="text-caption text-text-muted">Included</span>;
+  }
+  return (
+    <span className="whitespace-nowrap font-accent text-figure-sm tabular-nums text-text-primary">
+      {amount > 0 ? "+" : "−"}
+      {formatCurrency(Math.abs(amount))}{" "}
+      <span className="font-body text-caption font-normal normal-case tracking-normal text-text-muted">est.</span>
+    </span>
   );
 }
 
@@ -26,6 +36,15 @@ export function MonthlyDelta({ amount }: { amount: number | null | undefined }) 
       {formatCurrency(Math.abs(amount))}
       <span aria-hidden>/mo</span>
       <span className="sr-only"> a month</span>
+    </span>
+  );
+}
+
+/** A quiet caption-size label beside a choice or card, e.g. "Supreme standard" or "Example lot". */
+export function Tag({ children }: { children: ReactNode }) {
+  return (
+    <span className="shrink-0 self-start border border-border px-1.5 py-0.5 text-caption uppercase tracking-eyebrow text-text-muted">
+      {children}
     </span>
   );
 }
@@ -91,6 +110,8 @@ interface ChoiceRowProps {
   label: string;
   /** The approved one-sentence reason this choice matters, shown in full under the label. */
   reason?: string;
+  /** Quiet caption-size label next to the name, e.g. "Supreme standard". */
+  tag?: string;
   /** Right-aligned price, e.g. <PriceDelta amount={1200} />. */
   price?: ReactNode;
   /** Change in the estimated monthly payment if this row were chosen; see MonthlyDelta. */
@@ -116,6 +137,7 @@ export default function ChoiceRow({
   value,
   label,
   reason,
+  tag,
   price,
   monthlyDelta,
   checked,
@@ -175,6 +197,7 @@ export default function ChoiceRow({
               />
             )}
             {label}
+            {tag && <Tag>{tag}</Tag>}
           </span>
           {(price || !!monthlyDelta) && (
             <span className="flex shrink-0 flex-col items-end tabular-nums">

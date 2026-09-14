@@ -8,7 +8,7 @@ import { landSituationCopy } from "@/lib/copy";
 import { monthlyDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { getLotAsset } from "@/lib/visual-assets";
-import ChoiceRow, { ChoiceGroup, MonthlyDelta, RadioMark, choiceRowClass } from "@/components/configurator/ui/ChoiceRow";
+import ChoiceRow, { ChoiceGroup, MonthlyDelta, RadioMark, Tag, choiceRowClass } from "@/components/configurator/ui/ChoiceRow";
 
 interface LotStepProps {
   state: ConfiguratorState;
@@ -42,7 +42,7 @@ export default function LotStep({ state, onChange }: LotStepProps) {
         <ChoiceRow
           name="land-situation"
           value="gold-river"
-          label="Browse our lots"
+          label="See example lots"
           reason={landSituationCopy["gold-river"]}
           monthlyDelta={monthlyDelta(BROWSE_LOTS)}
           checked={situation === "gold-river"}
@@ -61,7 +61,7 @@ export default function LotStep({ state, onChange }: LotStepProps) {
 
       {situation === "gold-river" && (
         <fieldset className="min-w-0">
-          <legend className="sr-only">Available lots</legend>
+          <legend className="sr-only">Example lots</legend>
           <div className="flex flex-col gap-2">
             {lotOptions.map((lot) => {
               const selected = state.selectedLotId === lot.id;
@@ -93,14 +93,19 @@ export default function LotStep({ state, onChange }: LotStepProps) {
 
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="flex items-start justify-between gap-3">
-                      <span className="text-body font-medium text-text-primary">{lot.name}</span>
+                      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-body font-medium text-text-primary">{lot.name}</span>
+                        <Tag>Example lot</Tag>
+                      </span>
                       <RadioMark checked={selected} />
                     </span>
-                    <span className="flex flex-wrap items-baseline gap-x-3">
+                    <span className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-caption text-text-muted">Example price</span>
                       <span className="font-accent text-figure text-text-primary">{formatCurrency(lot.price)}</span>
                       <MonthlyDelta amount={monthlyDelta(patch)} />
                     </span>
                     <span className="text-body-sm text-text-secondary">{lot.location}</span>
+                    <span className="mt-1 text-caption uppercase tracking-eyebrow text-text-muted">Example values</span>
                     <span className="font-accent text-figure-sm uppercase tracking-wide text-text-secondary">
                       {lot.acreage} acres · {lot.widthFt} × {lot.depthFt} ft
                     </span>

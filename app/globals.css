@@ -76,12 +76,22 @@ body {
   font-family: var(--font-body);
 }
 
-/* Keyboard focus: one visible ring everywhere. focus-ring-within goes on a
-   row or card that wraps a visually hidden native input. */
+/* Keyboard focus: one visible gold ring everywhere. focus-ring-within goes on
+   a row or card that wraps a visually hidden native input (a radio row), so
+   the ring shows on the row instead of the 1px hidden control.
+   transition-property is reset here (dropping outline-color) because rows
+   also carry Tailwind's transition-colors, whose transition-property list
+   includes outline-color: animating outline-color from its unset value
+   (currentColor, i.e. the row's own text colour) can render stuck mid-fade —
+   the ring showing in the text colour instead of gold — depending on when the
+   browser is able to tick the animation. A focus indicator should appear
+   instantly regardless, so it's excluded from the transition rather than
+   timed around. */
 @utility focus-ring {
   &:focus-visible {
     outline: 2px solid var(--gold-bright);
     outline-offset: 2px;
+    transition-property: color, background-color, border-color;
   }
 }
 
@@ -89,6 +99,7 @@ body {
   &:has(:focus-visible) {
     outline: 2px solid var(--gold-bright);
     outline-offset: 2px;
+    transition-property: color, background-color, border-color;
   }
 }
 

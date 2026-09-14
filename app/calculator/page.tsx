@@ -229,12 +229,9 @@ export default function CalculatorPage() {
                     <h4 className={`font-medium text-sm mb-1 ${selectedCategory === cat.id ? "text-gold" : "text-text-white"}`}>
                       {cat.label}
                     </h4>
-                    <p className="text-text-muted text-xs leading-snug mb-2">
+                    <p className="text-text-muted text-xs leading-snug">
                       {cat.description}
                     </p>
-                    <span className={`text-xs font-semibold tabular-nums ${selectedCategory === cat.id ? "text-gold" : "text-text-muted"}`}>
-                      {cat.priceRange}
-                    </span>
                   </button>
                 ))}
               </div>

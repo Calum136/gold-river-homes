@@ -1,9 +1,12 @@
 import { isOptionAvailable } from "@/lib/defaults";
 import type { OptionItem } from "@/lib/defaults";
-import { displayedOptionDelta, monthlyDeltaFor } from "@/lib/pricing";
+import { priceDeltaFor, monthlyDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { getOptionAsset } from "@/lib/visual-assets";
 import ChoiceRow, { ChoiceGroup, PriceDelta } from "./ChoiceRow";
+
+/** True for the options transcribed from Supreme's 2026 standard spec sheets. */
+const isSupremeStandard = (opt: OptionItem) => opt.description?.endsWith("Supreme's standard.") ?? false;
 
 /** State fields that hold the id of one option from a data group. */
 export type OptionStateKey =
@@ -39,6 +42,7 @@ interface OptionRowsProps {
 export default function OptionRows({ groupId, legend, showLegend, options, state, stateKey, onChange }: OptionRowsProps) {
   const thumbs = options.map((opt) => getOptionAsset(`${groupId}:${opt.id}`));
   const reserveThumb = options.some((opt, i) => !!thumbs[i] || !!opt.swatchHex);
+  const priceDelta = priceDeltaFor(state);
   const monthlyDelta = monthlyDeltaFor(state);
 
   return (
@@ -52,7 +56,8 @@ export default function OptionRows({ groupId, legend, showLegend, options, state
             value={opt.id}
             label={opt.label}
             reason={opt.whyItMatters}
-            price={<PriceDelta amount={displayedOptionDelta(groupId, opt.id, state.modelId, opt.priceDelta)} />}
+            tag={isSupremeStandard(opt) ? "Supreme standard" : undefined}
+            price={<PriceDelta amount={priceDelta(patch)} />}
             monthlyDelta={monthlyDelta(patch)}
             checked={state[stateKey] === opt.id}
             onSelect={() => onChange(patch)}

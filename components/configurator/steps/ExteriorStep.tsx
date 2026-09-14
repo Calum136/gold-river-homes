@@ -1,7 +1,7 @@
 "use client";
 
 import { exteriorGroups, sidingColors, metalRoofColors } from "@/lib/defaults";
-import { monthlyDeltaFor, porchDelta } from "@/lib/pricing";
+import { monthlyDeltaFor, priceDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { porchCopy } from "@/lib/copy";
 import { PORCH_LABELS } from "@/lib/stage";
@@ -76,6 +76,7 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
       const withPorch = getOptionAsset("porch:with");
       const reserveThumb = !!(without || withPorch);
       const monthlyDelta = monthlyDeltaFor(state);
+      const priceDelta = priceDeltaFor(state);
       return (
         <ChoiceGroup legend="Front porch">
           <ChoiceRow
@@ -83,7 +84,7 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
             value="without"
             label={PORCH_LABELS.without}
             reason={porchCopy.without}
-            price={<PriceDelta amount={0} />}
+            price={<PriceDelta amount={priceDelta({ hasFrontPorch: false })} />}
             monthlyDelta={monthlyDelta({ hasFrontPorch: false })}
             checked={!state.hasFrontPorch}
             onSelect={() => onChange({ hasFrontPorch: false })}
@@ -95,7 +96,7 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
             value="with"
             label={PORCH_LABELS.with}
             reason={porchCopy.with}
-            price={<PriceDelta amount={porchDelta(state)} />}
+            price={<PriceDelta amount={priceDelta({ hasFrontPorch: true })} />}
             monthlyDelta={monthlyDelta({ hasFrontPorch: true })}
             checked={state.hasFrontPorch}
             onSelect={() => onChange({ hasFrontPorch: true })}
