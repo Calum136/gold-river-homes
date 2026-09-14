@@ -1,10 +1,13 @@
 "use client";
 
 import type { ConfiguratorState } from "@/lib/pricing";
+import type { SavedConfiguration } from "@/lib/saved-configs";
 import type { StageExample } from "@/lib/stage";
 import ReviewDecisions from "@/components/configurator/review/ReviewDecisions";
 import CostBreakdown from "@/components/configurator/review/CostBreakdown";
 import MortgageEstimate from "@/components/configurator/review/MortgageEstimate";
+import SavedConfigurations from "@/components/configurator/review/SavedConfigurations";
+import ShareActions from "@/components/configurator/review/ShareActions";
 
 interface SummaryStepProps {
   state: ConfiguratorState;
@@ -14,11 +17,36 @@ interface SummaryStepProps {
   onOpenDecision: (screenId: string | null) => void;
   /** Example photo of the open decision's selected choice. */
   example: StageExample | null;
+  /** Named saves in this browser, newest first. */
+  saves: SavedConfiguration[];
+  activeSaveId: string | null;
+  /** The configuration's saved name, if it has one. */
+  activeName: string | null;
+  onSaved: (saved: SavedConfiguration) => void;
+  onLoadSave: (saved: SavedConfiguration) => void;
+  onDeletedSave: (id: string) => void;
+  shareLink: string;
+  enquiryHref: string;
 }
 
 // The final page: every decision editable in place, the full cost breakdown
-// with ranges, and the monthly payment on the buyer's own terms.
-export default function SummaryStep({ state, onChange, openDecision, onOpenDecision, example }: SummaryStepProps) {
+// with ranges, the monthly payment on the buyer's own terms, and the ending:
+// a named save, a share link, the printable spec sheet and the enquiry email.
+export default function SummaryStep({
+  state,
+  onChange,
+  openDecision,
+  onOpenDecision,
+  example,
+  saves,
+  activeSaveId,
+  activeName,
+  onSaved,
+  onLoadSave,
+  onDeletedSave,
+  shareLink,
+  enquiryHref,
+}: SummaryStepProps) {
   return (
     <div className="space-y-14">
       <ReviewDecisions
@@ -33,27 +61,23 @@ export default function SummaryStep({ state, onChange, openDecision, onOpenDecis
 
       <MortgageEstimate state={state} onChange={onChange} />
 
-      {/* CTA */}
-      <div className="border border-border bg-bg-elevated p-6 text-center space-y-4">
-        <div>
-          <h2 className="font-display text-white text-xl mb-1">Ready to build?</h2>
-          <p className="text-text-muted text-sm">Reach out to our team and we&apos;ll help you plan the next step.</p>
+      <section aria-labelledby="keep-it-heading" className="border-t border-border pt-10">
+        <h2 id="keep-it-heading" className="font-display text-title text-text-primary">
+          Keep it, share it
+        </h2>
+        <div className="mt-6 space-y-10">
+          <SavedConfigurations
+            state={state}
+            saves={saves}
+            activeSaveId={activeSaveId}
+            activeName={activeName}
+            onSaved={onSaved}
+            onLoad={onLoadSave}
+            onDeleted={onDeletedSave}
+          />
+          <ShareActions shareLink={shareLink} enquiryHref={enquiryHref} />
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a
-            href="tel:9022733033"
-            className="focus-ring flex items-center justify-center gap-2 bg-gold text-white font-semibold px-6 py-3 hover:bg-gold-bright transition-colors text-sm"
-          >
-            Call 902-273-3033
-          </a>
-          <a
-            href="mailto:info@goldriverhomes.ca?subject=Home%20Quote%20Request"
-            className="focus-ring flex items-center justify-center gap-2 border border-gold text-gold font-semibold px-6 py-3 hover:bg-gold/10 transition-colors text-sm"
-          >
-            Email Us
-          </a>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

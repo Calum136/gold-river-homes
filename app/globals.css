@@ -116,6 +116,21 @@ body {
   }
 }
 
+/* Print. From the configurator only its spec sheet prints
+   (components/configurator/SpecSheet.tsx), sized to fit one Letter page inside
+   these margins, dark on white. */
+@page {
+  size: letter;
+  margin: 0.45in;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

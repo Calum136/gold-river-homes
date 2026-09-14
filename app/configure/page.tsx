@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { calculateConfiguratorPrice, defaultState, runningEstimate } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
@@ -11,6 +11,14 @@ import { stageNote } from "@/lib/copy";
 import { SCREENS, chapterForScreen } from "@/lib/screens";
 import { selectionFor } from "@/lib/selections";
 import { homeModels } from "@/lib/defaults";
+import { enquiryMailto } from "@/lib/enquiry";
+import {
+  getSavedConfigurations,
+  getServerSavedConfigurations,
+  subscribeSavedConfigurations,
+} from "@/lib/saved-configs";
+import type { SavedConfiguration } from "@/lib/saved-configs";
+import { hasShareHash, readShareHash, sameConfiguration, shareUrl } from "@/lib/share";
 
 import HomeVisualizer from "@/components/configurator/HomeVisualizer";
 import StageChrome from "@/components/configurator/StageChrome";
@@ -20,11 +28,23 @@ import type { SelectionItem } from "@/components/configurator/SelectionsSummary"
 import ChapterNav from "@/components/configurator/ChapterNav";
 import DecisionChoices from "@/components/configurator/DecisionChoices";
 import SummaryStep from "@/components/configurator/steps/SummaryStep";
+import SpecSheet from "@/components/configurator/SpecSheet";
 
 // state.step is a SCREEN index (1-based) into SCREENS (lib/screens.ts): one
 // decision per screen. Bump the version whenever ConfiguratorState changes
 // shape or screens reorder.
 const STORAGE_KEY = "grh-configurator-v2";
+
+/** A restored configuration, kept on a screen that exists. */
+function withValidStep(state: ConfiguratorState): ConfiguratorState {
+  return { ...state, step: Math.min(Math.max(1, state.step), SCREENS.length) };
+}
+
+// The configurator's own address, for share links. It doesn't change while the
+// page is open, and the server has none.
+const subscribeNever = () => () => {};
+const getPageUrl = () => `${window.location.origin}${window.location.pathname}`;
+const getServerPageUrl = () => "";
 
 function canAdvance(state: ConfiguratorState, screenId: string): boolean {
   switch (screenId) {
@@ -41,39 +61,69 @@ function canAdvance(state: ConfiguratorState, screenId: string): boolean {
 }
 
 export default function ConfigurePage() {
-  const [state, setState] = useState<ConfiguratorState>(defaultState);
+  // The untouched first state is never persisted, so mounting (or React's
+  // development double mount) can't overwrite a saved configuration before
+  // it has been read.
+  const [initialState] = useState<ConfiguratorState>(defaultState);
+  const [state, setState] = useState<ConfiguratorState>(initialState);
   // Furthest screen reached this visit, so chapters the buyer has already been
   // through stay one click away after going back. A reload starts from the
   // saved screen.
   const [furthestScreen, setFurthestScreen] = useState(1);
   // On the review page, the decision open for editing. The stage shows it.
   const [openDecision, setOpenDecision] = useState<string | null>(null);
+  // The named save the buyer last saved or loaded this visit.
+  const [activeSaveId, setActiveSaveId] = useState<string | null>(null);
+  const saves = useSyncExternalStore(subscribeSavedConfigurations, getSavedConfigurations, getServerSavedConfigurations);
+  const pageUrl = useSyncExternalStore(subscribeNever, getPageUrl, getServerPageUrl);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // A refresh shouldn't cost the buyer their whole configuration.
+  // On load a share link in the URL takes precedence over the configuration
+  // saved in this browser, and a link that can't be read is ignored. Either
+  // way, a refresh shouldn't cost the buyer their whole configuration.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = sanitizeState(JSON.parse(saved));
-        parsed.step = Math.min(Math.max(1, parsed.step), SCREENS.length);
-        // One-time hydration from localStorage on mount (empty dep array — this
-        // doesn't cascade). localStorage isn't available during server rendering,
-        // so this can't run during the initial render without a hydration mismatch.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setState(parsed);
+    let restored = readShareHash(window.location.hash);
+    if (!restored) {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) restored = sanitizeState(JSON.parse(saved));
+      } catch {
+        // Corrupt/blocked storage — start fresh.
       }
-    } catch {
-      // Corrupt/blocked storage — start fresh.
     }
+    if (restored) {
+      // One-time hydration on mount (empty dep array — this doesn't cascade).
+      // Neither the URL hash nor localStorage is available during server
+      // rendering, so this can't run during the initial render without a
+      // hydration mismatch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setState(withValidStep(restored));
+    }
+
+    // A share link pasted into a tab that's already open changes only the hash.
+    function onHashChange() {
+      const fromLink = readShareHash(window.location.hash);
+      if (!fromLink) return;
+      setState(withValidStep(fromLink));
+      setActiveSaveId(null);
+      setOpenDecision(null);
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
   useEffect(() => {
+    if (state === initialState) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       // Storage unavailable (private mode) — configurator still works, just won't persist.
     }
-  }, [state]);
+    // Once a share link's configuration is saved here, the link leaves the
+    // address bar, so a reload keeps later changes instead of reapplying it.
+    if (hasShareHash(window.location.hash)) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }, [state, initialState]);
 
   function patch(updates: Partial<ConfiguratorState>) {
     setState((prev) => ({ ...prev, ...updates }));
@@ -121,6 +171,21 @@ export default function ConfigurePage() {
           : [];
       });
 
+  // The ending, on the review page. The configuration's name is the save last
+  // saved or loaded this visit, or a save that matches it exactly (after a
+  // reload, say).
+  const activeSave = isLast
+    ? saves.find((s) => s.id === activeSaveId) ?? saves.find((s) => sameConfiguration(s.state, state)) ?? null
+    : null;
+  const shareLink = isLast ? shareUrl(pageUrl, state) : "";
+  const enquiryHref = isLast ? enquiryMailto(state, activeSave?.name, shareLink) : "";
+
+  function loadSave(saved: SavedConfiguration) {
+    setState({ ...saved.state, step: SCREENS.length });
+    setActiveSaveId(saved.id);
+    setOpenDecision(null);
+  }
+
   const renderScreen = () =>
     screen.chapter === "cost" ? (
       <SummaryStep
@@ -129,6 +194,14 @@ export default function ConfigurePage() {
         openDecision={openDecision}
         onOpenDecision={setOpenDecision}
         example={openDecision ? stage.example : null}
+        saves={saves}
+        activeSaveId={activeSaveId}
+        activeName={activeSave?.name ?? null}
+        onSaved={(saved) => setActiveSaveId(saved.id)}
+        onLoadSave={loadSave}
+        onDeletedSave={(id) => setActiveSaveId((prev) => (prev === id ? null : prev))}
+        shareLink={shareLink}
+        enquiryHref={enquiryHref}
       />
     ) : (
       <DecisionChoices screenId={screen.id} chapter={screen.chapter} state={state} onChange={patch} />
@@ -138,9 +211,10 @@ export default function ConfigurePage() {
     // Desktop: the configurator is exactly one viewport tall. The stage photo
     // never scrolls; the decision panel scrolls on its own. Phone: one column
     // (photo, its caption bar, the panel) with navigation stuck to the bottom.
-    <div className="flex min-h-dvh flex-col bg-bg-primary lg:h-dvh lg:overflow-hidden">
+    // Print: the app is hidden and only the spec sheet prints.
+    <div className="flex min-h-dvh flex-col bg-bg-primary lg:h-dvh lg:overflow-hidden print:block print:min-h-0 print:bg-white">
       {/* Slim header */}
-      <header className="shrink-0 border-b border-border bg-bg-secondary">
+      <header className="shrink-0 border-b border-border bg-bg-secondary print:hidden">
         <div className="flex h-14 items-center gap-3 px-4 lg:gap-6 lg:px-6">
           <Link href="/" className="focus-ring shrink-0 font-display text-base font-bold tracking-wide text-gold sm:text-lg">
             Gold River Homes
@@ -157,7 +231,7 @@ export default function ConfigurePage() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
+      <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row print:hidden">
         {/* The stage: the home photo with nothing on it, its chrome underneath */}
         <section aria-label="Home photo" className="flex shrink-0 flex-col lg:w-[64%]">
           <div className="relative aspect-[4/3] w-full sm:aspect-[16/10] lg:aspect-auto lg:min-h-0 lg:flex-1">
@@ -175,8 +249,9 @@ export default function ConfigurePage() {
           <div ref={panelRef} className="relative flex-1 lg:overflow-y-auto">
             {/* Below lg the step nav is sticky, not part of the flex layout, so it
                 can cover the tail of this content unless padding reserves at least
-                its own height (about 88px) plus the iOS home-indicator inset. */}
-            <div className="mx-auto w-full max-w-2xl px-4 pb-[calc(88px+env(safe-area-inset-bottom)+1rem)] pt-8 sm:px-6 lg:px-10 lg:pb-10 lg:pt-10">
+                its own height (about 88px, up to about 105px when its mortgage terms
+                wrap to a second line) plus the iOS home-indicator inset. */}
+            <div className="mx-auto w-full max-w-2xl px-4 pb-[calc(112px+env(safe-area-inset-bottom)+1rem)] pt-8 sm:px-6 lg:px-10 lg:pb-10 lg:pt-10">
               <header className="mb-8">
                 {isChapterOpening ? (
                   // Where a chapter opens: its name large, its opener, then the question.
@@ -268,17 +343,21 @@ export default function ConfigurePage() {
                   Next →
                 </button>
               ) : (
+                // The full enquiry email. Phones show "Email" to leave the running
+                // figures room; the accessible name is always "Email Gold River".
                 <a
-                  href="mailto:info@goldriverhomes.ca?subject=Home%20Quote%20Request"
+                  href={enquiryHref}
                   className="focus-ring shrink-0 bg-gold px-5 py-2.5 text-body-sm font-semibold text-white transition-colors hover:bg-gold-bright sm:px-6"
                 >
-                  Get a Quote
+                  Email<span className="sr-only sm:not-sr-only"> Gold River</span>
                 </a>
               )}
             </div>
           </nav>
         </section>
       </div>
+
+      {isLast && <SpecSheet state={state} shareLink={shareLink} savedName={activeSave?.name ?? null} />}
 
       {/* Focus stays on Next so the buyer can keep going; screen readers hear the new question. */}
       <p aria-live="polite" className="sr-only">
