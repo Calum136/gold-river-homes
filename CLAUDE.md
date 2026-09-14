@@ -3,9 +3,9 @@
 
 @AGENTS.md
 
-## Status: ACTIVE — Premium configurator overhaul pushed to GitHub `main` on Sep 13, 2026 (b1f9432): photo-first stage, named chapters, price + monthly payment + reason on every choice.
-## Next: (1) Label the five made-up lots as examples and mark model/option prices as estimates; fix the porch + metal roof price row (C2b). The lots still read like real listings. (2) Review-and-refine page, share link, printable spec sheet, full enquiry email (B4/B5). (3) Owner sends the Supreme data request, including written permission for Supreme's photos (`docs/visualization/03-asset-pipeline.md`).
-## Completion: ~70% of the premium handoff (D, A (photo-first), B1–B3, C1 done; B4, B5, C2b outstanding)
+## Status: ACTIVE — Premium configurator handoff complete and live on `main` (5eda7d5, Sep 14, 2026): photo-first stage, named chapters, price + monthly payment + reason on every choice, example-lot and estimate labels, review-and-refine page, named saves, share link, printable spec sheet, enquiry email.
+## Next: (1) Calum's manual pass on the live site (400 px, keyboard-only, print preview, share link in a private window); the final stage was verified by build and scripts, not in a browser. (2) Owner sends the Supreme data request, including written permission for Supreme's photos (`docs/visualization/03-asset-pipeline.md`). (3) Swap in real lots, model prices and the factory option price list when Gold River supplies them, and fill the 22 photo gaps (`npm run assets:report`).
+## Completion: All premium handoff workstreams shipped; remaining items are blocked on owner data (lots, prices, options, photo permission)
 
 - **Client:** Gold River Homes (Supreme Homes retailer)
 - **Location:** 219 NS-12, Chester Basin, NS B0J 1K0
@@ -73,6 +73,23 @@ docs/
 8. Calum reviews UI himself at the localhost link; don't send screenshots.
 
 ## Session Notes
+- **Sep 14, 2026 (handoff finished, live on main 5eda7d5):** Each stage was pushed after lint, `tsc --noEmit`, build and grep checks, under Calum's standing OK.
+  - **C2b labels (c5d93f1).**
+    - Lots renamed to clearly labelled examples ("Example: wooded lot near Chester Basin", "Example price") with one neutral description.
+    - Model prices read "Est.", and upgrades carry an "est." marker.
+    - Category price ranges and marketing claims removed.
+    - Row prices are now exact total differences (`priceDeltaFor`); porch plus metal roof had been about $540 low.
+    - "Supreme standard" tag added; the estimate statement appears once.
+    - Phone bottom padding added.
+    - Focus ring fixed: `outline-color` was being transitioned, so the ring showed the text colour instead of gold.
+  - **B4 review page (f997666).** The final screen is a review-and-refine page: decisions grouped by chapter, editable inline against the live stage, cost ranges, and the total shown as a range.
+  - **B5 ending (5eda7d5).**
+    - Named saves (`grh-saved-configs-v1`).
+    - Share link `#c=v1.…` with a checksum (`lib/share.ts`); 2,000 random states round-tripped exactly and damaged links are rejected.
+    - Print-stylesheet spec sheet.
+    - Enquiry mailto kept under 1,800 characters (`lib/enquiry.ts`).
+  - **Verification gap.** The dev server was stopped at Calum's request, so the final stage was verified by build and scripts, not in a browser. Calum will check the live site by hand.
+  - **Unapproved wording.** Minor UI labels not in the approved copy doc: "Your decisions", "Keep it, share it", and the email greeting ("Hello Gold River Homes, I'd like to talk about this home configuration.").
 - **Sep 12–13, 2026 (premium configurator overhaul, pushed to main b1f9432):** Worked from `docs/handoff-premium-experience.md`, with Calum deciding at each step through questions.
   - **Direction change.** Calum rejected the handoff's drawn-elevation plan ("the drawings look like a child's drawing"), so the main visual is now real photography, never tinted or edited.
   - **Photo system.** 81 approved photos with a provenance manifest (`lib/visual-assets.json`): Supreme exteriors and rooms, cropped from web sheets where needed, plus Unsplash examples for options and example lots. A resolver (`lib/stage.ts`) picks the stage photo and the captioned option example. Deleted ParametricHouse, RoomVisualizer, LotBackdrop, BaliPhotoConfigurator, option-thumbs and the siding tint.
