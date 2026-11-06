@@ -85,6 +85,9 @@ docs/
     - **Lag cause.** The Poly Haven pine is 142k triangles; lot trees are now baked cut-outs.
     - **Cabinet colours.** New field `cabinetColorId`; prices are placeholders until Matt's pricing rules arrive.
     - **Testing note.** Calum runs his own dev server on port 3000 from this folder, so don't start a second one.
+  - **Round 3.** All fixed; see the round 3 table in the build notes.
+    - **What changed.** Foundation sets the ground level (crawlspace lifts the house); dining set removed; smooth see-through ground; landscaping drawn in code (`landscape.ts`); door hinges and view angles; flooring covers the kitchen; room detail in view (`details.ts`); zoom in Dollhouse and Top down; faint step arrows replace scroll-to-step; one disclaimer; "Back to [step]" replaces Tour.
+    - **Open question for Matt.** Kitchen flooring vs Supreme's spec wording, which still says vinyl tile in the kitchen.
 - **Sep 14, 2026 (handoff finished, live on main 5eda7d5):** Each stage was pushed after lint, `tsc --noEmit`, build and grep checks, under Calum's standing OK.
   - **C2b labels (c5d93f1).**
     - Lots renamed to clearly labelled examples ("Example: wooded lot near Chester Basin", "Example price") with one neutral description.

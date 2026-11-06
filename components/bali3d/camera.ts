@@ -64,8 +64,10 @@ export const PRESETS: ViewPreset[] = [
   { id: "top", label: "Top down", pose: pose(37, 15.9, 150, 37, 16, 0, 26), cutaway: true },
   { id: "kitchen", label: "Kitchen", pose: STOPS.cabinetStyle },
   { id: "living", label: "Living", pose: STOPS.paintPackage },
-  { id: "bedroom", label: "Main bedroom", pose: pose(18.0, 1.6, 5.2, 11.0, 13.0, 2.6, 64) },
-  { id: "bath", label: "Bathroom", pose: pose(65.9, 14.9, 5.3, 72.5, 11.0, 2.2, 72) },
+  // From the front corner by the closet, so the open bedroom door is behind the camera's right shoulder.
+  { id: "bedroom", label: "Main bedroom", pose: pose(8.8, 2.4, 5.2, 15.6, 13.2, 2.6, 66) },
+  // Just inside the doorway, the open door alongside rather than in front.
+  { id: "bath", label: "Bathroom", pose: pose(66.0, 12.4, 5.3, 73.2, 11.3, 2.2, 78) },
 ];
 
 /** The plan sheet, straight down through a long lens, fitted to the viewport. */
@@ -209,3 +211,6 @@ export function makeRoute(a: Pose, b: Pose): Route {
 export function isInside(v: THREE.Vector3): boolean {
   return zoneOf(v) !== "out";
 }
+
+/** Which part of the house a point is in: "out", "great", "hall", "br1", "br2", "br3" or "bath1". */
+export const zoneAt = (v: THREE.Vector3): string => zoneOf(v);

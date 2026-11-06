@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { SCREENS } from "@/lib/screens";
@@ -8,14 +8,13 @@ import type { BaliEngine } from "./engine";
 import { GUIDE } from "./guide";
 
 // ============================================
-// The Bali's 3D stage: the scene fills the stage box, with the view buttons
-// (Google Maps style) and the scroll hint on top. three.js loads only when a
-// buyer picks the Bali, and if WebGL isn't available the photo stage shows
-// instead.
+// The Bali's 3D stage: the scene fills the stage box. On top of it: arrows to
+// step back and forward (faint until hovered), a marker on what the current
+// step changes, and view buttons (Google Maps style). three.js loads only when
+// a buyer picks the Bali; without WebGL the photo stage shows instead.
 // ============================================
 
-const VIEW_BUTTONS: { id: string | null; label: string }[] = [
-  { id: null, label: "Tour" },
+const VIEW_BUTTONS: { id: string; label: string }[] = [
   { id: "aerial", label: "Aerial" },
   { id: "front", label: "Front" },
   { id: "back", label: "Back" },
@@ -27,48 +26,34 @@ const VIEW_BUTTONS: { id: string | null; label: string }[] = [
   { id: "bath", label: "Bathroom" },
 ];
 
-// The wheel drives the tour only in the desktop layout, where the page itself
-// never scrolls. On narrower screens the stage sits above the panel and the
-// wheel must keep scrolling the page.
-const DESKTOP = "(min-width: 1024px)";
-const subscribeDesktop = (cb: () => void) => {
-  const mq = window.matchMedia(DESKTOP);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-};
-const getDesktop = () => window.matchMedia(DESKTOP).matches;
-const getServerDesktop = () => false;
+const ZOOMABLE = new Set(["dollhouse", "top"]);
 
 interface BaliStageProps {
   state: ConfiguratorState;
   /** The screen (or, on the review page, the open decision) the camera frames. */
   focusId: string;
-  /** Scrolling the tour asks for another screen (1-based, like state.step). */
-  onStepRequest: (screen: number) => void;
-  /** Furthest screen scrolling may reach (1-based). */
-  maxScreen: number;
-  scrollEnabled: boolean;
+  /** Step arrows: undefined hides an arrow. */
+  onPrev?: () => void;
+  onNext?: () => void;
   /** Shown if WebGL can't start. */
   fallback: ReactNode;
 }
 
-export default function BaliStage({ state, focusId, onStepRequest, maxScreen, scrollEnabled: allowScroll, fallback }: BaliStageProps) {
-  const desktop = useSyncExternalStore(subscribeDesktop, getDesktop, getServerDesktop);
-  const scrollEnabled = allowScroll && desktop;
+export default function BaliStage({ state, focusId, onPrev, onNext, fallback }: BaliStageProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const calloutRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<BaliEngine | null>(null);
-  const latest = useRef({ state, focusId, onStepRequest, maxScreen, scrollEnabled });
+  const latest = useRef({ state, focusId });
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [preset, setPreset] = useState<string | null>(null);
-  const [scrolledOnce, setScrolledOnce] = useState(false);
   const guide = GUIDE[focusId];
   const anchor = guide?.anchor?.(state) ?? null;
   const anchorKey = anchor ? anchor.join(",") : "";
+  const stepTitle = guide?.label ?? SCREENS.find((s) => s.id === focusId)?.title ?? "this step";
 
   useEffect(() => {
-    latest.current = { state, focusId, onStepRequest, maxScreen, scrollEnabled };
+    latest.current = { state, focusId };
   });
 
   // Create the engine once; it lives as long as the stage does.
@@ -81,10 +66,6 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
         try {
           engine = new BaliEngine(hostRef.current, {
             screenIds: SCREENS.map((s) => s.id),
-            onStepRequest: (index) => latest.current.onStepRequest(index + 1),
-            onScrollHint: (index) => {
-              if (index !== null) setScrolledOnce(true);
-            },
             onPresetChange: setPreset,
             onReady: () => setReady(true),
             callout: calloutRef.current,
@@ -97,7 +78,6 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
         if (process.env.NODE_ENV !== "production") (window as unknown as { __bali?: BaliEngine }).__bali = engine;
         const now = latest.current;
         engine.setState(now.state);
-        engine.setScrollLimit(now.maxScreen - 1, now.scrollEnabled);
         engine.setFocus(now.focusId, { instant: true });
         engine.setCallout(GUIDE[now.focusId]?.anchor?.(now.state) ?? null);
       })
@@ -117,10 +97,6 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
     engineRef.current?.setFocus(focusId);
   }, [focusId]);
 
-  useEffect(() => {
-    engineRef.current?.setScrollLimit(maxScreen - 1, scrollEnabled);
-  }, [maxScreen, scrollEnabled]);
-
   // The marker follows the decision in focus (and, for water and wastewater, the choice).
   useEffect(() => {
     engineRef.current?.setCallout(anchorKey ? (anchorKey.split(",").map(Number) as [number, number, number]) : null);
@@ -128,28 +104,16 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
 
   if (failed) return <>{fallback}</>;
 
-  const onPlan = focusId === "model" && !preset;
+  const arrow =
+    "focus-ring absolute top-1/2 z-10 flex h-16 w-11 -translate-y-1/2 items-center justify-center bg-black/40 text-3xl leading-none text-white opacity-25 backdrop-blur-sm transition-opacity duration-200 hover:opacity-100 focus-visible:opacity-100";
 
   return (
-    <div className="absolute inset-0 overflow-hidden bg-[#cfd8de]">
+    <div className="group absolute inset-0 overflow-hidden bg-[#cfd8de]">
       <div ref={hostRef} className="absolute inset-0" aria-label="3D model of the Bali that changes with your choices" role="img" />
 
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-bg-secondary">
           <p className="text-caption uppercase tracking-eyebrow text-text-muted">Building your Bali…</p>
-        </div>
-      )}
-
-      {/* Honest label: this is a model built from the published plan, not a photo. */}
-      <p className="pointer-events-none absolute left-3 top-3 max-w-[70%] bg-black/55 px-2 py-1 text-caption text-white/85 backdrop-blur-sm">
-        3D model from Supreme&apos;s Bali floor plan. Finishes are representative.
-      </p>
-
-      {onPlan && ready && !scrolledOnce && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
-          <p className="bg-black/70 px-4 py-2 text-body-sm text-white backdrop-blur-sm">
-            {scrollEnabled ? "Scroll on the plan to raise the walls" : "Press Next to raise the walls"}
-          </p>
         </div>
       )}
 
@@ -167,26 +131,45 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
         </span>
       </div>
 
-      {/* The decision in focus, so the panel and the picture read as one. */}
-      {guide && !preset && focusId !== "model" && (
-        <p className="pointer-events-none absolute right-3 top-3 max-w-[45%] border-l-2 border-gold bg-black/60 px-2 py-1 text-caption text-white backdrop-blur-sm">
-          <span className="text-white/60">Now choosing </span>
-          {guide.label}
+      {/* Step arrows: faint until hovered, so the home stays the focus. */}
+      {onPrev && (
+        <button type="button" onClick={onPrev} aria-label="Previous step" className={`${arrow} left-0`}>
+          ‹
+        </button>
+      )}
+      {onNext && (
+        <button type="button" onClick={onNext} aria-label="Next step" className={`${arrow} right-0`}>
+          ›
+        </button>
+      )}
+
+      {preset && ZOOMABLE.has(preset) && (
+        <p className="pointer-events-none absolute right-3 top-3 bg-black/60 px-2 py-1 text-caption text-white/85 backdrop-blur-sm">
+          Scroll to zoom · drag to turn · Shift-drag to move
         </p>
       )}
 
-      {/* View buttons */}
+      {/* Views. "Back to …" returns to the current step's own view. */}
       <div className="absolute inset-x-0 bottom-0 flex gap-1 overflow-x-auto p-2 [scrollbar-width:none]">
+        {preset && (
+          <button
+            type="button"
+            onClick={() => engineRef.current?.setPreset(null)}
+            className="focus-ring shrink-0 bg-gold px-2.5 py-1.5 text-caption font-semibold text-white"
+          >
+            ← Back to {stepTitle}
+          </button>
+        )}
         {VIEW_BUTTONS.map((v) => {
-          const active = (v.id ?? null) === preset;
+          const active = v.id === preset;
           return (
             <button
-              key={v.label}
+              key={v.id}
               type="button"
               onClick={() => engineRef.current?.setPreset(v.id)}
               aria-pressed={active}
               className={`focus-ring shrink-0 px-2.5 py-1.5 text-caption font-medium backdrop-blur-sm transition-colors ${
-                active ? "bg-gold text-white" : "bg-black/55 text-white/85 hover:bg-black/75 hover:text-white"
+                active ? "bg-white text-black" : "bg-black/55 text-white/85 hover:bg-black/75 hover:text-white"
               }`}
             >
               {v.label}

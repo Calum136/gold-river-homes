@@ -30,8 +30,8 @@ export default function StageChrome({ stage, model, className = "", caption }: S
       <div className="min-w-0">
         {caption ? (
           <>
-            <p className="text-caption text-text-secondary">{caption.text}</p>
-            <p className="hidden text-caption text-text-muted xl:block">{caption.note}</p>
+            <p className="text-caption text-text-muted">{caption.text}</p>
+            {caption.note && <p className="hidden text-caption text-text-muted xl:block">{caption.note}</p>}
           </>
         ) : (
           <>

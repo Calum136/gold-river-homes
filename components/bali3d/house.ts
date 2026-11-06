@@ -3,7 +3,7 @@ import type { ConfiguratorState } from "@/lib/pricing";
 import { Builder } from "./builder";
 import type { Face, FaceSlots } from "./builder";
 import type { Materials, Slot } from "./materials";
-import { FLOOR_ZONES, PLAN, ROOMS, WALLS, insideFootprint } from "./plan";
+import { FLOOR_ZONES, PLAN, ROOMS, WALLS, gradeFor, insideFootprint } from "./plan";
 import type { Opening, WallDef } from "./plan";
 import { FT, P, wx, wy, wz } from "./space";
 import { labelTexture } from "./textures";
@@ -14,7 +14,6 @@ import { labelTexture } from "./textures";
 // colour and material choices never rebuild anything.
 // ============================================
 
-const GRADE = -PLAN.floorHeight; // ground level, in feet above the floor
 
 // ---------- Trim profiles (feet) ----------
 
@@ -251,15 +250,26 @@ function interiorDoor(b: Builder, ctx: WallCtx, o: Opening, s: number, e: number
   const into = o.into ?? -1;
   const w = e - s;
   const face = ctx.c + (into * ctx.t) / 2;
-  // Leaf standing open at 90 degrees against the hinge side.
+  // Leaf standing open at 90 degrees on the hinge side, its thickness running along the wall.
+  const atEnd = o.hinge === "end";
+  const hinge = atEnd ? e : s;
+  const along = atEnd ? -1 : 1;
+  const l0 = hinge + along * 0.04;
+  const l1 = hinge + along * 0.19;
   const leaf0 = face + into * 0.02;
   const leaf1 = face + into * (w - 0.04);
-  wbox(b, ctx, s + 0.04, s + 0.19, Math.min(leaf0, leaf1), Math.max(leaf0, leaf1), 0.03, head - 0.05, "doorInt", true);
+  wbox(b, ctx, Math.min(l0, l1), Math.max(l0, l1), Math.min(leaf0, leaf1), Math.max(leaf0, leaf1), 0.03, head - 0.05, "doorInt", true);
   // Lever handles on both faces near the latch edge.
   const latch = face + into * (w - 0.3);
-  wbox(b, ctx, s + 0.19, s + 0.27, Math.min(latch, latch + into * 0.35), Math.max(latch, latch + into * 0.35), 3.0, 3.06, "hardware");
-  wbox(b, ctx, s - 0.04, s + 0.04, Math.min(latch, latch + into * 0.35), Math.max(latch, latch + into * 0.35), 3.0, 3.06, "hardware");
-  doorSwingArc(b, ctx, s + 0.1, w - 0.1, into, 1);
+  const lat0 = Math.min(latch, latch + into * 0.35);
+  const lat1 = Math.max(latch, latch + into * 0.35);
+  const h0 = hinge + along * 0.19;
+  const h1 = hinge + along * 0.27;
+  const k0 = hinge - along * 0.04;
+  const k1 = hinge + along * 0.04;
+  wbox(b, ctx, Math.min(h0, h1), Math.max(h0, h1), lat0, lat1, 3.0, 3.06, "hardware");
+  wbox(b, ctx, Math.min(k0, k1), Math.max(k0, k1), lat0, lat1, 3.0, 3.06, "hardware");
+  doorSwingArc(b, ctx, hinge + along * 0.1, w - 0.1, into, along);
 }
 
 function closetDoors(b: Builder, ctx: WallCtx, s: number, e: number, head: number) {
@@ -540,7 +550,7 @@ export function buildRoof(m: Materials, ink: THREE.Material): THREE.Group {
 
 // ---------- Entry: landing, covered porch, vestibule ----------
 
-function stairs(b: Builder, x0: number, x1: number, yTop: number, dir: -1 | 1, topH: number) {
+function stairs(b: Builder, x0: number, x1: number, yTop: number, dir: -1 | 1, topH: number, GRADE: number) {
   // Stairs from a landing at topH down to the ground, running in the -y direction.
   const drop = topH - GRADE;
   const n = Math.max(2, Math.round(drop / 0.62));
@@ -611,6 +621,8 @@ function frontGable(b: Builder, x0: number, x1: number, yFront: number, yBack: n
 export function buildEntry(state: ConfiguratorState, m: Materials, ink: THREE.Material): THREE.Group {
   const b = new Builder();
   const fd = PLAN.frontDoor;
+  // The ground sits lower under a crawlspace house, so its stairs have more steps.
+  const GRADE = gradeFor(state.foundationType);
   const landingTop = -0.22;
   const vestibule = !!state.hasVestibule;
   const porch = state.hasFrontPorch;
@@ -682,7 +694,7 @@ export function buildEntry(state: ConfiguratorState, m: Materials, ink: THREE.Ma
     frontGable(b, x0, x1, y0, -0.2, h1, true);
     b.box(fd.x - 0.15, fd.x + 0.15, y0 - 0.2, y0, 7.15, 7.55, "lamp");
     // Landing and stairs from the vestibule door
-    const st = stairs(b, fd.x - 2.5, fd.x + 2.5, y0, -1, landingTop - 0.1);
+    const st = stairs(b, fd.x - 2.5, fd.x + 2.5, y0, -1, landingTop - 0.1, GRADE);
     railing(b, fd.x - 2.6, y0, fd.x - 2.6, st.bottomY, landingTop - 0.1, GRADE);
     railing(b, fd.x + 2.6, y0, fd.x + 2.6, st.bottomY, landingTop - 0.1, GRADE);
     // Skirting under the vestibule
@@ -720,7 +732,7 @@ export function buildEntry(state: ConfiguratorState, m: Materials, ink: THREE.Ma
     railing(b, skipX1 + 0.6, postY, px1 - 0.45, postY, landingTop);
     railing(b, px0 + 0.45, postY, px0 + 0.45, -0.3, landingTop);
     railing(b, px1 - 0.45, postY, px1 - 0.45, -0.3, landingTop);
-    if (!vestibule) stairs(b, fd.x - 2.4, fd.x + 2.4, py0, -1, landingTop);
+    if (!vestibule) stairs(b, fd.x - 2.4, fd.x + 2.4, py0, -1, landingTop, GRADE);
   }
 
   if (!vestibule && !porch) {
@@ -730,7 +742,7 @@ export function buildEntry(state: ConfiguratorState, m: Materials, ink: THREE.Ma
     const ly0 = -5;
     b.box(lx0, lx1, ly0, 0, landingTop - 0.18, landingTop, "deck", { edges: true });
     b.box(lx0, lx1, ly0, ly0 + 0.15, GRADE, landingTop - 0.18, "deck");
-    const st = stairs(b, fd.x - 2.0, fd.x + 2.0, ly0, -1, landingTop);
+    const st = stairs(b, fd.x - 2.0, fd.x + 2.0, ly0, -1, landingTop, GRADE);
     railing(b, lx0 + 0.1, -0.2, lx0 + 0.1, ly0, landingTop);
     railing(b, lx1 - 0.1, -0.2, lx1 - 0.1, ly0, landingTop);
     railing(b, fd.x - 2.1, ly0, fd.x - 2.1, st.bottomY, landingTop, GRADE);
@@ -1056,39 +1068,12 @@ function toilet(b: Builder, x: number, y: number, facing: "+y" | "+x") {
 export function buildFurniture(m: Materials, ink: THREE.Material): THREE.Group {
   const b = new Builder();
   // Drawn stand-ins that loaded models replace, each in its own named group.
+  // (The dining area is left open: Calum asked for no dining set in the render.)
   const sets: Record<string, Builder> = {
-    "dining-table": new Builder(),
-    "dining-chairs": new Builder(),
     sofa: new Builder(),
     armchairs: new Builder(),
     coffee: new Builder(),
   };
-
-  // Dining table and chairs
-  const t = sets["dining-table"];
-  t.box(34.7, 40.7, 13.0, 16.2, 2.35, 2.5, "wood", { edges: true });
-  for (const [x, y] of [
-    [35.0, 13.3],
-    [40.4, 13.3],
-    [35.0, 15.9],
-    [40.4, 15.9],
-  ]) t.box(x - 0.1, x + 0.1, y - 0.1, y + 0.1, 0, 2.35, "wood");
-  const ch = sets["dining-chairs"];
-  for (const x of [35.9, 37.7, 39.5]) {
-    for (const [y, back] of [
-      [12.2, 11.85],
-      [17.0, 17.35],
-    ]) {
-      ch.box(x - 0.75, x + 0.75, y - 0.7, y + 0.7, 1.45, 1.6, "fabric", { edges: true });
-      ch.box(x - 0.75, x + 0.75, Math.min(back, back + (back < y ? 0.12 : -0.12)), Math.max(back, back + (back < y ? 0.12 : -0.12)), 1.6, 3.0, "fabric");
-      for (const [dx, dy] of [
-        [-0.65, -0.6],
-        [0.65, -0.6],
-        [-0.65, 0.6],
-        [0.65, 0.6],
-      ]) ch.box(x + dx - 0.05, x + dx + 0.05, y + dy - 0.05, y + dy + 0.05, 0, 1.45, "wood");
-    }
-  }
 
   // Living room: rug, sofa against the right wall, two armchairs, round coffee table
   b.box(33.4, 42.0, 19.2, 28.4, 0, 0.03, "rug");

@@ -9,7 +9,8 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { ConfiguratorState } from "@/lib/pricing";
-import { PRESETS, STOPS, Route, clonePose, isInside, makeRoute, planPose } from "./camera";
+import { PRESETS, STOPS, Route, clonePose, isInside, makeRoute, planPose, zoneAt } from "./camera";
+import { DETAIL_ZONES, buildDetails } from "./details";
 import type { Pose } from "./camera";
 import { applySelections, createMaterials, disposeMaterials, inkify, INDOOR_SLOTS, INK, makeInkLineMaterial, PAPER, setGround } from "./materials";
 import type { Materials, Slot } from "./materials";
@@ -19,8 +20,10 @@ import type { LightSpot } from "./house";
 import { disposeGroup } from "./builder";
 import { FURNITURE_PROPS, buildCutaway, buildFoundation, buildLot, buildUtilities, cutawayPlanes, lotProps, terrainFor, CUTAWAY } from "./site";
 import type { PropPlacement } from "./site";
-import { PLAN } from "./plan";
-import { FLOOR_Y, P, wx, wz } from "./space";
+import { PLAN, gradeFor } from "./plan";
+import { FLOOR_Y, P, wx, wy, wz } from "./space";
+import { buildLandscape, createLandscapeKit, disposeLandscapeKit } from "./landscape";
+import type { LandscapeKit } from "./landscape";
 import { configureTextures, disposeTextures } from "./textures";
 
 // ============================================
@@ -32,11 +35,7 @@ import { configureTextures, disposeTextures } from "./textures";
 export interface EngineOptions {
   /** Screen ids in flow order (lib/screens.ts). */
   screenIds: string[];
-  /** The buyer scrolled the tour to another screen (0-based index). */
-  onStepRequest: (index: number) => void;
-  /** While scrolling: the screen the tour is passing, or null when it settles. */
-  onScrollHint?: (index: number | null) => void;
-  /** The view preset changed (null when back on the tour). */
+  /** The view preset changed (null when back on the step's own view). */
   onPresetChange?: (id: string | null) => void;
   onReady?: () => void;
   /** A marker element the engine keeps pinned over the spot each decision changes. */
@@ -44,8 +43,10 @@ export interface EngineOptions {
 }
 
 const GOLD = new THREE.Color("#c4882a");
+/** Views where the wheel zooms and dragging with Shift (or the right button) pans. */
+const ZOOMABLE = new Set(["dollhouse", "top"]);
 /** Lot models drawn as baked cut-outs rather than full meshes. */
-const IMPOSTOR_MODELS = new Set(["pine", "shrub_b"]);
+const IMPOSTOR_MODELS = new Set(["pine"]);
 const PULSE_SECONDS = 1.1;
 
 interface Flight {
@@ -65,16 +66,11 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 
 const PROP_FILES: Record<string, string> = {
   pine: "/3d/models/pine/pine_sapling_small_1k.gltf",
-  shrub_a: "/3d/models/shrub_a/shrub_04_1k.gltf",
-  shrub_b: "/3d/models/shrub_b/shrub_02_1k.gltf",
   sofa: "/3d/models/sofa/sofa_02_1k.gltf",
   armchair: "/3d/models/armchair/mid_century_lounge_chair_1k.gltf",
   coffee_table: "/3d/models/coffee_table/coffee_table_round_01_1k.gltf",
   side_table: "/3d/models/side_table/side_table_01_1k.gltf",
   plant: "/3d/models/plant/potted_plant_04_1k.gltf",
-  vase: "/3d/models/vase/ceramic_vase_01_1k.gltf",
-  dining_table: "/3d/models/dining_table/dining_table_1k.gltf",
-  dining_chair: "/3d/models/dining_chair/dining_chair_02_1k.gltf",
   stool: "/3d/models/stool/metal_stool_03_1k.gltf",
 };
 
@@ -124,18 +120,13 @@ export class BaliEngine {
   private pTarget = 0;
   private flight: Flight | null = null;
   private preset: { id: string; pose: Pose; cutaway: boolean } | null = null;
-  private maxIndex: number;
-  private scrollEnabled = true;
-  private snapTimer: number | null = null;
-  private scrolling = false;
-  private scrollDir = 1;
   /** The screen the page currently shows, as far as the tour knows. */
   private reportedIndex = -1;
 
   // Look-around from dragging
   private yaw = 0;
   private pitch = 0;
-  private dragging: { x: number; y: number; id: number } | null = null;
+  private dragging: { x: number; y: number; id: number; pan: boolean } | null = null;
 
   // Frame state
   private pose: Pose = { pos: new THREE.Vector3(), target: new THREE.Vector3(), fov: 45 };
@@ -155,6 +146,13 @@ export class BaliEngine {
   private calloutAnchor: THREE.Vector3 | null = null;
   private calloutShown = false;
   private pulses = new Map<Slot, number>();
+  private landKit: LandscapeKit;
+  /** Zoom (distance multiplier) and pan offset in the zoomable views. */
+  private zoom = 1;
+  private panOffset = new THREE.Vector3();
+  private groundY = 0;
+  /** Deep soil under the see-through lawn, so underground pieces read against earth, not sky. */
+  private soil: THREE.Mesh;
   private impostors = new Map<string, { geometry: THREE.BufferGeometry; material: THREE.MeshBasicMaterial }>();
   private impostorTargets: THREE.WebGLRenderTarget[] = [];
 
@@ -162,7 +160,6 @@ export class BaliEngine {
     this.container = container;
     this.opts = opts;
     this.ids = opts.screenIds;
-    this.maxIndex = this.ids.length - 1;
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const coarse = window.matchMedia("(pointer: coarse)").matches;
     this.highQuality = !coarse && window.devicePixelRatio <= 2.5;
@@ -239,6 +236,10 @@ export class BaliEngine {
     this.scene.add(this.labels);
 
     INK.uInkCenter.value.set(wx(PLAN.frontDoor.x), wz(0));
+    this.landKit = createLandscapeKit();
+    this.soil = new THREE.Mesh(new THREE.CircleGeometry(70, 48).rotateX(-Math.PI / 2), this.m.soil);
+    this.soil.visible = false;
+    this.scene.add(this.soil);
     this.scene.add(this.props, this.lotPropGroup);
     this.scene.background = new THREE.Color("#cfd8de");
 
@@ -247,6 +248,7 @@ export class BaliEngine {
     this.setGroup("ceiling", buildCeiling(this.m), this.riserInner);
     this.setGroup("roof", buildRoof(this.m, this.inkLines), this.riserInner);
     this.setGroup("furniture", buildFurniture(this.m, this.inkLines), this.riserInner);
+    this.setGroup("details", buildDetails(this.m, this.inkLines), this.riserInner);
 
     this.buildStops();
     this.loadSky();
@@ -288,10 +290,14 @@ export class BaliEngine {
       frontDoor.traverse((o) => (o.castShadow = false));
       this.riserInner.add(frontDoor);
     }
-    if (changed("hasFrontPorch", "hasVestibule")) {
+    // The foundation sets the ground level, so the entry steps, lot, garden,
+    // services and sky all follow it.
+    const ground = changed("foundationType");
+    if (changed("hasFrontPorch", "hasVestibule") || ground) {
       const entry = buildEntry(next, this.m, this.inkLines);
       entry.getObjectByName("vestibule-door")?.traverse((o) => (o.castShadow = false));
       this.setGroup("entry", entry, this.riserInner);
+      this.setGroup("landscape", buildLandscape(next, this.landKit, this.m), this.scene);
     }
     if (changed("cabinetStyleId")) this.setGroup("kitchen", buildKitchen(next, this.m, this.inkLines), this.riserInner);
     if (changed("lightingPackageId")) {
@@ -300,11 +306,14 @@ export class BaliEngine {
       this.spots = spots;
     }
     if (changed("hasFireplace")) this.setGroup("feature", buildFeatureWall(next, this.m, this.inkLines), this.riserInner);
-    if (changed("foundationType")) this.setGroup("foundation", buildFoundation(next, this.m, this.inkLines), this.scene);
-    if (changed("waterType", "sewerType")) this.setGroup("utilities", buildUtilities(next, this.m, this.inkLines), this.scene);
+    if (ground) {
+      this.setGroup("foundation", buildFoundation(next, this.m, this.inkLines), this.scene);
+      this.placeGround(gradeFor(next.foundationType));
+    }
+    if (changed("waterType", "sewerType") || ground) this.setGroup("utilities", buildUtilities(next, this.m, this.inkLines), this.scene);
     if (changed("insulationId", "sidingStyleId")) this.setGroup("cutaway", buildCutaway(next, this.m), this.scene);
     const terrain = terrainFor(next);
-    if (terrain !== this.terrain) {
+    if (terrain !== this.terrain || ground) {
       this.terrain = terrain;
       setGround(this.m, terrain);
       this.setGroup("lot", buildLot(next, this.m), this.scene);
@@ -319,8 +328,8 @@ export class BaliEngine {
   setFocus(screenId: string, opts: { instant?: boolean } = {}) {
     const idx = this.ids.indexOf(screenId);
     if (idx < 0) return;
-    // The page following the wheel: the tour is already on its way there.
-    if (idx === this.reportedIndex && (this.scrolling || this.pTarget === idx) && !opts.instant && !this.preset) return;
+    // Already there (or on the way): nothing to do.
+    if (idx === this.reportedIndex && this.pTarget === idx && !opts.instant && !this.preset) return;
     this.reportedIndex = idx;
     const leavingPreset = !!this.preset;
     if (this.preset) {
@@ -361,6 +370,8 @@ export class BaliEngine {
     this.preset = { id, pose: clonePose(preset.pose), cutaway: !!preset.cutaway };
     this.yaw = 0;
     this.pitch = 0;
+    this.zoom = 1;
+    this.panOffset.set(0, 0, 0);
     // Presets show the finished house: take the tour off the plan sheet first.
     const modelIdx = this.ids.indexOf("model");
     if (Math.abs(this.p - modelIdx) < 0.9) this.p = this.pTarget = modelIdx + 1;
@@ -379,16 +390,9 @@ export class BaliEngine {
     this.invalidate(2);
   }
 
-  /** Furthest screen the tour may scroll to (0-based), and whether scrolling drives the tour at all. */
-  setScrollLimit(maxIndex: number, enabled: boolean) {
-    this.maxIndex = Math.max(0, Math.min(maxIndex, this.ids.length - 1));
-    this.scrollEnabled = enabled;
-  }
-
   dispose() {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
-    if (this.snapTimer) window.clearTimeout(this.snapTimer);
     this.resizeObs.disconnect();
     this.unbindInput();
     this.scene.traverse((o) => {
@@ -406,6 +410,7 @@ export class BaliEngine {
       material.dispose();
     }
     for (const rt of this.impostorTargets) rt.dispose();
+    disposeLandscapeKit(this.landKit);
     this.roomEnv.dispose();
     this.inkLines.dispose();
     disposeTextures();
@@ -434,6 +439,14 @@ export class BaliEngine {
     for (let i = 0; i < this.stops.length - 1; i++) this.segments.push(makeRoute(this.stops[i], this.stops[i + 1]));
   }
 
+  /** Move the ground-level pieces (sky dome's ground, the soil seen in the see-through view). */
+  private placeGround(grade: number) {
+    this.groundY = wy(grade);
+    if (this.skybox) this.skybox.position.y = this.groundY + 6 - 0.02;
+    this.soil.position.y = this.groundY - 18 * 0.3048;
+    this.shadowDirty = true;
+  }
+
   private async loadSky() {
     try {
       const tex = await new HDRLoader().loadAsync("/3d/hdri/lilienstein_2k.hdr");
@@ -444,7 +457,7 @@ export class BaliEngine {
       tex.mapping = THREE.EquirectangularReflectionMapping;
       this.scene.environment = tex;
       this.skybox = new GroundedSkybox(tex, 6, 160, 64);
-      this.skybox.position.y = 6 - 0.02;
+      this.skybox.position.y = this.groundY + 6 - 0.02;
       this.skybox.userData.noAO = true;
       // Drawn first and never writing depth, so anything below ground (footings,
       // pipes, the septic tank) shows through when the lawn turns see-through.
@@ -699,46 +712,39 @@ export class BaliEngine {
   // decision panel switches as the tour passes halfway to the next stop, and
   // when the wheel rests the camera glides on to the next stop in the
   // direction it was going. One notch is enough to move on.
+  // Steps move with the on-screen arrows (and Next and Back), not the wheel.
+  // The wheel zooms in the Dollhouse and Top down views, toward the cursor.
   private onWheel = (e: WheelEvent) => {
-    if (!this.scrollEnabled) return;
+    if (!this.preset || !ZOOMABLE.has(this.preset.id) || this.flight) return;
     e.preventDefault();
-    if (this.preset) {
-      this.setPreset(null);
-      return;
-    }
-    if (this.flight) {
-      // Take over from a flight wherever it has got to.
-      this.flight = null;
-      this.pTarget = this.p;
-    }
     const delta = e.deltaMode === 1 ? e.deltaY * 30 : e.deltaY;
-    if (delta === 0) return;
-    this.scrolling = true;
-    this.scrollDir = Math.sign(delta);
-    this.pTarget = THREE.MathUtils.clamp(this.pTarget + delta * 0.0032, 0, this.maxIndex);
-    this.report(Math.round(this.pTarget));
-    if (this.snapTimer) window.clearTimeout(this.snapTimer);
-    this.snapTimer = window.setTimeout(() => {
-      const settled =
-        this.scrollDir > 0 ? Math.ceil(this.pTarget - 0.08) : Math.floor(this.pTarget + 0.08);
-      this.pTarget = THREE.MathUtils.clamp(settled, 0, this.maxIndex);
-      this.report(this.pTarget);
-      this.scrolling = false;
-      this.opts.onScrollHint?.(null);
-    }, 180);
+    const k = Math.exp(delta * 0.0013);
+    const next = THREE.MathUtils.clamp(this.zoom * k, 0.22, 1.7);
+    // Slide toward whatever is under the cursor as we close in.
+    const hit = this.groundPointAt(e.clientX, e.clientY);
+    if (hit && next < this.zoom) {
+      const target = this.preset.pose.target.clone().add(this.panOffset);
+      this.panOffset.addScaledVector(hit.sub(target).setY(0), 1 - next / this.zoom);
+    }
+    this.zoom = next;
     this.invalidate(2);
   };
 
-  /** Tell the page which screen the tour is on, once per change. */
-  private report(index: number) {
-    if (index === this.reportedIndex) return;
-    this.reportedIndex = index;
-    this.opts.onScrollHint?.(index);
-    this.opts.onStepRequest(index);
+  /** Where a screen point lands on the floor plane, in world space. */
+  private groundPointAt(clientX: number, clientY: number): THREE.Vector3 | null {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, this.camera);
+    const hit = new THREE.Vector3();
+    return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -FLOOR_Y), hit);
   }
 
+
   private onPointerDown = (e: PointerEvent) => {
-    this.dragging = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    // In the zoomable views, Shift-drag or the right button pans; otherwise dragging turns the view.
+    const pan = !!this.preset && ZOOMABLE.has(this.preset.id) && (e.shiftKey || e.button === 2);
+    this.dragging = { x: e.clientX, y: e.clientY, id: e.pointerId, pan };
     this.renderer.domElement.setPointerCapture(e.pointerId);
   };
 
@@ -748,9 +754,22 @@ export class BaliEngine {
     const dy = e.clientY - this.dragging.y;
     this.dragging.x = e.clientX;
     this.dragging.y = e.clientY;
-    this.yaw = THREE.MathUtils.clamp(this.yaw - dx * 0.005, -Math.PI * 0.9, Math.PI * 0.9);
-    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.004, -0.6, 0.5);
+    if (this.dragging.pan) {
+      // Move across the ground, scaled to how far away the view is.
+      const dist = this.camera.position.distanceTo(this.pose.target);
+      const per = (dist * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * 2) / this.container.clientHeight;
+      const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0).setY(0).normalize();
+      const fwd = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), right).normalize();
+      this.panOffset.addScaledVector(right, -dx * per).addScaledVector(fwd, dy * per);
+    } else {
+      this.yaw = THREE.MathUtils.clamp(this.yaw - dx * 0.005, -Math.PI * 0.9, Math.PI * 0.9);
+      this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.004, -0.6, 0.5);
+    }
     this.invalidate(2);
+  };
+
+  private onContextMenu = (e: Event) => {
+    if (this.preset && ZOOMABLE.has(this.preset.id)) e.preventDefault();
   };
 
   private onPointerUp = (e: PointerEvent) => {
@@ -764,6 +783,7 @@ export class BaliEngine {
     el.addEventListener("pointermove", this.onPointerMove);
     el.addEventListener("pointerup", this.onPointerUp);
     el.addEventListener("pointercancel", this.onPointerUp);
+    el.addEventListener("contextmenu", this.onContextMenu);
   }
 
   private unbindInput() {
@@ -773,6 +793,7 @@ export class BaliEngine {
     el.removeEventListener("pointermove", this.onPointerMove);
     el.removeEventListener("pointerup", this.onPointerUp);
     el.removeEventListener("pointercancel", this.onPointerUp);
+    el.removeEventListener("contextmenu", this.onContextMenu);
   }
 
   // ---------- Frame ----------
@@ -837,9 +858,11 @@ export class BaliEngine {
         if (!f.toPreset) this.p = this.pTarget = f.pTo;
       }
     } else if (this.preset) {
-      this.pose.pos.copy(this.preset.pose.pos);
-      this.pose.target.copy(this.preset.pose.target);
-      this.pose.fov = this.preset.pose.fov;
+      // Zoom pulls the camera toward its target; pan slides both across the ground.
+      const { pos, target, fov } = this.preset.pose;
+      this.pose.target.copy(target).add(this.panOffset);
+      this.pose.pos.copy(pos).sub(target).multiplyScalar(this.zoom).add(this.pose.target);
+      this.pose.fov = fov;
     } else {
       const k = 1 - Math.exp(-dt * 5.5);
       const before = this.p;
@@ -950,9 +973,20 @@ export class BaliEngine {
 
     // See-through ground for the foundation, water and wastewater decisions
     const xray = atPreset ? 0 : Math.max(near1("foundation", 0.3, 0.85), near1("water", 0.3, 0.85), near1("sewer", 0.3, 0.85));
-    this.m.grass.opacity = 1 - 0.88 * xray;
-    this.m.mulch.opacity = 1 - 0.88 * xray;
-    this.m.gravel.opacity = 1 - 0.88 * xray;
+    // A smooth fade (not a dithered one, which shimmers), over a backdrop of soil.
+    const seeThrough = xray > 0.01;
+    for (const mat of [this.m.grass, this.m.mulch, this.m.gravel]) {
+      if (mat.transparent !== seeThrough) {
+        mat.transparent = seeThrough;
+        mat.depthWrite = !seeThrough;
+        mat.needsUpdate = true;
+      }
+      mat.opacity = 1 - 0.8 * xray;
+    }
+    this.soil.visible = seeThrough;
+    // Under a crawlspace house, the road-facing wall opens to show the space beneath.
+    const crawlFront = this.groups.foundation?.getObjectByName("foundation-front");
+    if (crawlFront) crawlFront.visible = xray < 0.5;
     if (this.groups.utilities) this.groups.utilities.visible = xray > 0.01 || reveal > 0.99;
     if (this.groups.foundation) this.groups.foundation.visible = rise > 0.5;
 
@@ -963,6 +997,20 @@ export class BaliEngine {
       mat.clippingPlanes = cutOn ? this.clipPlanes : this.clipOff;
     }
     if (this.groups.cutaway) this.groups.cutaway.visible = cutOn;
+
+    // Room detail shows only in or beside the room the camera is in; the
+    // Dollhouse and Top down views keep the simpler shapes.
+    const zone = zoneAt(pos);
+    const details = this.groups.details;
+    if (details) {
+      for (const room of details.children) {
+        const show = !cut && !inkActive && (DETAIL_ZONES[room.name] ?? []).includes(zone);
+        if (room.visible !== show) {
+          room.visible = show;
+          moving = true;
+        }
+      }
+    }
 
     // Changed surfaces glow gold and fade back
     if (this.pulses.size) {

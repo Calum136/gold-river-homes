@@ -4,7 +4,7 @@ import { lotOptions } from "@/lib/defaults";
 import type { LotTerrain } from "@/lib/defaults";
 import { Builder } from "./builder";
 import type { Materials } from "./materials";
-import { PLAN } from "./plan";
+import { PLAN, gradeFor } from "./plan";
 import { FT, P, wx, wz } from "./space";
 
 // ============================================
@@ -14,7 +14,6 @@ import { FT, P, wx, wz } from "./space";
 // those screens, so these choices change the picture too.
 // ============================================
 
-const GRADE = -PLAN.floorHeight;
 const ROAD_Y = -78;
 
 export function terrainFor(state: ConfiguratorState): LotTerrain {
@@ -26,6 +25,7 @@ export function terrainFor(state: ConfiguratorState): LotTerrain {
 
 /** Ground, driveway, walkway, garden beds and the road. */
 export function buildLot(state: ConfiguratorState, m: Materials): THREE.Group {
+  const GRADE = gradeFor(state.foundationType);
   const b = new Builder();
   const terrain = terrainFor(state);
   // Lawn: a disc of real grass texture reaching right out to the sky dome's
@@ -43,9 +43,7 @@ export function buildLot(state: ConfiguratorState, m: Materials): THREE.Group {
   b.box(41.6, 45.6, -12.5, -8, GRADE, GRADE + lift + 0.01, "paving");
   // Road
   b.box(-150, 230, ROAD_Y - 22, ROAD_Y, GRADE, GRADE + lift, "asphalt");
-  // Garden beds along the front, either side of the entry
-  b.box(1, 38.5, -3.2, 0, GRADE, GRADE + lift + 0.02, "mulch");
-  b.box(48.8, 73, -3.2, 0, GRADE, GRADE + lift + 0.02, "mulch");
+  // Garden beds and planting along the front are drawn in landscape.ts.
   const group = b.build(m, null, "lot");
   group.traverse((o) => {
     if ((o as THREE.Mesh).isMesh && (o as THREE.Mesh).material === m.grass) {
@@ -71,6 +69,7 @@ export interface PropPlacement {
 
 /** Trees, shrubs and rocks around the lot, by terrain. Positions in plan feet. */
 export function lotProps(state: ConfiguratorState): PropPlacement[] {
+  const GRADE = gradeFor(state.foundationType);
   const terrain = terrainFor(state);
   const out: PropPlacement[] = [];
   const rnd = (() => {
@@ -92,14 +91,7 @@ export function lotProps(state: ConfiguratorState): PropPlacement[] {
     out.push({ model: "pine", x, y, h: GRADE, rotY: rnd() * 6.28, scale: 4.5 + rnd() * 2.5 });
   }
   // Foundation shrubs in the beds
-  // A few full-detail shrubs by the house (about 27,000 triangles each, so not too many).
-  for (const x of [8, 21, 33, 54, 67]) {
-    out.push({ model: "shrub_a", x, y: -1.6, h: GRADE + 0.05, rotY: x, scale: 3.4 });
-  }
-  if (terrain !== "town") {
-    out.push({ model: "shrub_b", x: -18, y: 6, h: GRADE, rotY: 1.2, scale: 0.6 });
-    out.push({ model: "shrub_b", x: 92, y: 20, h: GRADE, rotY: 2.4, scale: 0.6 });
-  }
+  // Shrubs and flowers by the house are drawn in code (landscape.ts).
   return out;
 }
 
@@ -112,14 +104,6 @@ export const FURNITURE_PROPS: PropPlacement[] = [
   { model: "side_table", x: 43.6, y: 19.2, h: 0, scale: 1 },
   { model: "plant", x: 37.4, y: 23.6, h: 1.62, scale: 1.6 },
   { model: "plant", x: 43.6, y: 19.2, h: 1.48, scale: 1.4 },
-  { model: "vase", x: 37.7, y: 14.6, h: 2.48, scale: 1 },
-  { model: "dining_table", x: 37.7, y: 14.6, h: 0, scale: [0.8, 0.86, 0.72], replaces: "dining-table" },
-  { model: "dining_chair", x: 35.9, y: 12.4, h: 0, rotY: Math.PI, scale: 1.05, replaces: "dining-chairs" },
-  { model: "dining_chair", x: 37.7, y: 12.4, h: 0, rotY: Math.PI, scale: 1.05, replaces: "dining-chairs" },
-  { model: "dining_chair", x: 39.5, y: 12.4, h: 0, rotY: Math.PI, scale: 1.05, replaces: "dining-chairs" },
-  { model: "dining_chair", x: 35.9, y: 16.8, h: 0, rotY: 0, scale: 1.05, replaces: "dining-chairs" },
-  { model: "dining_chair", x: 37.7, y: 16.8, h: 0, rotY: 0, scale: 1.05, replaces: "dining-chairs" },
-  { model: "dining_chair", x: 39.5, y: 16.8, h: 0, rotY: 0, scale: 1.05, replaces: "dining-chairs" },
   { model: "stool", x: 30.4, y: 10.3, h: 0, scale: 1, replaces: "stools" },
   { model: "stool", x: 32.3, y: 10.3, h: 0, scale: 1, replaces: "stools" },
   { model: "stool", x: 34.2, y: 10.3, h: 0, scale: 1, replaces: "stools" },
@@ -130,7 +114,9 @@ export const FURNITURE_PROPS: PropPlacement[] = [
 // ---------- Foundation (below the floor) ----------
 
 export function buildFoundation(state: ConfiguratorState, m: Materials, ink: THREE.Material): THREE.Group {
+  const GRADE = gradeFor(state.foundationType);
   const b = new Builder();
+  const front = new Builder();
   const L = PLAN.living;
   const rects: [number, number, number, number][] = [
     [0, 74, 0, 16],
@@ -174,22 +160,37 @@ export function buildFoundation(state: ConfiguratorState, m: Materials, ink: THR
       ring(x0 - 0.05, x1 + 0.05, y0 - 0.05, y1 + 0.05, 0.08, GRADE + 0.15, -1, "skirting");
     }
   } else {
-    // Crawlspace: perimeter footing walls below frost depth, piers down the
-    // middle, a vapour barrier on the ground, vented skirting above grade.
+    // Crawlspace: the house stands on a short concrete wall that lifts its
+    // floor about three feet off the ground, with vents along it. Inside,
+    // piers carry the middle of the floor over a vapour barrier. Shallow
+    // footings with frost-protection insulation keep it a crawlspace, not a
+    // basement. The road-facing wall is built on its own so the see-through
+    // view can open it and show the space under the house.
+    const t = 0.67;
     for (const [x0, x1, y0, y1] of rects) {
-      ring(x0, x1, y0, y1, 0.67, GRADE - 4.0, -1, "concrete");
-      ring(x0 - 0.4, x1 + 0.4, y0 - 0.4, y1 + 0.4, 0.67, GRADE - 4.7, GRADE - 4.0, "concrete");
-      b.box(x0 + 0.67, x1 - 0.67, y0 + 0.67, y1 - 0.67, GRADE - 0.02, GRADE + 0.01, "vapour");
+      if (y0 === 0) front.box(x0, x1, y0, y0 + t, GRADE - 1.5, -1, "concrete", { edges: true });
+      else b.box(x0, x1, y0, y0 + t, GRADE - 1.5, -1, "concrete", { edges: true });
+      b.box(x0, x1, y1 - t, y1, GRADE - 1.5, -1, "concrete", { edges: true });
+      b.box(x0, x0 + t, y0 + t, y1 - t, GRADE - 1.5, -1, "concrete", { edges: true });
+      b.box(x1 - t, x1, y0 + t, y1 - t, GRADE - 1.5, -1, "concrete", { edges: true });
+      ring(x0 - 0.4, x1 + 0.4, y0 - 0.4, y1 + 0.4, 1.4, GRADE - 2.2, GRADE - 1.5, "concrete");
+      b.box(x0 - 3, x1 + 3, y0 - 3, y0 - 0.4, GRADE - 1.3, GRADE - 1.1, "insBoard");
+      b.box(x0 - 3, x1 + 3, y1 + 0.4, y1 + 3, GRADE - 1.3, GRADE - 1.1, "insBoard");
+      b.box(x0 + t, x1 - t, y0 + t, y1 - t, GRADE + 0.02, GRADE + 0.05, "vapour");
+      // Underside of the insulated floor, seen from the crawlspace
+      b.box(x0 + t, x1 - t, y0 + t, y1 - t, -1.0, -0.96, { ny: "osb" });
     }
     for (let x = 8; x < 70; x += 8) {
-      b.box(x - 0.5, x + 0.5, 7.5, 8.5, GRADE - 3.5, -1.2, "concrete", { edges: true });
-      b.box(x - 1, x + 1, 7, 9, GRADE - 4.0, GRADE - 3.5, "concrete");
+      b.box(x - 0.5, x + 0.5, 7.5, 8.5, GRADE, -1.0, "concrete", { edges: true });
+      b.box(x - 1, x + 1, 7, 9, GRADE - 1.2, GRADE, "concrete");
     }
-    // Skirting panels with crawlspace vents
-    for (const [x0, x1, y0, y1] of rects) ring(x0 - 0.06, x1 + 0.06, y0 - 0.06, y1 + 0.06, 0.06, GRADE, -1, "skirting");
-    for (const x of [6, 20, 52, 68]) b.box(x - 0.8, x + 0.8, -0.1, -0.06, GRADE + 0.35, GRADE + 0.85, "blackGlass");
+    // Foundation vents along the front
+    for (const x of [6, 18, 30, 52, 62, 70]) front.box(x - 0.7, x + 0.7, -0.04, 0, GRADE + 0.7, GRADE + 1.3, "blackGlass");
   }
-  return b.build(m, ink, "foundation");
+  const group = b.build(m, ink, "foundation");
+  const frontWall = front.build(m, ink, "foundation-front");
+  if (frontWall.children.length) group.add(frontWall);
+  return group;
 }
 
 // ---------- Water and wastewater ----------
@@ -209,6 +210,7 @@ function pipe(b: Builder, slot: "pipeWater" | "pipeSewer" | "steelPipe", pts: [n
 }
 
 export function buildUtilities(state: ConfiguratorState, m: Materials, ink: THREE.Material): THREE.Group {
+  const GRADE = gradeFor(state.foundationType);
   const b = new Builder();
   const frost = GRADE - 5.5;
 

@@ -30,6 +30,8 @@ export interface Opening {
   head?: number;
   /** Which side of the wall a door swings into: -1 toward lower plan coordinates, +1 toward higher. */
   into?: 1 | -1;
+  /** Which end of the opening carries the hinges (so the open leaf lies clear of fixtures). */
+  hinge?: "start" | "end";
 }
 
 export interface WallDef {
@@ -78,7 +80,7 @@ export const PLAN = {
 const EXT = PLAN.extT;
 const INT = PLAN.intT;
 const WIN = (at: number, w: number, sill = 3, head = 7): Opening => ({ at, w, kind: "window", sill, head });
-const DOOR = (at: number, w = 2.5, into: 1 | -1 = -1): Opening => ({ at, w, kind: "door", head: 6.8, into });
+const DOOR = (at: number, w = 2.5, into: 1 | -1 = -1, hinge: "start" | "end" = "start"): Opening => ({ at, w, kind: "door", head: 6.8, into, hinge });
 const CLOSET = (at: number, w: number): Opening => ({ at, w, kind: "closet", head: 6.8 });
 
 export const WALLS: WallDef[] = [
@@ -119,7 +121,8 @@ export const WALLS: WallDef[] = [
 
   // ---- Interior ----
   // Bathroom 2 and the walk-in closet against Bedroom 1
-  { id: "bath2-br1", a: [7.7, 0.5], b: [7.7, 15.5], t: INT, openings: [DOOR(3.4, 2.4), DOOR(8.7, 2.4)] },
+  // Bathroom 2's door hinges at its far end so the open leaf clears the vanity.
+  { id: "bath2-br1", a: [7.7, 0.5], b: [7.7, 15.5], t: INT, openings: [DOOR(3.4, 2.4), DOOR(8.7, 2.4, -1, "end")] },
   { id: "bath2-wic", a: [0.5, 6.6], b: [7.525, 6.6], t: INT },
   // Bedroom 1 to the laundry
   { id: "br1-laundry", a: [19.7, 0.5], b: [19.7, 15.5], t: INT, openings: [DOOR(5.9, 2.6)] },
@@ -142,7 +145,8 @@ export const WALLS: WallDef[] = [
   { id: "br3-closet", a: [62.0, 0.5], b: [62.0, 11.725], t: INT, openings: [CLOSET(6.5, 3.6)] },
   { id: "br3-top", a: [62.175, 9.9], b: [73.5, 9.9], t: INT, openings: [DOOR(1.6, 2.4)] },
   // Bathroom 1
-  { id: "bath1-left", a: [65.0, 10.075], b: [65.0, 15.5], t: INT, openings: [DOOR(2.4, 2.4, 1)] },
+  // Bathroom 1's door hinges at its far end so the open leaf clears the vanity.
+  { id: "bath1-left", a: [65.0, 10.075], b: [65.0, 15.5], t: INT, openings: [DOOR(2.4, 2.4, 1, "end")] },
 ];
 
 export const ROOMS: RoomDef[] = [
@@ -160,18 +164,28 @@ export const ROOMS: RoomDef[] = [
   { id: "bath1", name: "BATHROOM 1", dims: `8'-0" x 5'-6"`, label: [69.2, 13.7] },
 ];
 
-// Supreme's standard: vinyl tile in the kitchen, dining room, entry and
-// bathrooms; laminate (or the engineered hardwood upgrade) in living areas,
-// bedrooms and halls.
+// The flooring choice covers the kitchen and dining room too (Calum, Nov 2026),
+// along with the living areas, bedrooms and halls. Vinyl tile stays in the
+// bathrooms, laundry, pantry and entry.
 export const FLOOR_ZONES: FloorZone[] = [
   { rect: [0.5, 73.5, 0.5, 15.5], kind: "main" },
   { rect: [PLAN.living.x0 + EXT, PLAN.living.x1 - EXT, 15.5, PLAN.living.y1 - EXT], kind: "main" },
   { rect: [0.5, 7.525, 6.775, 15.5], kind: "tile" },
   { rect: [19.875, 25.125, 0.5, 15.5], kind: "tile" },
-  { rect: [25.475, 45.17, 0.5, 15.5], kind: "tile" },
-  { rect: [45.17, 46.375, 0.5, 8.7], kind: "tile" },
+  { rect: [41.6, 46.375, 0.5, 8.7], kind: "tile" },
   { rect: [65.175, 73.5, 10.075, 15.5], kind: "tile" },
 ];
+
+/**
+ * Ground level, in feet below the finished floor, by foundation. A slab keeps
+ * the house low; a crawlspace lifts it on a short concrete wall; a basement
+ * sits in between, with most of its wall below ground.
+ */
+const GRADE_BY_FOUNDATION: Record<string, number> = { slab: -1.25, crawlspace: -3.25, basement: -2.0 };
+
+export function gradeFor(foundation: string): number {
+  return GRADE_BY_FOUNDATION[foundation] ?? -PLAN.floorHeight;
+}
 
 /** Does a plan point sit inside the home's footprint? */
 export function insideFootprint(x: number, y: number): boolean {

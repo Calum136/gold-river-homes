@@ -183,10 +183,12 @@ export class Builder {
   }
 }
 
-/** Dispose every geometry under a group (materials are shared and live on). */
+/** Dispose every geometry under a group (materials, and geometries marked shared, live on). */
 export function disposeGroup(group: THREE.Object3D) {
   group.traverse((o) => {
     const mesh = o as THREE.Mesh;
-    if (mesh.geometry) mesh.geometry.dispose();
+    if (mesh.geometry && !mesh.geometry.userData.shared) mesh.geometry.dispose();
+    // Frees an instanced mesh's per-instance buffers; its shared geometry is kept.
+    if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose();
   });
 }

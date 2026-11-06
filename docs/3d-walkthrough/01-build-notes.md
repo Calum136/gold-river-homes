@@ -77,6 +77,22 @@ To put another model in 3D: trace its plan into a `plan.ts`-style file, add its 
 | Cabinet colours | New `cabinetColorId`: White (standard), Dove Grey, Sage Green, Navy, Charcoal (est. +$800 each), plus Natural Oak and Espresso stains with Solid Wood Shaker. It flows through state, share link (`cc`), pricing, review and spec sheet |
 | (found while testing) | Two cost lines both read "Premium". Upgrade lines now name their group, for example "Insulation: Premium" |
 
+## Round 3 (Calum testing in his own browser)
+
+| Feedback | Change |
+|---|---|
+| Crawlspace looked like a half basement | The foundation now sets the ground level: slab 1'-3" below the floor (low house), crawlspace 3'-3" (house lifted on a vented concrete wall, shallow footings with frost insulation), basement 2' (window wells, deep walls). Entry steps, lot, garden, services and the sky's ground all follow it. In the see-through view a crawlspace's front wall opens to show the space under the house |
+| Remove the dining set | Table, chairs and vase removed (models deleted from `public/3d/models`) |
+| Grass acts strangely on the water and septic screens | The dithered see-through lawn shimmered. It now fades smoothly over a soil backdrop |
+| Nicer front landscaping, without free assets | `landscape.ts` draws the garden in code: curved mulch beds with paver edging, river rock at the drip line, rounded evergreens, white and blue hydrangeas, lavender, ornamental grasses, two small red maples, topiary planters at the steps, path lights (lit at evening). Instanced, so a few draw calls; it lays itself out around the landing, porch or vestibule |
+| Door blocks the bedroom view; bathroom door covers the vanity | Doors can hinge at either end (`hinge` in `plan.ts`); both bathroom doors now swing clear of their vanities. The bedroom and bathroom views moved so open doors sit beside the camera |
+| Kitchen floor is laminate or hardwood too | The flooring choice now covers the kitchen and dining room; tile stays in the baths, laundry, pantry and entry. Supreme's spec wording in `lib/defaults.ts` still says vinyl tile in the kitchen: to settle with Matt |
+| Render detail based on what's in view | `details.ts`: bathrooms get a shower curtain, shower head and spout, toilet seat, lid and tank lid, paper roll, vanity light, soap, towel bar and towel, bath mat. Bedrooms get art and a throw, the kitchen a fruit bowl and utensil crock. Each room's detail shows only when the camera is in or beside it; Dollhouse and Top down keep the simple shapes |
+| Zoom in Top down and Dollhouse | Wheel zooms toward the cursor; drag turns; Shift-drag or right-drag pans |
+| Arrows instead of scroll | The wheel no longer moves steps. Faint arrows at the stage edges (full strength on hover) step back and forward |
+| Three demo disclaimers | One line under the stage: "Illustrative 3D model of Supreme's Bali floor plan." |
+| What does Tour do? | It returned to the current step's view from a preset. Replaced by "← Back to [step]", shown only while a preset view is open |
+
 ## Known gaps
 
 - **Page weight.** About 70 MB loads the first time the Bali opens (textures about 33 MB, sky 7 MB, furniture 12 MB, and the pine model alone 22 MB). Compressing textures (KTX2) and meshes (Draco) would cut this a lot before a public launch.

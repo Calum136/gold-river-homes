@@ -36,10 +36,8 @@ import { GUIDE } from "@/components/bali3d/guide";
 // Models with a live 3D stage. Every other model keeps the photo stage.
 const MODELS_IN_3D = new Set(["bali"]);
 
-const STAGE_3D_CAPTION = {
-  text: "Live 3D model of the Supreme Bali, built from Supreme's published floor plan. Scroll over it or press Next to walk through; drag to look around.",
-  note: "The 3D model is illustrative: colours and materials are representative, not exact products. Real photos are under More photos.",
-};
+// The one note on what the 3D view is.
+const STAGE_3D_CAPTION = { text: "Illustrative 3D model of Supreme's Bali floor plan.", note: "" };
 
 // state.step is a SCREEN index (1-based) into SCREENS (lib/screens.ts): one
 // decision per screen. Bump the version whenever ConfiguratorState changes
@@ -153,8 +151,6 @@ export default function ConfigurePage() {
   const focusId = isLast && openDecision ? openDecision : screen.id;
   const stage = resolveStage(state, focusId);
   const in3d = !!model && MODELS_IN_3D.has(model.id);
-  // Scrolling the 3D tour can't skip a decision the flow requires.
-  const tourLimit = !canAdvance(state, "land") ? 1 : !canAdvance(state, "model") ? 2 : SCREENS.length;
 
   function goToScreen(target: number) {
     setFurthestScreen((prev) => Math.max(prev, screenIndex, target));
@@ -257,11 +253,8 @@ export default function ConfigurePage() {
               <BaliStage
                 state={state}
                 focusId={focusId}
-                onStepRequest={(target) => {
-                  if (target !== screenIndex) goToScreen(target);
-                }}
-                maxScreen={tourLimit}
-                scrollEnabled={!isLast}
+                onPrev={!isLast && screenIndex > 1 ? back : undefined}
+                onNext={!isLast && ready ? advance : undefined}
                 fallback={<HomeVisualizer stage={stage} />}
               />
             ) : (
@@ -328,7 +321,7 @@ export default function ConfigurePage() {
               <SelectionsSummary items={selectionItems} onJump={goToScreen} className="mt-12" />
 
               {/* Below xl the photo note lives here, once, instead of under the photo. */}
-              <p className="mt-12 text-caption text-text-muted xl:hidden">{stageNote}</p>
+              {!in3d && <p className="mt-12 text-caption text-text-muted xl:hidden">{stageNote}</p>}
             </div>
           </div>
 
