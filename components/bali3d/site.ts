@@ -28,12 +28,13 @@ export function terrainFor(state: ConfiguratorState): LotTerrain {
 export function buildLot(state: ConfiguratorState, m: Materials): THREE.Group {
   const b = new Builder();
   const terrain = terrainFor(state);
-  // Lawn: a big disc of real grass texture around the house.
-  const lawn = new THREE.CircleGeometry(95 / FT, 72);
+  // Lawn: a disc of real grass texture reaching right out to the sky dome's
+  // edge, so the sky image's own ground never shows as a pale ring.
+  const lawn = new THREE.CircleGeometry(158 / FT, 96);
   b.shape("grass", lawn, { x: 37, y: 0, h: GRADE }, { rotX: -Math.PI / 2, worldUV: true });
 
   const drive = terrain === "town" ? "asphalt" : "gravel";
-  const lift = 0.03;
+  const lift = 0.06;
   // Driveway to a parking pad at the left front, then out to the road.
   b.box(4, 22, -26, -5, GRADE, GRADE + lift, drive);
   b.box(8, 18, ROAD_Y + 6, -26, GRADE, GRADE + lift, drive);
@@ -45,17 +46,6 @@ export function buildLot(state: ConfiguratorState, m: Materials): THREE.Group {
   // Garden beds along the front, either side of the entry
   b.box(1, 38.5, -3.2, 0, GRADE, GRADE + lift + 0.02, "mulch");
   b.box(48.8, 73, -3.2, 0, GRADE, GRADE + lift + 0.02, "mulch");
-  // Coastal and wooded lots get boulders.
-  if (terrain === "coastal" || terrain === "wooded") {
-    for (const [x, y, s] of [
-      [-42, -48, 2.4],
-      [112, -10, 3.0],
-      [104, 38, 2.2],
-      [-34, 46, 2.8],
-    ] as const) {
-      b.shape("rockFace", new THREE.DodecahedronGeometry(s, 1), { x, y, h: GRADE + s * 0.35 }, { scale: [1.4, 0.7, 1], edges: false });
-    }
-  }
   const group = b.build(m, null, "lot");
   group.traverse((o) => {
     if ((o as THREE.Mesh).isMesh && (o as THREE.Mesh).material === m.grass) {
@@ -90,7 +80,7 @@ export function lotProps(state: ConfiguratorState): PropPlacement[] {
       return s / 2147483647;
     };
   })();
-  const trees = terrain === "wooded" ? 34 : terrain === "meadow" ? 9 : terrain === "coastal" ? 5 : 6;
+  const trees = terrain === "wooded" ? 22 : terrain === "meadow" ? 9 : terrain === "coastal" ? 5 : 6;
   for (let i = 0; i < trees; i++) {
     const a = rnd() * Math.PI * 2;
     // Trees stand behind and beside the house: the front yard, where the
@@ -102,8 +92,9 @@ export function lotProps(state: ConfiguratorState): PropPlacement[] {
     out.push({ model: "pine", x, y, h: GRADE, rotY: rnd() * 6.28, scale: 4.5 + rnd() * 2.5 });
   }
   // Foundation shrubs in the beds
-  for (const x of [4, 10, 16, 22, 28, 34, 52, 58, 64, 70]) {
-    out.push({ model: "shrub_a", x, y: -1.6, h: GRADE + 0.05, rotY: x, scale: 3.2 });
+  // A few full-detail shrubs by the house (about 27,000 triangles each, so not too many).
+  for (const x of [8, 21, 33, 54, 67]) {
+    out.push({ model: "shrub_a", x, y: -1.6, h: GRADE + 0.05, rotY: x, scale: 3.4 });
   }
   if (terrain !== "town") {
     out.push({ model: "shrub_b", x: -18, y: 6, h: GRADE, rotY: 1.2, scale: 0.6 });
@@ -266,8 +257,8 @@ export function buildUtilities(state: ConfiguratorState, m: Materials, ink: THRE
       b.box(lx - 1.2, lx + 1.2, ty - 48, ty - 18, GRADE - 4.2, GRADE - 2.3, "drainRock", { edges: true });
       pipe(b, "pipeSewer", [[lx, ty - 18, GRADE - 3.2], [lx, ty - 48, GRADE - 3.3]], 0.2);
     }
-    // The field reads on the surface as a gentle mound.
-    b.shape("grass", new THREE.SphereGeometry(1, 32, 8, 0, Math.PI * 2, 0, Math.PI / 2), { x: tx, y: ty - 33, h: GRADE - 0.05 }, { scale: [24, 0.8, 20], worldUV: true });
+    // The field reads on the surface as a low, wide rise in the lawn.
+    b.shape("grass", new THREE.SphereGeometry(1, 48, 10, 0, Math.PI * 2, 0, Math.PI / 2), { x: tx, y: ty - 33, h: GRADE - 0.3 }, { scale: [26, 0.75, 22], worldUV: true });
   }
   return b.build(m, ink, "utilities");
 }

@@ -65,6 +65,18 @@ To put another model in 3D: trace its plan into a `plan.ts`-style file, add its 
 - It flows through pricing, saves, share links (`vb`), the review page and the spec sheet.
 - Its reason sentences in `lib/copy.ts` are not yet in the approved copy doc.
 
+## Round 2 (after Calum's first review, 8/10)
+
+| Feedback | Change |
+|---|---|
+| Laggy | Trees were 142,000 triangles each (about 1.9 million on a wooded lot). Lot trees are now baked once into cut-out textures and drawn as one instanced mesh: per-frame triangles went from about 1 million to under 200,000. Occlusion runs at half resolution, room lights cut from 7 to 3, shadow map 2048, lot plants and door leaves cast no shadows, pixel ratio steps down if frames run slow, and hidden option prices are no longer calculated |
+| Flashing | Overlapping coplanar faces removed: walls are cut back where they meet another wall and butted ends get no end face; casings stand prouder than baseboards; floor tile, driveway, walk and beds carry a depth offset; railings are single beams; doubled porch, vestibule, tub and ridge pieces fixed; the depth range is tighter |
+| Scrolling needs two goes and snaps | The camera follows the wheel continuously. One notch is enough: when the wheel rests, the camera glides on to the next stop in the direction you scrolled. The panel switches as the tour passes halfway |
+| Panel and picture feel separate | A gold marker is pinned in the scene on what each screen changes (`components/bali3d/guide.ts`). A "Now choosing" chip sits on the stage, and a line in the panel says where to look. Changed surfaces glow gold for a second when a choice is made |
+| Brown mounds | The rock shapes are removed. The septic field is a lower, wider rise in the lawn, and wooded lots use a greener leaf-litter tint |
+| Cabinet colours | New `cabinetColorId`: White (standard), Dove Grey, Sage Green, Navy, Charcoal (est. +$800 each), plus Natural Oak and Espresso stains with Solid Wood Shaker. It flows through state, share link (`cc`), pricing, review and spec sheet |
+| (found while testing) | Two cost lines both read "Premium". Upgrade lines now name their group, for example "Insulation: Premium" |
+
 ## Known gaps
 
 - **Page weight.** About 70 MB loads the first time the Bali opens (textures about 33 MB, sky 7 MB, furniture 12 MB, and the pine model alone 22 MB). Compressing textures (KTX2) and meshes (Draco) would cut this a lot before a public launch.

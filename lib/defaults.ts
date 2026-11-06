@@ -508,6 +508,27 @@ export const metalRoofColors: OptionItem[] = [
   { id: "arctic-white", label: "Arctic White", priceDelta: 0, swatchHex: "#E8EAF0", whyItMatters: "A light roof stays cooler in summer sun and shows fading less than a dark metal finish." },
 ];
 
+// --- Cabinet colours (Nov 2026, chosen on the cabinets screen) ---
+// Painted colours suit either door style; the two stains need solid wood.
+// Prices and reasons are placeholders until Gold River supplies its own.
+
+export const CABINET_STAINS: readonly string[] = ["natural-oak", "espresso"];
+
+export const cabinetColors: OptionItem[] = [
+  { id: "white", label: "White", priceDelta: 0, swatchHex: "#F2F0EB", isDefault: true, whyItMatters: "White cabinets keep a kitchen bright and suit any countertop or floor." },
+  { id: "dove-grey", label: "Dove Grey", priceDelta: 800, swatchHex: "#C7C5BF", whyItMatters: "A soft grey that hides everyday marks better than white and still reads as light." },
+  { id: "sage", label: "Sage Green", priceDelta: 800, swatchHex: "#8F9E8B", whyItMatters: "A muted green that brings some colour into the kitchen without dominating it." },
+  { id: "navy", label: "Navy", priceDelta: 800, swatchHex: "#2F3B4D", whyItMatters: "A deep blue that makes the cabinets the kitchen's focal point, best with light counters." },
+  { id: "charcoal", label: "Charcoal", priceDelta: 800, swatchHex: "#3B3E42", whyItMatters: "A dark, modern finish that pairs well with white quartz and matte black hardware." },
+  { id: "natural-oak", label: "Natural Oak Stain", priceDelta: 0, swatchHex: "#C9A577", availableForModels: undefined, whyItMatters: "A clear stain that shows the solid wood's grain; offered with Solid Wood Shaker." },
+  { id: "espresso", label: "Espresso Stain", priceDelta: 0, swatchHex: "#4A3426", whyItMatters: "A dark stain over the solid wood grain; offered with Solid Wood Shaker." },
+];
+
+/** Colours offered with a cabinet style: stains need the solid wood doors. */
+export function cabinetColorsFor(styleId: string): OptionItem[] {
+  return styleId === "premium-shaker" ? cabinetColors : cabinetColors.filter((c) => !CABINET_STAINS.includes(c.id));
+}
+
 // --- Exterior option groups ---
 
 export const exteriorGroups: OptionGroup[] = [

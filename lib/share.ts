@@ -53,6 +53,7 @@ const FIELD_CODECS: Record<TopField, { key: string; codec: Codec }> = {
   flooringId: { key: "f", codec: "id" },
   countertopsId: { key: "ct", codec: "id" },
   cabinetStyleId: { key: "cb", codec: "id" },
+  cabinetColorId: { key: "cc", codec: "id" },
   paintPackageId: { key: "pp", codec: "id" },
   interiorTrimId: { key: "it", codec: "id" },
   lightingPackageId: { key: "lp", codec: "id" },

@@ -31,6 +31,7 @@ import SummaryStep from "@/components/configurator/steps/SummaryStep";
 import SpecSheet from "@/components/configurator/SpecSheet";
 import { PriceVisibility } from "@/components/configurator/ui/PriceVisibility";
 import BaliStage from "@/components/bali3d/BaliStage";
+import { GUIDE } from "@/components/bali3d/guide";
 
 // Models with a live 3D stage. Every other model keeps the photo stage.
 const MODELS_IN_3D = new Set(["bali"]);
@@ -307,6 +308,16 @@ export default function ConfigurePage() {
               </header>
 
               {/* The review page shows an open decision's example inside that decision. */}
+              {/* With the 3D stage, a line ties the question to the picture: where to look. */}
+              {in3d && !isLast && GUIDE[screen.id] && (
+                <p className="-mt-4 mb-8 flex items-start gap-2 border-l-2 border-gold pl-3 text-body-sm text-text-secondary">
+                  <span aria-hidden className="mt-0.5 shrink-0 text-gold">
+                    ◉
+                  </span>
+                  <span>{GUIDE[screen.id].look}</span>
+                </p>
+              )}
+
               {/* With the 3D stage, the home itself shows each choice, so the example photo steps aside. */}
               {!isLast && stage.example && (!in3d || screen.id === "land") && (
                 <OptionExample example={stage.example} className="mb-8" />

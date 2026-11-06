@@ -81,6 +81,10 @@ docs/
   - **Prices.** `PriceVisibility` hides per-choice prices, monthly deltas, model and lot prices, site ranges and the running total in the flow; the review page shows everything.
   - **Also fixed.** Duplicate React keys in CostBreakdown and SpecSheet when two items share a label ("Premium").
   - **Checks.** Lint, tsc and build clean; every screen checked in the built-in browser.
+  - **Round 2.** Calum rated it 8/10 ("in concept it's AMAZING") and flagged lag, flashing, two-scroll snapping, panel and render feeling separate, brown "poop" mounds, and missing cabinet colours. All fixed; see the round 2 table in `docs/3d-walkthrough/01-build-notes.md`.
+    - **Lag cause.** The Poly Haven pine is 142k triangles; lot trees are now baked cut-outs.
+    - **Cabinet colours.** New field `cabinetColorId`; prices are placeholders until Matt's pricing rules arrive.
+    - **Testing note.** Calum runs his own dev server on port 3000 from this folder, so don't start a second one.
 - **Sep 14, 2026 (handoff finished, live on main 5eda7d5):** Each stage was pushed after lint, `tsc --noEmit`, build and grep checks, under Calum's standing OK.
   - **C2b labels (c5d93f1).**
     - Lots renamed to clearly labelled examples ("Example: wooded lot near Chester Basin", "Example price") with one neutral description.

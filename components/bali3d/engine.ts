@@ -7,11 +7,13 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { PRESETS, STOPS, Route, clonePose, isInside, makeRoute, planPose } from "./camera";
 import type { Pose } from "./camera";
 import { applySelections, createMaterials, disposeMaterials, inkify, INDOOR_SLOTS, INK, makeInkLineMaterial, PAPER, setGround } from "./materials";
-import type { Materials } from "./materials";
+import type { Materials, Slot } from "./materials";
+import { PULSE_FOR } from "./guide";
 import { buildCeiling, buildEntry, buildFeatureWall, buildFixtures, buildFloors, buildFurniture, buildKitchen, buildLabels, buildRoof, buildShell } from "./house";
 import type { LightSpot } from "./house";
 import { disposeGroup } from "./builder";
@@ -37,7 +39,14 @@ export interface EngineOptions {
   /** The view preset changed (null when back on the tour). */
   onPresetChange?: (id: string | null) => void;
   onReady?: () => void;
+  /** A marker element the engine keeps pinned over the spot each decision changes. */
+  callout?: HTMLElement | null;
 }
+
+const GOLD = new THREE.Color("#c4882a");
+/** Lot models drawn as baked cut-outs rather than full meshes. */
+const IMPOSTOR_MODELS = new Set(["pine", "shrub_b"]);
+const PULSE_SECONDS = 1.1;
 
 interface Flight {
   route: Route;
@@ -118,7 +127,10 @@ export class BaliEngine {
   private maxIndex: number;
   private scrollEnabled = true;
   private snapTimer: number | null = null;
-  private lastHint: number | null = null;
+  private scrolling = false;
+  private scrollDir = 1;
+  /** The screen the page currently shows, as far as the tour knows. */
+  private reportedIndex = -1;
 
   // Look-around from dragging
   private yaw = 0;
@@ -138,6 +150,13 @@ export class BaliEngine {
   private shadowDirty = true;
   private lastRise = -1;
   private lastEvening = -1;
+  private perfFrames = 0;
+  private perfTime = 0;
+  private calloutAnchor: THREE.Vector3 | null = null;
+  private calloutShown = false;
+  private pulses = new Map<Slot, number>();
+  private impostors = new Map<string, { geometry: THREE.BufferGeometry; material: THREE.MeshBasicMaterial }>();
+  private impostorTargets: THREE.WebGLRenderTarget[] = [];
 
   constructor(container: HTMLElement, opts: EngineOptions) {
     this.container = container;
@@ -182,7 +201,7 @@ export class BaliEngine {
 
     // Lights. The sun's direction is read from the sky image once it loads.
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(this.highQuality ? 4096 : 2048, this.highQuality ? 4096 : 2048);
+    this.sun.shadow.mapSize.set(2048, 2048);
     const sc = this.sun.shadow.camera;
     sc.left = -17;
     sc.right = 17;
@@ -195,7 +214,8 @@ export class BaliEngine {
     this.sun.position.set(30, 40, 25);
     this.sun.target.position.set(0, 0, -2);
     this.scene.add(this.sun, this.sun.target, this.hemi);
-    for (let i = 0; i < 7; i++) {
+    // Three pooled room lights: every light costs every material on every pixel.
+    for (let i = 0; i < 3; i++) {
       const l = new THREE.PointLight(0xffd6a0, 0, 9, 2);
       this.roomLights.push(l);
       this.scene.add(l);
@@ -250,6 +270,13 @@ export class BaliEngine {
     const changed = (...keys: (keyof ConfiguratorState)[]) => !prev || keys.some((k) => prev[k] !== next[k]);
 
     applySelections(this.m, next);
+    // Make the change easy to spot: what changed glows gold for a moment.
+    if (prev) {
+      const now = performance.now() / 1000;
+      for (const [key, slots] of Object.entries(PULSE_FOR) as [keyof ConfiguratorState, Slot[]][]) {
+        if (prev[key] !== next[key]) for (const slot of slots) this.pulses.set(slot, now);
+      }
+    }
     if (changed("exteriorTrimId", "interiorTrimId")) {
       const { shell, frontDoor } = buildShell(next, this.m, this.inkLines);
       this.setGroup("shell", shell, this.riserInner);
@@ -258,9 +285,14 @@ export class BaliEngine {
         disposeGroup(this.frontDoor);
       }
       this.frontDoor = frontDoor;
+      frontDoor.traverse((o) => (o.castShadow = false));
       this.riserInner.add(frontDoor);
     }
-    if (changed("hasFrontPorch", "hasVestibule")) this.setGroup("entry", buildEntry(next, this.m, this.inkLines), this.riserInner);
+    if (changed("hasFrontPorch", "hasVestibule")) {
+      const entry = buildEntry(next, this.m, this.inkLines);
+      entry.getObjectByName("vestibule-door")?.traverse((o) => (o.castShadow = false));
+      this.setGroup("entry", entry, this.riserInner);
+    }
     if (changed("cabinetStyleId")) this.setGroup("kitchen", buildKitchen(next, this.m, this.inkLines), this.riserInner);
     if (changed("lightingPackageId")) {
       const { group, spots } = buildFixtures(next, this.m, this.inkLines);
@@ -287,6 +319,9 @@ export class BaliEngine {
   setFocus(screenId: string, opts: { instant?: boolean } = {}) {
     const idx = this.ids.indexOf(screenId);
     if (idx < 0) return;
+    // The page following the wheel: the tour is already on its way there.
+    if (idx === this.reportedIndex && (this.scrolling || this.pTarget === idx) && !opts.instant && !this.preset) return;
+    this.reportedIndex = idx;
     const leavingPreset = !!this.preset;
     if (this.preset) {
       this.preset = null;
@@ -338,6 +373,12 @@ export class BaliEngine {
     this.invalidate(4);
   }
 
+  /** Pin the marker over a plan point (feet), or hide it. */
+  setCallout(anchor: [number, number, number] | null) {
+    this.calloutAnchor = anchor ? P(...anchor) : null;
+    this.invalidate(2);
+  }
+
   /** Furthest screen the tour may scroll to (0-based), and whether scrolling drives the tour at all. */
   setScrollLimit(maxIndex: number, enabled: boolean) {
     this.maxIndex = Math.max(0, Math.min(maxIndex, this.ids.length - 1));
@@ -360,6 +401,11 @@ export class BaliEngine {
       mat.dispose();
     }
     disposeMaterials(this.m);
+    for (const { geometry, material } of this.impostors.values()) {
+      geometry.dispose();
+      material.dispose();
+    }
+    for (const rt of this.impostorTargets) rt.dispose();
     this.roomEnv.dispose();
     this.inkLines.dispose();
     disposeTextures();
@@ -449,10 +495,13 @@ export class BaliEngine {
       const size = this.renderer.getSize(new THREE.Vector2());
       const composer = new EffectComposer(this.renderer);
       composer.addPass(new RenderPass(this.scene, this.camera));
-      const gtao = new GTAOPass(this.scene, this.camera, size.x, size.y);
+      const gtao = new GTAOPass(this.scene, this.camera, size.x / 2, size.y / 2);
       gtao.blendIntensity = 0.85;
-      gtao.updateGtaoMaterial({ radius: 0.55, distanceExponent: 1.4, thickness: 1.2, scale: 1.0, samples: 12 });
-      gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+      gtao.updateGtaoMaterial({ radius: 0.55, distanceExponent: 1.4, thickness: 1.2, scale: 1.0, samples: 8 });
+      gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 4, rings: 2, samples: 8 });
+      // Occlusion is soft, so it's worked out at half resolution: a quarter of the cost.
+      const fullSetSize = gtao.setSize.bind(gtao);
+      gtao.setSize = (w: number, h: number) => fullSetSize(Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(h / 2)));
       // Leave the sky dome and window glass out of the occlusion pass: the
       // inside of a huge sphere would read as fully occluded and go black.
       const pass = gtao as unknown as { _overrideVisibility: () => void; _visibilityCache: THREE.Object3D[] };
@@ -541,16 +590,97 @@ export class BaliEngine {
   }
 
   private placeLotProps(list: PropPlacement[]) {
-    for (const child of [...this.lotPropGroup.children]) this.lotPropGroup.remove(child);
+    for (const child of [...this.lotPropGroup.children]) {
+      this.lotPropGroup.remove(child);
+      if ((child as THREE.InstancedMesh).isInstancedMesh) (child as THREE.InstancedMesh).dispose();
+    }
     const terrain = this.terrain;
-    for (const p of list) {
-      this.loadProp(p.model).then((src) => {
+    const byModel = new Map<string, PropPlacement[]>();
+    for (const p of list) byModel.set(p.model, [...(byModel.get(p.model) ?? []), p]);
+    for (const [model, placements] of byModel) {
+      this.loadProp(model).then((src) => {
         if (!src || this.disposed || this.terrain !== terrain) return;
-        this.lotPropGroup.add(this.place(src, p));
-        this.shadowDirty = true;
+        if (IMPOSTOR_MODELS.has(model)) {
+          // Background trees: one instanced cut-out for all of them.
+          this.lotPropGroup.add(this.impostorInstances(model, src, placements));
+        } else {
+          for (const p of placements) {
+            const placed = this.place(src, p);
+            // Shrubs on the lot don't cast shadows: far cheaper, barely missed.
+            placed.traverse((o) => (o.castShadow = false));
+            this.lotPropGroup.add(placed);
+          }
+        }
         this.invalidate(3);
       });
     }
+  }
+
+  /**
+   * A tree model is about 140,000 triangles. Seen across a lawn it reads just
+   * as well as a picture of itself, so each tree type is rendered once into a
+   * texture and drawn as two crossed cut-outs (four triangles), all of them in
+   * one instanced draw call.
+   */
+  private impostorInstances(model: string, src: THREE.Object3D, placements: PropPlacement[]): THREE.InstancedMesh {
+    let tmpl = this.impostors.get(model);
+    if (!tmpl) {
+      tmpl = this.bakeImpostor(src);
+      this.impostors.set(model, tmpl);
+    }
+    const mesh = new THREE.InstancedMesh(tmpl.geometry, tmpl.material, placements.length);
+    const m4 = new THREE.Matrix4();
+    placements.forEach((p, i) => {
+      const s = Array.isArray(p.scale) ? p.scale[1] : p.scale;
+      m4.compose(P(p.x, p.y, p.h), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.rotY ?? 0), new THREE.Vector3(s, s, s));
+      mesh.setMatrixAt(i, m4);
+    });
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    mesh.userData.noAO = true;
+    mesh.frustumCulled = false;
+    return mesh;
+  }
+
+  private bakeImpostor(src: THREE.Object3D): { geometry: THREE.BufferGeometry; material: THREE.MeshBasicMaterial } {
+    const box = new THREE.Box3().setFromObject(src);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const w = Math.max(size.x, size.z) * 1.05;
+    const h = size.y * 1.03;
+    const texW = 384;
+    const texH = Math.min(1024, Math.round((texW * h) / w));
+    const cam = new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.01, 200);
+    cam.position.set(center.x, center.y, center.z + 50);
+    cam.lookAt(center);
+    const stage = new THREE.Scene();
+    stage.add(new THREE.HemisphereLight(0xeef3ff, 0x55603f, 1.7));
+    const key = new THREE.DirectionalLight(0xfff0d8, 2.4);
+    key.position.set(4, 10, 8);
+    stage.add(key);
+    stage.add(src.clone(true));
+    const rt = new THREE.WebGLRenderTarget(texW, texH, { samples: 4 });
+    // Draw the real model, not its plan-sheet version, and on a clear background.
+    const ink = INK.uInkR.value;
+    INK.uInkR.value = 1e6;
+    const prevTarget = this.renderer.getRenderTarget();
+    const prevClear = this.renderer.getClearAlpha();
+    const prevColor = this.renderer.getClearColor(new THREE.Color());
+    this.renderer.setRenderTarget(rt);
+    this.renderer.setClearColor(0x000000, 0);
+    this.renderer.clear();
+    this.renderer.render(stage, cam);
+    this.renderer.setRenderTarget(prevTarget);
+    this.renderer.setClearColor(prevColor, prevClear);
+    INK.uInkR.value = ink;
+    rt.texture.generateMipmaps = true;
+
+    const material = new THREE.MeshBasicMaterial({ map: rt.texture, alphaTest: 0.45, side: THREE.DoubleSide });
+    const a = new THREE.PlaneGeometry(w, h).translate(center.x, h / 2 + box.min.y, 0);
+    const b = a.clone().rotateY(Math.PI / 2);
+    const geometry = mergeGeometries([a, b], false)!;
+    this.impostorTargets.push(rt);
+    return { geometry, material };
   }
 
   /** Hide drawn stand-ins whose loaded models have arrived, keeping their plan outlines. */
@@ -565,29 +695,47 @@ export class BaliEngine {
 
   // ---------- Input ----------
 
+  // The wheel drives the tour continuously: the camera follows the wheel, the
+  // decision panel switches as the tour passes halfway to the next stop, and
+  // when the wheel rests the camera glides on to the next stop in the
+  // direction it was going. One notch is enough to move on.
   private onWheel = (e: WheelEvent) => {
-    if (!this.scrollEnabled || this.flight) return;
+    if (!this.scrollEnabled) return;
     e.preventDefault();
     if (this.preset) {
       this.setPreset(null);
       return;
     }
-    const delta = e.deltaMode === 1 ? e.deltaY * 30 : e.deltaY;
-    this.pTarget = THREE.MathUtils.clamp(this.pTarget + delta * 0.0018, 0, this.maxIndex);
-    const hint = Math.round(this.pTarget);
-    if (hint !== this.lastHint) {
-      this.lastHint = hint;
-      this.opts.onScrollHint?.(hint);
+    if (this.flight) {
+      // Take over from a flight wherever it has got to.
+      this.flight = null;
+      this.pTarget = this.p;
     }
+    const delta = e.deltaMode === 1 ? e.deltaY * 30 : e.deltaY;
+    if (delta === 0) return;
+    this.scrolling = true;
+    this.scrollDir = Math.sign(delta);
+    this.pTarget = THREE.MathUtils.clamp(this.pTarget + delta * 0.0032, 0, this.maxIndex);
+    this.report(Math.round(this.pTarget));
     if (this.snapTimer) window.clearTimeout(this.snapTimer);
     this.snapTimer = window.setTimeout(() => {
-      this.pTarget = Math.round(this.pTarget);
-      this.lastHint = null;
+      const settled =
+        this.scrollDir > 0 ? Math.ceil(this.pTarget - 0.08) : Math.floor(this.pTarget + 0.08);
+      this.pTarget = THREE.MathUtils.clamp(settled, 0, this.maxIndex);
+      this.report(this.pTarget);
+      this.scrolling = false;
       this.opts.onScrollHint?.(null);
-      this.opts.onStepRequest(this.pTarget);
-    }, 260);
+    }, 180);
     this.invalidate(2);
   };
+
+  /** Tell the page which screen the tour is on, once per change. */
+  private report(index: number) {
+    if (index === this.reportedIndex) return;
+    this.reportedIndex = index;
+    this.opts.onScrollHint?.(index);
+    this.opts.onStepRequest(index);
+  }
 
   private onPointerDown = (e: PointerEvent) => {
     this.dragging = { x: e.clientX, y: e.clientY, id: e.pointerId };
@@ -665,7 +813,9 @@ export class BaliEngine {
       out.fov = s.fov;
       return out;
     }
-    return this.segments[i].at(easeInOut(f), out);
+    // Half eased, half linear: the camera still settles gently at a stop but
+    // doesn't stall at each one when the wheel carries it past several.
+    return this.segments[i].at(0.5 * f + 0.5 * easeInOut(f), out);
   }
 
   private frame = () => {
@@ -691,7 +841,7 @@ export class BaliEngine {
       this.pose.target.copy(this.preset.pose.target);
       this.pose.fov = this.preset.pose.fov;
     } else {
-      const k = 1 - Math.exp(-dt * 4.2);
+      const k = 1 - Math.exp(-dt * 5.5);
       const before = this.p;
       this.p += (this.pTarget - this.p) * k;
       if (Math.abs(this.pTarget - this.p) < 1e-4) this.p = this.pTarget;
@@ -727,10 +877,12 @@ export class BaliEngine {
       this.camera.fov = this.pose.fov;
       this.camera.updateProjectionMatrix();
     }
-    // Keep near/far tight for depth precision: very far on the plan sheet, close indoors.
+    // Keep near/far tight for depth precision (too loose and distant surfaces
+    // flicker): very far on the plan sheet, a little closer outdoors than in.
     const camH = pos.y;
-    const near = camH > 40 ? camH * 0.5 : 0.05;
-    const far = camH > 40 ? camH * 2.5 : 900;
+    const indoors = isInside(pos);
+    const near = camH > 40 ? camH * 0.5 : indoors ? 0.08 : 0.25;
+    const far = camH > 40 ? camH * 2.5 : 450;
     if (this.camera.near !== near || this.camera.far !== far) {
       this.camera.near = near;
       this.camera.far = far;
@@ -791,6 +943,10 @@ export class BaliEngine {
     const premium = this.state?.lightingPackageId === "premium";
     this.m.led.emissiveIntensity = premium ? 0.8 + 3.0 * evening : 0;
     this.updateRoomLights(evening, premium);
+    // Baked tree cut-outs carry their own light, so dim them by hand at evening;
+    // and keep the lot's trees off the plan sheet.
+    for (const { material } of this.impostors.values()) material.color.setScalar(1 - 0.72 * evening);
+    this.lotPropGroup.visible = reveal > 0.6;
 
     // See-through ground for the foundation, water and wastewater decisions
     const xray = atPreset ? 0 : Math.max(near1("foundation", 0.3, 0.85), near1("water", 0.3, 0.85), near1("sewer", 0.3, 0.85));
@@ -807,6 +963,34 @@ export class BaliEngine {
       mat.clippingPlanes = cutOn ? this.clipPlanes : this.clipOff;
     }
     if (this.groups.cutaway) this.groups.cutaway.visible = cutOn;
+
+    // Changed surfaces glow gold and fade back
+    if (this.pulses.size) {
+      moving = true;
+      const now = performance.now() / 1000;
+      for (const [slot, start] of this.pulses) {
+        const mat = this.m[slot];
+        if (mat.userData.baseEmissive === undefined) {
+          mat.userData.baseEmissive = mat.emissive.clone();
+          mat.userData.baseEmissiveIntensity = mat.emissiveIntensity;
+        }
+        const t = (now - start) / PULSE_SECONDS;
+        const base = mat.userData.baseEmissive as THREE.Color;
+        const baseI = mat.userData.baseEmissiveIntensity as number;
+        if (t >= 1) {
+          mat.emissive.copy(base);
+          mat.emissiveIntensity = baseI;
+          this.pulses.delete(slot);
+          continue;
+        }
+        const amp = Math.sin(Math.PI * t);
+        mat.emissive.copy(base).lerp(GOLD, amp);
+        mat.emissiveIntensity = THREE.MathUtils.lerp(baseI, 0.5, amp);
+      }
+    }
+
+    // The marker over what this decision changes, once the camera has settled.
+    this.placeCallout(rise);
 
     // Doors swing open as the camera walks through them
     this.swingDoor(this.frontDoor, P(PLAN.frontDoor.x, 0.25, 3.4), pos);
@@ -839,21 +1023,64 @@ export class BaliEngine {
     } else {
       this.renderer.render(this.scene, this.camera);
     }
+    this.adaptResolution(dt);
     if (!this.readyFired) {
       this.readyFired = true;
       this.opts.onReady?.();
     }
   };
 
+  private placeCallout(rise: number) {
+    const el = this.opts.callout;
+    if (!el) return;
+    const settled =
+      !!this.calloutAnchor &&
+      !this.flight &&
+      !this.preset &&
+      rise > 0.999 &&
+      Math.abs(this.p - this.pTarget) < 0.03 &&
+      Math.abs(this.p - Math.round(this.p)) < 0.03;
+    let show = false;
+    if (settled && this.calloutAnchor) {
+      this.camera.updateMatrixWorld();
+      const v = this.calloutAnchor.clone().project(this.camera);
+      if (v.z > -1 && v.z < 1 && Math.abs(v.x) < 0.92 && Math.abs(v.y) < 0.9) {
+        const w = this.container.clientWidth;
+        const h = this.container.clientHeight;
+        el.style.transform = `translate3d(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px, 0)`;
+        show = true;
+      }
+    }
+    if (show !== this.calloutShown) {
+      this.calloutShown = show;
+      el.style.opacity = show ? "1" : "0";
+    }
+  }
+
+  /**
+   * While the camera is moving, watch the frame time. If frames run slow
+   * (under about 40 per second), drop the pixel ratio a step, down to 1.
+   */
+  private adaptResolution(dt: number) {
+    this.perfFrames++;
+    this.perfTime += dt;
+    if (this.perfFrames < 40) return;
+    const avg = this.perfTime / this.perfFrames;
+    this.perfFrames = 0;
+    this.perfTime = 0;
+    const pr = this.renderer.getPixelRatio();
+    if (avg > 0.025 && pr > 1) {
+      this.renderer.setPixelRatio(Math.max(1, pr - 0.25));
+      this.resize();
+    }
+  }
+
   private swingDoor(door: THREE.Object3D | null | undefined, hinge: THREE.Vector3, cam: THREE.Vector3) {
     if (!door) return;
     const d = cam.distanceTo(hinge);
     const open = 1 - smooth(1.6, 5.5, d);
-    const angle = open * 1.7;
-    if (Math.abs(door.rotation.y - angle) > 1e-4) {
-      door.rotation.y = angle;
-      this.shadowDirty = true;
-    }
+    // Door leaves cast no shadow, so swinging them never re-renders the shadow map.
+    door.rotation.y = open * 1.7;
   }
 
   private updateRoomLights(evening: number, premium: boolean) {
@@ -861,15 +1088,11 @@ export class BaliEngine {
     // and under-cabinet strips with the premium package.
     const pick = (room: string) => this.spots.find((s) => s.room === room);
     const plan: { x: number; y: number; h: number; power: number }[] = [];
-    const kitchen = this.spots.filter((s) => s.room === "kitchen");
-    if (kitchen.length) plan.push({ x: 33.6, y: 7.65, h: 5.0, power: 1.4 });
-    for (const room of ["dining", "foyer", "living", "hall"]) {
+    // Kitchen (brighter with the premium package's under-cabinet strips), dining, living.
+    plan.push({ x: 33.6, y: 6.0, h: 5.0, power: premium ? 1.9 : 1.4 });
+    for (const room of ["dining", "living"]) {
       const s = pick(room);
       if (s) plan.push(s);
-    }
-    if (premium) {
-      plan.push({ x: 27.0, y: 1.6, h: 4.2, power: 0.5 });
-      plan.push({ x: 40.3, y: 1.6, h: 4.2, power: 0.5 });
     }
     // Lights stay in the scene with zero intensity when unused: changing how
     // many lights are visible would recompile every material.

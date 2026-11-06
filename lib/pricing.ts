@@ -10,6 +10,7 @@ import {
   siteEstimates,
   extensionOptions,
   vestibuleAvailable,
+  cabinetColorsFor,
 } from "./defaults";
 import { calculateMortgage, formatMortgageAssumption, monthlyPaymentFor } from "./calculator";
 import type { CostBreakdown } from "./calculator";
@@ -90,6 +91,7 @@ export interface ConfiguratorState {
   flooringId: string;
   countertopsId: string;
   cabinetStyleId: string;
+  cabinetColorId: string;
   paintPackageId: string;
   interiorTrimId: string;
   lightingPackageId: string;
@@ -128,6 +130,7 @@ export function defaultState(): ConfiguratorState {
     flooringId: "standard",
     countertopsId: "laminate",
     cabinetStyleId: "shaker",
+    cabinetColorId: "white",
     paintPackageId: "builder-white",
     interiorTrimId: "standard",
     lightingPackageId: "standard",
@@ -339,8 +342,15 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
     const group = interiorGroups.find((g) => g.id === groupId);
     const option = group?.options.find((o) => o.id === selectedId);
     if (option && option.priceDelta > 0) {
-      items.push({ label: option.label, amount: option.priceDelta });
+      // Name the group too: "Premium" alone could be the lighting or the insulation.
+      items.push({ label: `${group?.label ?? groupId}: ${option.label}`, amount: option.priceDelta });
     }
+  }
+
+  // Cabinet colour (only colours offered with the chosen door style count)
+  const cabinetColor = cabinetColorsFor(state.cabinetStyleId).find((c) => c.id === state.cabinetColorId);
+  if (cabinetColor && cabinetColor.priceDelta > 0) {
+    items.push({ label: `Cabinet colour: ${cabinetColor.label}`, amount: cabinetColor.priceDelta });
   }
 
   // Fireplace

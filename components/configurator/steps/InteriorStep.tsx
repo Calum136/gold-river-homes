@@ -1,6 +1,6 @@
 "use client";
 
-import { interiorGroups } from "@/lib/defaults";
+import { CABINET_STAINS, cabinetColorsFor, interiorGroups } from "@/lib/defaults";
 import { monthlyDeltaFor, priceDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { fireplaceCopy } from "@/lib/copy";
@@ -69,6 +69,31 @@ function FireplaceChoice({ state, onChange }: Pick<InteriorStepProps, "state" | 
 
 export default function InteriorStep({ state, onChange, only }: InteriorStepProps) {
   if (only === "fireplace") return <FireplaceChoice state={state} onChange={onChange} />;
+
+  if (only === "cabinetStyle") {
+    const styles = interiorGroups.find((g) => g.id === "cabinetStyle")?.options ?? [];
+    // A stain needs solid wood doors: going back to painted MDF resets a stain to white.
+    const onStyle = (patch: Partial<ConfiguratorState>) =>
+      onChange(
+        patch.cabinetStyleId && patch.cabinetStyleId !== "premium-shaker" && CABINET_STAINS.includes(state.cabinetColorId)
+          ? { ...patch, cabinetColorId: "white" }
+          : patch
+      );
+    return (
+      <div className="space-y-8">
+        <OptionRows groupId="cabinetStyle" legend="Cabinet style" options={styles} state={state} stateKey="cabinetStyleId" onChange={onStyle} />
+        <OptionRows
+          groupId="cabinetColor"
+          legend="Cabinet colour"
+          showLegend
+          options={cabinetColorsFor(state.cabinetStyleId)}
+          state={state}
+          stateKey="cabinetColorId"
+          onChange={onChange}
+        />
+      </div>
+    );
+  }
 
   const group = interiorGroups.find((g) => g.id === only);
   const stateKey = STATE_KEY_MAP[only];

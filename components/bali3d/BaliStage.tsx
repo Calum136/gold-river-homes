@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { SCREENS } from "@/lib/screens";
 import type { BaliEngine } from "./engine";
+import { GUIDE } from "./guide";
 
 // ============================================
 // The Bali's 3D stage: the scene fills the stage box, with the view buttons
@@ -55,13 +56,16 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
   const desktop = useSyncExternalStore(subscribeDesktop, getDesktop, getServerDesktop);
   const scrollEnabled = allowScroll && desktop;
   const hostRef = useRef<HTMLDivElement>(null);
+  const calloutRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<BaliEngine | null>(null);
   const latest = useRef({ state, focusId, onStepRequest, maxScreen, scrollEnabled });
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [preset, setPreset] = useState<string | null>(null);
-  const [hint, setHint] = useState<number | null>(null);
   const [scrolledOnce, setScrolledOnce] = useState(false);
+  const guide = GUIDE[focusId];
+  const anchor = guide?.anchor?.(state) ?? null;
+  const anchorKey = anchor ? anchor.join(",") : "";
 
   useEffect(() => {
     latest.current = { state, focusId, onStepRequest, maxScreen, scrollEnabled };
@@ -79,11 +83,11 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
             screenIds: SCREENS.map((s) => s.id),
             onStepRequest: (index) => latest.current.onStepRequest(index + 1),
             onScrollHint: (index) => {
-              setHint(index);
               if (index !== null) setScrolledOnce(true);
             },
             onPresetChange: setPreset,
             onReady: () => setReady(true),
+            callout: calloutRef.current,
           });
         } catch {
           setFailed(true);
@@ -95,6 +99,7 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
         engine.setState(now.state);
         engine.setScrollLimit(now.maxScreen - 1, now.scrollEnabled);
         engine.setFocus(now.focusId, { instant: true });
+        engine.setCallout(GUIDE[now.focusId]?.anchor?.(now.state) ?? null);
       })
       .catch(() => setFailed(true));
     return () => {
@@ -116,10 +121,14 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
     engineRef.current?.setScrollLimit(maxScreen - 1, scrollEnabled);
   }, [maxScreen, scrollEnabled]);
 
+  // The marker follows the decision in focus (and, for water and wastewater, the choice).
+  useEffect(() => {
+    engineRef.current?.setCallout(anchorKey ? (anchorKey.split(",").map(Number) as [number, number, number]) : null);
+  }, [anchorKey]);
+
   if (failed) return <>{fallback}</>;
 
   const onPlan = focusId === "model" && !preset;
-  const hintScreen = hint !== null ? SCREENS[hint] : null;
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#cfd8de]">
@@ -144,10 +153,26 @@ export default function BaliStage({ state, focusId, onStepRequest, maxScreen, sc
         </div>
       )}
 
-      {hintScreen && (
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center">
-          <p className="bg-black/70 px-5 py-3 font-display text-lg text-white backdrop-blur-sm">{hintScreen.title}</p>
-        </div>
+      {/* What this screen is choosing, pinned to where it shows in the house. */}
+      <div
+        ref={calloutRef}
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 opacity-0 transition-opacity duration-300"
+        style={{ willChange: "transform" }}
+      >
+        <span className="absolute -left-2 -top-2 block h-4 w-4 rounded-full border-2 border-white bg-gold shadow-[0_0_0_4px_rgba(196,136,42,0.35)]" />
+        <span className="absolute -left-2 -top-2 block h-4 w-4 animate-ping rounded-full bg-gold/60 motion-reduce:hidden" />
+        <span className="absolute left-4 top-[-0.85rem] whitespace-nowrap border border-gold bg-black/75 px-2 py-1 text-caption font-medium text-white backdrop-blur-sm">
+          {guide?.label}
+        </span>
+      </div>
+
+      {/* The decision in focus, so the panel and the picture read as one. */}
+      {guide && !preset && focusId !== "model" && (
+        <p className="pointer-events-none absolute right-3 top-3 max-w-[45%] border-l-2 border-gold bg-black/60 px-2 py-1 text-caption text-white backdrop-blur-sm">
+          <span className="text-white/60">Now choosing </span>
+          {guide.label}
+        </p>
       )}
 
       {/* View buttons */}

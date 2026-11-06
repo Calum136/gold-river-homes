@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { sidingColors, metalRoofColors, interiorGroups } from "@/lib/defaults";
+import { CABINET_STAINS, cabinetColors, sidingColors, metalRoofColors, interiorGroups } from "@/lib/defaults";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { metalRoofMaps, scan, scanSet, shingleMaps, sidingMaps } from "./textures";
 import type { SidingStyle } from "./textures";
@@ -201,7 +201,7 @@ export function createMaterials(): Materials {
     // so they get a little neutral glow of their own instead.
     ceiling: std({ color: "#f7f6f2", roughness: 0.95, envMapIntensity: 0.3, emissive: "#f1eee8", emissiveIntensity: 0.06 }),
     floorMain: std({ roughness: 0.6, envMapIntensity: INTERIOR_ENV }),
-    floorTile: std({ ...tile, color: "#e9e6e0", envMapIntensity: INTERIOR_ENV }),
+    floorTile: std({ ...tile, color: "#e9e6e0", envMapIntensity: INTERIOR_ENV, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     trimInt: std({ color: "#f8f7f3", roughness: 0.38, envMapIntensity: INTERIOR_ENV }),
     doorInt: std({ color: "#f6f5f1", roughness: 0.42, envMapIntensity: INTERIOR_ENV }),
     doorFront: std({ color: "#2b2f33", roughness: 0.4 }),
@@ -224,12 +224,13 @@ export function createMaterials(): Materials {
     lamp: std({ color: "#fffaf0", emissive: "#ffe2b8", emissiveIntensity: 0.4, roughness: 0.6 }),
     led: std({ color: "#fff6e6", emissive: "#ffe6c4", emissiveIntensity: 0, roughness: 0.5 }),
     deck: std({ ...scanSet("cabinet-wood", 1.4), color: "#a8805c", roughness: 0.8 }),
-    paving: std({ ...paving, roughness: 1 }),
+    paving: std({ ...paving, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 }),
     plant: std({ color: "#4b6b3a", roughness: 0.9 }),
     grass: std({ ...scanSet("lawn", 2.0), roughness: 1, alphaHash: true }),
-    gravel: std({ ...scanSet("gravel", 2.0), roughness: 1, alphaHash: true }),
-    asphalt: std({ ...scanSet("asphalt", 3.0), color: "#8d8d8d", roughness: 1 }),
-    mulch: std({ ...scanSet("mulch", 1.6), roughness: 1, alphaHash: true }),
+    // Ground overlays sit just above the lawn; a depth offset keeps them from flickering against it.
+    gravel: std({ ...scanSet("gravel", 2.0), roughness: 1, alphaHash: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
+    asphalt: std({ ...scanSet("asphalt", 3.0), color: "#8d8d8d", roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
+    mulch: std({ ...scanSet("mulch", 1.6), roughness: 1, alphaHash: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
     rockFace: std({ ...stone, color: "#a9a49c", roughness: 1 }),
     concrete: std({ ...scanSet("concrete", 2.4), color: "#bdbab4", roughness: 1 }),
     soil: std({ color: "#6b5440", roughness: 1 }),
@@ -340,15 +341,21 @@ export function applySelections(m: Materials, state: ConfiguratorState) {
     m.counter.roughness = 0.42;
   }
 
-  // Cabinets: painted MDF shaker, or solid wood shaker
-  if (state.cabinetStyleId === "premium-shaker") {
+  // Cabinets: a painted colour on MDF or solid wood doors, or a stain that
+  // shows the solid wood's grain.
+  const solidWood = state.cabinetStyleId === "premium-shaker";
+  const cabinetHex = cabinetColors.find((c) => c.id === state.cabinetColorId)?.swatchHex ?? "#F2F0EB";
+  if (solidWood && CABINET_STAINS.includes(state.cabinetColorId)) {
     setMaps(m.cabinet, scanSet("cabinet-wood", 0.9));
-    m.cabinet.color.set("#d8b48c");
+    m.cabinet.normalScale.set(1, 1);
+    m.cabinet.color.set(state.cabinetColorId === "espresso" ? "#6a4a36" : "#f0d4a8");
     m.cabinet.roughness = 1;
   } else {
-    setMaps(m.cabinet, { map: null, normalMap: scan("cabinet-painted", "nor", 1.0), roughnessMap: null });
-    m.cabinet.color.set("#f2f0eb");
-    m.cabinet.roughness = 0.42;
+    // Painted. Solid wood keeps a faint grain under the paint; MDF is smooth.
+    setMaps(m.cabinet, { map: null, normalMap: solidWood ? scan("cabinet-wood", "nor", 0.9) : scan("cabinet-painted", "nor", 1.0), roughnessMap: null });
+    m.cabinet.normalScale.set(solidWood ? 0.35 : 1, solidWood ? 0.35 : 1);
+    m.cabinet.color.set(cabinetHex);
+    m.cabinet.roughness = 0.45;
   }
 
   // Hardware: pulls, faucets and door handles
@@ -390,7 +397,7 @@ export const INDOOR_SLOTS: Slot[] = [
 export function setGround(m: Materials, terrain: string) {
   if (terrain === "wooded") {
     setMaps(m.grass, scanSet("grass", 2.2));
-    m.grass.color.set("#cdd6b8");
+    m.grass.color.set("#bfd09a");
   } else {
     setMaps(m.grass, scanSet("lawn", 2.0));
     m.grass.color.set(terrain === "coastal" ? "#e4e2c6" : "#ffffff");

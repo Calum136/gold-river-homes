@@ -1,6 +1,7 @@
 import { defaultState } from "./pricing";
 import type { ConfiguratorState } from "./pricing";
 import {
+  cabinetColors,
   homeModels,
   lotOptions,
   exteriorGroups,
@@ -121,6 +122,7 @@ export function sanitizeState(raw: unknown): ConfiguratorState {
     flooringId: validEnum(src.flooringId, groupOptionIds("flooring"), base.flooringId),
     countertopsId: validEnum(src.countertopsId, groupOptionIds("countertops"), base.countertopsId),
     cabinetStyleId: validEnum(src.cabinetStyleId, groupOptionIds("cabinetStyle"), base.cabinetStyleId),
+    cabinetColorId: validEnum(src.cabinetColorId, cabinetColors.map((c) => c.id), base.cabinetColorId),
     paintPackageId: validEnum(src.paintPackageId, groupOptionIds("paintPackage"), base.paintPackageId),
     interiorTrimId: validEnum(src.interiorTrimId, groupOptionIds("interiorTrim"), base.interiorTrimId),
     lightingPackageId: validEnum(src.lightingPackageId, groupOptionIds("lightingPackage"), base.lightingPackageId),

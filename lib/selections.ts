@@ -3,6 +3,7 @@ import type { ConfiguratorState } from "./pricing";
 import { CHAPTERS, SCREENS } from "./screens";
 import type { ChapterDef } from "./screens";
 import {
+  cabinetColorsFor,
   exteriorGroups,
   extensionOptions,
   foundationCosts,
@@ -142,6 +143,20 @@ export function selectionFor(
     kind: "delta",
     amount: currentTotal - calculateConfiguratorPrice({ ...state, ...patch }).totalCost,
   });
+
+  // Cabinets: the door style and its colour, priced together.
+  if (screenId === "cabinetStyle") {
+    const style = groupOptions("cabinetStyle").find((o) => o.id === state.cabinetStyleId);
+    const color = cabinetColorsFor(state.cabinetStyleId).find((c) => c.id === state.cabinetColorId);
+    return detail({
+      value: `${style?.label ?? NOT_CHOSEN}${color ? `, ${color.label}` : ""}`,
+      swatchHex: color?.swatchHex,
+      thumb: style ? getOptionAsset(`cabinetStyle:${style.id}`) : null,
+      description: style?.description,
+      supremeStandard: style ? isSupremeStandard(style) && state.cabinetColorId === standard.cabinetColorId : false,
+      price: overStandard({ cabinetStyleId: standard.cabinetStyleId, cabinetColorId: standard.cabinetColorId }),
+    });
+  }
 
   const optionDecision = OPTION_DECISIONS[screenId];
   if (optionDecision) {

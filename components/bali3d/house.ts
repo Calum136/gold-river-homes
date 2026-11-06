@@ -40,9 +40,10 @@ interface IntTrim extends TrimStyle {
 }
 
 const INT_TRIM: Record<string, IntTrim> = {
-  standard: { casing: 0.31, proud: 0.05, head: 0.46, cap: false, blocks: false, stepped: false, base: 0.44, baseCap: false, plinth: false },
-  colonial: { casing: 0.3, proud: 0.05, head: 0.3, cap: true, blocks: false, stepped: true, base: 0.5, baseCap: true, plinth: false },
-  craftsman: { casing: 0.4, proud: 0.06, head: 0.55, cap: true, blocks: true, stepped: false, base: 0.62, baseCap: true, plinth: true },
+  // Casings stand prouder than the baseboards they meet, so no faces coincide.
+  standard: { casing: 0.31, proud: 0.075, head: 0.46, cap: false, blocks: false, stepped: false, base: 0.44, baseCap: false, plinth: false },
+  colonial: { casing: 0.3, proud: 0.075, head: 0.3, cap: true, blocks: false, stepped: true, base: 0.5, baseCap: true, plinth: false },
+  craftsman: { casing: 0.4, proud: 0.085, head: 0.55, cap: true, blocks: true, stepped: false, base: 0.62, baseCap: true, plinth: true },
 };
 
 // ---------- Wall helpers ----------
@@ -57,19 +58,79 @@ interface WallCtx {
   s1: number;
   /** Outward side for exterior walls: +1 toward higher cross coordinates. */
   out: 1 | -1;
+  /** Whether each end of the wall stands free (and so needs an end face). */
+  freeStart: boolean;
+  freeEnd: boolean;
 }
 
-function ctxFor(w: WallDef): WallCtx {
-  const alongX = w.a[1] === w.b[1];
+// ---------- Wall junctions ----------
+//
+// Walls in the plan data meet by overlapping, the way they're drawn. Two
+// boxes overlapping at a junction share coplanar faces, and coplanar faces
+// flicker as the camera moves. So before building, every wall that ends
+// inside a crossing wall is cut back to that wall's face, and wall ends that
+// butt into another wall get no end face at all.
+
+type Rect = [number, number, number, number];
+const isAlongX = (w: WallDef) => w.a[1] === w.b[1];
+
+function resolveWalls(): Map<string, { s0: number; s1: number }> {
+  const spans = new Map(WALLS.map((w) => [w.id, isAlongX(w) ? { s0: w.a[0], s1: w.b[0] } : { s0: w.a[1], s1: w.b[1] }]));
+  for (const w of WALLS) {
+    const alongX = isAlongX(w);
+    const c = alongX ? w.a[1] : w.a[0];
+    const half = w.t / 2;
+    for (const end of ["start", "end"] as const) {
+      const span = spans.get(w.id)!;
+      const s = end === "start" ? span.s0 : span.s1;
+      const ex = alongX ? s : c;
+      const ey = alongX ? c : s;
+      for (const o of WALLS) {
+        if (o === w || isAlongX(o) === alongX) continue;
+        const [ox0, ox1, oy0, oy1] = wallRect(o, spans);
+        const eps = 1e-6;
+        if (ex < ox0 - eps || ex > ox1 + eps || ey < oy0 - eps || ey > oy1 + eps) continue;
+        // Only cut back when the crossing wall covers this wall's whole thickness there.
+        const covers = alongX ? oy0 <= c - half + eps && oy1 >= c + half - eps : ox0 <= c - half + eps && ox1 >= c + half - eps;
+        if (!covers) continue;
+        const near = alongX ? (end === "start" ? ox1 : ox0) : end === "start" ? oy1 : oy0;
+        if (end === "start") span.s0 = Math.max(span.s0, near);
+        else span.s1 = Math.min(span.s1, near);
+        break;
+      }
+    }
+  }
+  return spans;
+}
+
+function wallRect(w: WallDef, spans: Map<string, { s0: number; s1: number }>): Rect {
+  const span = spans.get(w.id)!;
+  const half = w.t / 2;
+  return isAlongX(w) ? [span.s0, span.s1, w.a[1] - half, w.a[1] + half] : [w.a[0] - half, w.a[0] + half, span.s0, span.s1];
+}
+
+/** Is a plan point inside any wall other than `self`? */
+function inAnyWall(x: number, y: number, self: WallDef, spans: Map<string, { s0: number; s1: number }>): boolean {
+  return WALLS.some((o) => {
+    if (o === self) return false;
+    const [x0, x1, y0, y1] = wallRect(o, spans);
+    return x > x0 && x < x1 && y > y0 && y < y1;
+  });
+}
+
+function ctxFor(w: WallDef, spans: Map<string, { s0: number; s1: number }>): WallCtx {
+  const alongX = isAlongX(w);
   const c = alongX ? w.a[1] : w.a[0];
-  const [s0, s1] = alongX ? [w.a[0], w.b[0]] : [w.a[1], w.b[1]];
+  const { s0, s1 } = spans.get(w.id)!;
   let out: 1 | -1 = 1;
   if (w.ext) {
     const mid = (s0 + s1) / 2;
     const probe = (sign: number) => (alongX ? insideFootprint(mid, c + sign) : insideFootprint(c + sign, mid));
     out = probe(1) ? -1 : 1;
   }
-  return { w, alongX, c, t: w.t, s0, s1, out };
+  // A wall end shows a face only where it stands free, not where it meets another wall.
+  const probeEnd = (s: number) => (alongX ? inAnyWall(s, c, w, spans) : inAnyWall(c, s, w, spans));
+  return { w, alongX, c, t: w.t, s0, s1, out, freeStart: !probeEnd(s0 - 0.05), freeEnd: !probeEnd(s1 + 0.05) };
 }
 
 /** World face on one side of a wall. */
@@ -104,8 +165,11 @@ function wallPiece(b: Builder, ctx: WallCtx, s: number, e: number, h0: number, h
   }
   slots.py = ext ? outSlot : inSlot;
   const jamb: Slot = ext ? "trimExt" : "trimInt";
-  slots[endFace(ctx, "start")] = thin ? null : s <= ctx.s0 + 1e-6 ? (ext ? outSlot : inSlot) : jamb;
-  slots[endFace(ctx, "end")] = thin ? null : e >= ctx.s1 - 1e-6 ? (ext ? outSlot : inSlot) : jamb;
+  const wallEnd: Slot = ext ? outSlot : inSlot;
+  const atStart = s <= ctx.s0 + 1e-6;
+  const atEnd = e >= ctx.s1 - 1e-6;
+  slots[endFace(ctx, "start")] = thin ? null : atStart ? (ctx.freeStart ? wallEnd : null) : jamb;
+  slots[endFace(ctx, "end")] = thin ? null : atEnd ? (ctx.freeEnd ? wallEnd : null) : jamb;
   wbox(b, ctx, s, e, ctx.c - ctx.t / 2, ctx.c + ctx.t / 2, h0, h1, slots, !thin || h1 - h0 < 6);
 }
 
@@ -130,8 +194,9 @@ function casing(b: Builder, ctx: WallCtx, sign: number, s: number, e: number, bo
   }
   if (style.stepped) {
     // A second, narrower band standing proud of the first: a stepped profile.
-    faceBox(b, ctx, sign, s - 0.12, s, p, p + 0.035, bottom, head + 0.12, slot);
-    faceBox(b, ctx, sign, e, e + 0.12, p, p + 0.035, bottom, head + 0.12, slot);
+    // The pieces meet without overlapping, so no faces are shared.
+    faceBox(b, ctx, sign, s - 0.12, s, p, p + 0.035, bottom, head, slot);
+    faceBox(b, ctx, sign, e, e + 0.12, p, p + 0.035, bottom, head, slot);
     faceBox(b, ctx, sign, s - 0.12, e + 0.12, p, p + 0.035, head, head + 0.12, slot);
   }
 }
@@ -230,8 +295,9 @@ export function buildShell(state: ConfiguratorState, m: Materials, ink: THREE.Ma
   const ext = EXT_TRIM[state.exteriorTrimId] ?? EXT_TRIM.standard;
   const int = INT_TRIM[state.interiorTrimId] ?? INT_TRIM.standard;
 
+  const spans = resolveWalls();
   for (const w of WALLS) {
-    const ctx = ctxFor(w);
+    const ctx = ctxFor(w, spans);
     const h0 = w.ext ? -1 : 0;
     const h1 = w.ext ? PLAN.eave : PLAN.ceiling;
     const ops = (w.openings ?? [])
@@ -347,22 +413,20 @@ export function buildShell(state: ConfiguratorState, m: Materials, ink: THREE.Ma
 
 function baseboard(b: Builder, ctx: WallCtx, sign: number, s: number, e: number, style: IntTrim) {
   faceBox(b, ctx, sign, s, e, 0, 0.05, 0, style.base, "trimInt");
-  if (style.baseCap) faceBox(b, ctx, sign, s, e, 0, 0.08, style.base, style.base + 0.07, "trimInt");
+  if (style.baseCap) faceBox(b, ctx, sign, s, e, 0, 0.065, style.base, style.base + 0.07, "trimInt");
 }
 
 // ---------- Floors and ceiling ----------
 
 export function buildFloors(m: Materials, ink: THREE.Material): THREE.Group {
   const b = new Builder();
+  // Tile sits a little above the main floor; its material also carries a
+  // depth offset, so the two never fight where they overlap.
   for (const z of FLOOR_ZONES) {
     const [x0, x1, y0, y1] = z.rect;
-    const lift = z.kind === "tile" ? 0.012 : 0;
+    const lift = z.kind === "tile" ? 0.02 : 0;
     b.box(x0, x1, y0, y1, -0.08 + lift, lift, { py: z.kind === "tile" ? "floorTile" : "floorMain" });
   }
-  // The subfloor edge under the walls, so the drawing reads as one slab.
-  b.box(0, 74, 0, 16, -1.0, -0.08, { py: null, ny: null, all: "skirting" });
-  const L = PLAN.living;
-  b.box(L.x0, L.x1, 16, L.y1, -1.0, -0.08, { py: null, ny: null, all: "skirting" });
   return b.build(m, ink, "floors");
 }
 
@@ -452,7 +516,7 @@ export function buildRoof(m: Materials, ink: THREE.Material): THREE.Group {
   const x1 = 74 + rakeOver;
   roofSlab(b, P(x0, -eaveOver, top(-eaveOver)), P(x1, -eaveOver, top(-eaveOver)), P(x1, 8, top(8)), P(x0, 8, top(8)), th * FT);
   roofSlab(b, P(x1, 16 + eaveOver, top(-eaveOver)), P(x0, 16 + eaveOver, top(-eaveOver)), P(x0, 8, top(8)), P(x1, 8, top(8)), th * FT);
-  // Ridge cap
+  // Ridge caps (the living room's starts where the main one ends, so they don't overlap)
   b.box(x0, x1, 7.75, 8.25, top(8) - 0.05, top(8) + 0.12, "roof");
 
   // Living room module: ridge running back from the main ridge.
@@ -460,7 +524,7 @@ export function buildRoof(m: Materials, ink: THREE.Material): THREE.Group {
   const ly1 = L.y1 + rakeOver;
   roofSlab(b, P(L.x0 - eaveOver, ly1, top(-eaveOver)), P(L.x0 - eaveOver, 9, top(-eaveOver)), P(lx, 9, top(8)), P(lx, ly1, top(8)), th * FT);
   roofSlab(b, P(L.x1 + eaveOver, 9, top(-eaveOver)), P(L.x1 + eaveOver, ly1, top(-eaveOver)), P(lx, ly1, top(8)), P(lx, 9, top(8)), th * FT);
-  b.box(lx - 0.25, lx + 0.25, 8, ly1, top(8) - 0.05, top(8) + 0.12, "roof");
+  b.box(lx - 0.25, lx + 0.25, 8.25, ly1, top(8) - 0.05, top(8) + 0.12, "roof");
 
   // Gable ends
   const gableH = PLAN.eave + 8 * p;
@@ -502,17 +566,24 @@ function railing(b: Builder, xa: number, ya: number, xb: number, yb: number, hBa
     const h = hBase + (hBaseEnd - hBase) * t;
     b.box(x - 0.06, x + 0.06, y - 0.06, y + 0.06, h, h + 2.9, "deck");
   }
-  const steps = Math.max(1, Math.ceil(len / 1.2));
-  for (let i = 0; i < steps; i++) {
-    const t0 = i / steps;
-    const t1 = (i + 1) / steps;
-    const xa0 = xa + (xb - xa) * t0;
-    const xa1 = xa + (xb - xa) * t1;
-    const ya0 = ya + (yb - ya) * t0;
-    const ya1 = ya + (yb - ya) * t1;
-    const h = hBase + (hBaseEnd - hBase) * (t0 + t1) / 2;
-    b.box(Math.min(xa0, xa1) - 0.1, Math.max(xa0, xa1) + 0.1, Math.min(ya0, ya1) - 0.1, Math.max(ya0, ya1) + 0.1, h + 2.9, h + 3.05, "deck", { edges: true });
-  }
+  // One continuous handrail, following the slope on stairs.
+  beam(b, "deck", P(xa, ya, hBase + 2.97), P(xb, yb, hBaseEnd + 2.97), 0.2, 0.15);
+}
+
+/** A rectangular beam from one world point to another (width and height in feet). */
+function beam(b: Builder, slot: Slot, from: THREE.Vector3, to: THREE.Vector3, width: number, height: number) {
+  const dir = to.clone().sub(from);
+  const len = dir.length();
+  const g = new THREE.BoxGeometry(len + 0.06, height * FT, width * FT);
+  const flat = new THREE.Vector3(dir.x, 0, dir.z).normalize();
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), flat);
+  const pitch = Math.atan2(dir.y, Math.hypot(dir.x, dir.z));
+  g.rotateZ(pitch);
+  g.applyQuaternion(q);
+  const mid = from.clone().add(to).multiplyScalar(0.5);
+  g.translate(mid.x, mid.y, mid.z);
+  b.add(slot, g);
+  b.addEdges(new THREE.EdgesGeometry(g));
 }
 
 function postAt(b: Builder, x: number, y: number, h0: number, h1: number) {
@@ -554,7 +625,8 @@ export function buildEntry(state: ConfiguratorState, m: Materials, ink: THREE.Ma
     const t = 0.5;
     const h1 = 8.6;
     // Floor and ceiling
-    b.box(x0, x1, y0, 0, -1.0, 0.01, { py: "floorTile", all: "skirting" }, { edges: true });
+    // Floor inside the walls (not under them, where its sides would coincide with the siding)
+    b.box(x0 + t, x1 - t, y0 + t, 0, -1.0, 0.01, { py: "floorTile", all: "skirting" }, { edges: true });
     b.box(x0 + t, x1 - t, y0 + t, 0, 7.8, 7.9, { ny: "ceiling" });
     // Side walls with a window each
     for (const [wx0, wx1, side] of [
@@ -564,7 +636,8 @@ export function buildEntry(state: ConfiguratorState, m: Materials, ink: THREE.Ma
       const outFace: Face = side < 0 ? "nx" : "px";
       const inFace: Face = side < 0 ? "px" : "nx";
       const slots: FaceSlots = { [outFace]: "siding", [inFace]: "wall", py: "siding", pz: "siding", nz: "siding", ny: null };
-      b.box(wx0, wx1, y0, -4.3, -1, h1, slots, { edges: true });
+      // Side walls start behind the front wall, which runs the full width.
+      b.box(wx0, wx1, y0 + t, -4.3, -1, h1, slots, { edges: true });
       b.box(wx0, wx1, -1.7, 0, -1, h1, slots, { edges: true });
       b.box(wx0, wx1, -4.3, -1.7, -1, 3.0, { ...slots, py: "sidingThin" });
       b.box(wx0, wx1, -4.3, -1.7, 6.8, h1, { ...slots, py: "sidingThin" });
@@ -623,10 +696,8 @@ export function buildEntry(state: ConfiguratorState, m: Materials, ink: THREE.Ma
     const py0 = -6.5;
     b.box(px0, px1, py0, 0, landingTop - 0.18, landingTop, "deck", { edges: true });
     b.box(px0, px1, py0, py0 + 0.15, GRADE, landingTop - 0.18, "skirting");
-    b.box(px0, px0 + 0.15, py0, 0, GRADE, landingTop - 0.18, "skirting");
-    b.box(px1 - 0.15, px1, py0, 0, GRADE, landingTop - 0.18, "skirting");
-    // Deck boards for texture
-    for (let x = px0 + 0.45; x < px1; x += 0.47) b.box(x, x + 0.02, py0, 0, landingTop - 0.001, landingTop + 0.004, "skirting");
+    b.box(px0, px0 + 0.15, py0 + 0.15, 0, GRADE, landingTop - 0.18, "skirting");
+    b.box(px1 - 0.15, px1, py0 + 0.15, 0, GRADE, landingTop - 0.18, "skirting");
     const postY = py0 + 0.45;
     const roofLow = 7.9;
     const roofHigh = 8.65;
@@ -913,7 +984,7 @@ export function buildFixtures(state: ConfiguratorState, m: Materials, ink: THREE
       [33.0, 28.0],
       [42.0, 28.0],
     ]) {
-      b.shape("lamp", new THREE.CircleGeometry(0.22, 16), { x, y, h: PLAN.ceiling - 0.01 }, { rotX: Math.PI / 2 });
+      b.shape("lamp", new THREE.CylinderGeometry(0.24, 0.24, 0.06, 16), { x, y, h: PLAN.ceiling - 0.03 });
     }
   }
   return { group: b.build(m, ink, "fixtures"), spots };
@@ -1057,8 +1128,12 @@ export function buildFurniture(m: Materials, ink: THREE.Material): THREE.Group {
   nightstand(b, 72.0, 73.5, 0.7, 2.3);
 
   // Bathroom 1: alcove tub with tiled walls, toilet, vanity
-  b.box(70.9, 73.5, 10.1, 15.5, 0, 1.75, "ceramic", { edges: true });
-  b.box(71.1, 73.3, 10.35, 15.25, 1.0, 1.76, "steel");
+  // Tub: an apron and rim around a sunken basin
+  b.box(70.9, 73.5, 10.1, 15.5, 0, 0.9, "ceramic", { edges: true });
+  b.box(70.9, 71.15, 10.1, 15.5, 0.9, 1.75, "ceramic", { edges: true });
+  b.box(73.25, 73.5, 10.1, 15.5, 0.9, 1.75, "ceramic");
+  b.box(71.15, 73.25, 10.1, 10.35, 0.9, 1.75, "ceramic");
+  b.box(71.15, 73.25, 15.25, 15.5, 0.9, 1.75, "ceramic");
   b.box(73.45, 73.5, 10.1, 15.5, 1.75, 7.0, "backsplash");
   b.box(70.9, 73.5, 15.45, 15.5, 1.75, 7.0, "backsplash");
   b.box(70.9, 73.5, 10.075, 10.12, 1.75, 7.0, "backsplash");
