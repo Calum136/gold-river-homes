@@ -3,9 +3,9 @@
 
 @AGENTS.md
 
-## Status: ACTIVE: Bali 3D walkthrough on branch `feat/bali-3d` (Nov 6, 2026, four review rounds), not merged: plan sheet, walls rise, step arrows tour the house, preset views and a Rooms menu, every choice changes the 3D scene live, prices on the final page, small yard with a to-scale backdrop ring. `main` is still the photo-first configurator (5eda7d5, Sep 14).
-## Next: (1) Calum reviews the Bali 3D demo locally (`npm run dev`, /configure, pick the Bali) and decides whether to merge. (2) Questions for Matt at the demo: real pricing rules, kitchen flooring vs Supreme's spec, whether the Bali offers a basement and where its stairs go. (3) Before a public launch, cut the 3D page weight (about 70 MB; KTX2 textures, Draco meshes, lighter pine). (4) Owner data request still open: real prices, lots, option list, Supreme permission for photos and plans.
-## Completion: Photo-first configurator shipped on main; Bali 3D demo built and browser-checked on its branch; remaining items blocked on Calum's review and owner data
+## Status: ACTIVE: Bali 3D walkthrough (four review rounds) merged to `main` and deployed Nov 6, 2026 at Calum's request, to show Matt: plan sheet, walls rise, step arrows tour the house, preset views and a Rooms menu, every choice changes the 3D scene live, prices on the final page, small yard with a to-scale backdrop ring. Live at https://goldriverhomes.netlify.app (Netlify site `goldriverhomes` builds from GitHub `main`).
+## Next: (1) Calum shows Matt the live demo. (2) Questions for Matt at the demo: real pricing rules, kitchen flooring vs Supreme's spec, whether the Bali offers a basement and where its stairs go. (3) Cut the 3D page weight (about 70 MB on first load; KTX2 textures, Draco meshes, lighter pine). (4) Owner data request still open: real prices, lots, option list, Supreme permission for photos and plans.
+## Completion: Bali 3D demo live on main; remaining items wait on Matt's answers and owner data
 
 - **Client:** Gold River Homes (Supreme Homes retailer)
 - **Location:** 219 NS-12, Chester Basin, NS B0J 1K0
