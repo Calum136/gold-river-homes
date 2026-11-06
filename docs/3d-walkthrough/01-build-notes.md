@@ -14,7 +14,7 @@ Branch `feat/bali-3d`. One working model, the Supreme Bali, as Calum asked. Ever
 
 | Screen | What changes, live |
 |---|---|
-| Land | Lot around the house: tree count, lawn or leafy forest floor, boulders, gravel or paved drive |
+| Land | The yard around the house: number of trees, lawn or leafy forest floor |
 | Model | The plan sheet |
 | Siding style | Siding profile: 7" horizontal lap, 8" vertical board, wide board and batten (drawn in code, so direction really changes) |
 | Siding colour | Siding colour |
@@ -46,7 +46,9 @@ Branch `feat/bali-3d`. One working model, the Supreme Bali, as Calum asked. Ever
 | `components/bali3d/textures.ts` | Scanned textures plus drawn siding, metal and shingle profiles |
 | `components/bali3d/camera.ts` | Camera stops per screen, view presets, routes through doorways |
 | `components/bali3d/engine.ts` | Renderer, lighting from the sky image, the reveal, input, live updates |
-| `components/bali3d/BaliStage.tsx` | React wrapper, view buttons, scroll hint, WebGL fallback to the photo stage |
+| `components/bali3d/BaliStage.tsx` | React wrapper, view buttons, Rooms menu, step arrows, WebGL fallback to the photo stage |
+| `components/bali3d/landscape.ts` | The front garden, drawn in code and instanced |
+| `components/bali3d/details.ts` | Room detail shown only when the camera is in or beside the room |
 | `components/configurator/ui/PriceVisibility.tsx` | Hides prices during the flow, shows them on the final page |
 
 To put another model in 3D: trace its plan into a `plan.ts`-style file, add its id to `MODELS_IN_3D` in `app/configure/page.tsx`, and check the camera stops.
@@ -93,11 +95,28 @@ To put another model in 3D: trace its plan into a `plan.ts`-style file, add its 
 | Three demo disclaimers | One line under the stage: "Illustrative 3D model of Supreme's Bali floor plan." |
 | What does Tour do? | It returned to the current step's view from a preset. Replaced by "← Back to [step]", shown only while a preset view is open |
 
+## Round 4 (Calum testing in his own browser)
+
+| Feedback | Change |
+|---|---|
+| White ring around the properties | The plan sheet's paper reveal stopped at 70 m, so distant ground still drew as paper. Once the reveal finishes, nothing draws as paper |
+| Insulation view blocked | Lot trees and maples kept out of the cutaway's line of sight (`CUTAWAY_CLEAR` in `landscape.ts`) |
+| Wall disconnected at the utility closet (flooring step) | The wall behind the coat closet now runs the full width of the HRV and water heater closet |
+| Siding pokes through on the living room wall | Where an exterior wall ends inside the house, that end now carries drywall, not siding |
+| Odd lighting above and below windows | Thin wall pieces (over and under openings) now take the same indoor lighting as full walls |
+| Zig-zag "straight lines", looks low resolution | The post-processing chain had lost anti-aliasing. It now renders into a 4x multisampled buffer, so baseboards and floor edges are smooth |
+| Big black ball | The premium entry light was drawn as a solid black sphere. It is now a frosted glass globe on a metal cap |
+| Views of all major rooms | A Rooms menu beside the view buttons: Kitchen, Living room, Main bedroom, Main bath, Bedroom 2, Bedroom 3, Bathroom, Laundry, Pantry. The laundry, pantry and ensuite doors are pocket doors, so no open leaf blocks those views |
+| Basement stairs | Left as is: the basement option draws stairs under the hall. To check with Matt whether the Bali offers a basement and where its stairs go |
+| No fog; backdrop over-scaled; about 10 ft around the house, then a to-scale backdrop ring | No fog. The yard is an oval about 10 to 15 ft clear of the house (`LOT` in `site.ts`), with the well, septic and street lines brought inside it. At its edge a scenery ring carries the sky image, projected from eye height at the yard's centre so its trees stand in proportion to the house. The yard sits on a soil base like an architect's model: a thin plinth in normal views, deepening to 20 ft (inside faces only, so nothing hides the pipes) when the ground turns see-through. Lot trees stand off the ends and back corners, clear of the well, septic tank, leach field and the Back view, and step aside on the underground steps |
+
 ## Known gaps
 
 - **Page weight.** About 70 MB loads the first time the Bali opens (textures about 33 MB, sky 7 MB, furniture 12 MB, and the pine model alone 22 MB). Compressing textures (KTX2) and meshes (Draco) would cut this a lot before a public launch.
-- **Phones.** On phones it runs at a lower quality (no ambient occlusion, smaller shadows). Scrolling drives the tour only on desktop; phones use Next and Back.
+- **Phones.** On phones it runs at a lower quality (no ambient occlusion, smaller shadows).
+- **Basement.** Whether the Bali offers a basement, and where its stairs go, is to check with Matt.
+- **Kitchen flooring.** Supreme's spec wording still says vinyl tile in the kitchen; the model follows Calum's call (the flooring choice covers it). To settle with Matt.
 - **Sky.** The sky image is a forest edge, so every lot reads as wooded at the horizon.
 - **Finishes are representative.** Colours and materials are representative, not exact Supreme products; the stage says so.
-- **Some furniture is vintage.** The dining table and stools are vintage-style CC0 models; beds and the TV are drawn in code.
+- **Some furniture is vintage.** The stools are vintage-style CC0 models; beds and the TV are drawn in code.
 - **Plan accuracy.** Traced at about 21.8 px per foot, so positions are within a few inches.

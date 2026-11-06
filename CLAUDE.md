@@ -3,8 +3,8 @@
 
 @AGENTS.md
 
-## Status: ACTIVE — Bali 3D walkthrough built on branch `feat/bali-3d` (Nov 6, 2026), not merged: scroll-driven plan sheet, walls rise, camera tours the house, every choice changes the 3D scene live, prices moved to the final page. `main` is still the photo-first configurator (5eda7d5, Sep 14).
-## Next: (1) Calum reviews the Bali 3D demo locally (`npm run dev`, /configure, pick the Bali) and decides whether to merge. (2) Before a public launch, cut the 3D page weight (about 70 MB; KTX2 textures, Draco meshes, lighter pine). (3) Owner data request still open: real prices, lots, option list, Supreme permission for photos and plans.
+## Status: ACTIVE: Bali 3D walkthrough on branch `feat/bali-3d` (Nov 6, 2026, four review rounds), not merged: plan sheet, walls rise, step arrows tour the house, preset views and a Rooms menu, every choice changes the 3D scene live, prices on the final page, small yard with a to-scale backdrop ring. `main` is still the photo-first configurator (5eda7d5, Sep 14).
+## Next: (1) Calum reviews the Bali 3D demo locally (`npm run dev`, /configure, pick the Bali) and decides whether to merge. (2) Questions for Matt at the demo: real pricing rules, kitchen flooring vs Supreme's spec, whether the Bali offers a basement and where its stairs go. (3) Before a public launch, cut the 3D page weight (about 70 MB; KTX2 textures, Draco meshes, lighter pine). (4) Owner data request still open: real prices, lots, option list, Supreme permission for photos and plans.
 ## Completion: Photo-first configurator shipped on main; Bali 3D demo built and browser-checked on its branch; remaining items blocked on Calum's review and owner data
 
 - **Client:** Gold River Homes (Supreme Homes retailer)
@@ -88,6 +88,10 @@ docs/
   - **Round 3.** All fixed; see the round 3 table in the build notes.
     - **What changed.** Foundation sets the ground level (crawlspace lifts the house); dining set removed; smooth see-through ground; landscaping drawn in code (`landscape.ts`); door hinges and view angles; flooring covers the kitchen; room detail in view (`details.ts`); zoom in Dollhouse and Top down; faint step arrows replace scroll-to-step; one disclaimer; "Back to [step]" replaces Tour.
     - **Open question for Matt.** Kitchen flooring vs Supreme's spec wording, which still says vinyl tile in the kitchen.
+  - **Round 4.** All fixed; see the round 4 table in the build notes.
+    - **What changed.** White ring gone (the paper reveal stopped at 70 m); utility closet wall joined; no siding on wall ends inside the house; even light above and below windows; 4x MSAA brings back anti-aliasing (the "zig-zag" lines); the black ball was the entry light, now a frosted globe; Rooms menu with every major room, and pocket doors on the laundry, pantry and ensuite.
+    - **Yard and backdrop.** No fog. The yard is an oval about 10 to 15 ft around the house (`LOT` in `site.ts`), with the services inside it, and a to-scale scenery ring at its edge. The yard sits on a soil base: a thin plinth normally, 20 ft deep (inside faces only) on the underground steps, via a global clip plane in `engine.ts`. Trees stand off the ends and back corners and hide on the underground steps.
+    - **Open question for Matt.** Whether the Bali offers a basement, and where its stairs go (the basement option draws them under the hall; Calum said leave as is).
 - **Sep 14, 2026 (handoff finished, live on main 5eda7d5):** Each stage was pushed after lint, `tsc --noEmit`, build and grep checks, under Calum's standing OK.
   - **C2b labels (c5d93f1).**
     - Lots renamed to clearly labelled examples ("Example: wooded lot near Chester Basin", "Example price") with one neutral description.

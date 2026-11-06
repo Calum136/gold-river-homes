@@ -60,6 +60,9 @@ interface WallCtx {
   /** Whether each end of the wall stands free (and so needs an end face). */
   freeStart: boolean;
   freeEnd: boolean;
+  /** Whether each end faces into the house. */
+  startIndoors: boolean;
+  endIndoors: boolean;
 }
 
 // ---------- Wall junctions ----------
@@ -127,9 +130,24 @@ function ctxFor(w: WallDef, spans: Map<string, { s0: number; s1: number }>): Wal
     const probe = (sign: number) => (alongX ? insideFootprint(mid, c + sign) : insideFootprint(c + sign, mid));
     out = probe(1) ? -1 : 1;
   }
-  // A wall end shows a face only where it stands free, not where it meets another wall.
+  // A wall end shows a face only where it stands free, not where it meets
+  // another wall; and an exterior wall's end that opens into the house (where
+  // the living room joins the main module) is painted, not sided.
   const probeEnd = (s: number) => (alongX ? inAnyWall(s, c, w, spans) : inAnyWall(c, s, w, spans));
-  return { w, alongX, c, t: w.t, s0, s1, out, freeStart: !probeEnd(s0 - 0.05), freeEnd: !probeEnd(s1 + 0.05) };
+  const probeIn = (s: number) => (alongX ? insideFootprint(s, c) : insideFootprint(c, s));
+  return {
+    w,
+    alongX,
+    c,
+    t: w.t,
+    s0,
+    s1,
+    out,
+    freeStart: !probeEnd(s0 - 0.05),
+    freeEnd: !probeEnd(s1 + 0.05),
+    startIndoors: probeIn(s0 - 0.3),
+    endIndoors: probeIn(s1 + 0.3),
+  };
 }
 
 /** World face on one side of a wall. */
@@ -164,11 +182,12 @@ function wallPiece(b: Builder, ctx: WallCtx, s: number, e: number, h0: number, h
   }
   slots.py = ext ? outSlot : inSlot;
   const jamb: Slot = ext ? "trimExt" : "trimInt";
-  const wallEnd: Slot = ext ? outSlot : inSlot;
   const atStart = s <= ctx.s0 + 1e-6;
   const atEnd = e >= ctx.s1 - 1e-6;
-  slots[endFace(ctx, "start")] = thin ? null : atStart ? (ctx.freeStart ? wallEnd : null) : jamb;
-  slots[endFace(ctx, "end")] = thin ? null : atEnd ? (ctx.freeEnd ? wallEnd : null) : jamb;
+  const startSlot: Slot = ext && !ctx.startIndoors ? outSlot : inSlot;
+  const endSlot: Slot = ext && !ctx.endIndoors ? outSlot : inSlot;
+  slots[endFace(ctx, "start")] = thin ? null : atStart ? (ctx.freeStart ? startSlot : null) : jamb;
+  slots[endFace(ctx, "end")] = thin ? null : atEnd ? (ctx.freeEnd ? endSlot : null) : jamb;
   wbox(b, ctx, s, e, ctx.c - ctx.t / 2, ctx.c + ctx.t / 2, h0, h1, slots, !thin || h1 - h0 < 6);
 }
 
@@ -961,9 +980,11 @@ export function buildFixtures(state: ConfiguratorState, m: Materials, ink: THREE
 
   // Entry: flush mount, or a statement fixture with the premium package
   if (premium) {
-    b.shape("hardware", new THREE.CylinderGeometry(0.015, 0.015, 1.2, 6), { x: 44.0, y: 4.5, h: PLAN.ceiling - 0.6 });
-    b.shape("hardware", new THREE.SphereGeometry(0.9, 18, 12), { x: 44.0, y: 4.5, h: 6.3 }, { scale: [1, 1, 1], edges: true });
-    b.shape("lamp", new THREE.SphereGeometry(0.35, 16, 10), { x: 44.0, y: 4.5, h: 6.3 });
+    // A frosted glass globe on a short rod, its cap and ring in the hardware finish.
+    b.shape("hardware", new THREE.CylinderGeometry(0.015, 0.015, 1.0, 6), { x: 44.0, y: 4.5, h: PLAN.ceiling - 0.5 });
+    b.shape("hardware", new THREE.CylinderGeometry(0.22, 0.3, 0.14, 20), { x: 44.0, y: 4.5, h: 6.95 });
+    b.shape("lamp", new THREE.SphereGeometry(0.62, 28, 18), { x: 44.0, y: 4.5, h: 6.3 }, { edges: true });
+    b.shape("hardware", new THREE.TorusGeometry(0.64, 0.025, 8, 40), { x: 44.0, y: 4.5, h: 6.3 }, { rotX: Math.PI / 2 });
   } else {
     b.shape("lamp", new THREE.CylinderGeometry(0.55, 0.45, 0.25, 24), { x: 44.0, y: 4.5, h: PLAN.ceiling - 0.13 }, { edges: true });
   }

@@ -14,8 +14,8 @@ import type { Materials } from "./materials";
 /** Which camera zones (see camera.ts) show each room's detail. */
 export const DETAIL_ZONES: Record<string, string[]> = {
   "detail:bath1": ["bath1", "hall"],
-  "detail:bath2": ["br1"],
-  "detail:br1": ["br1"],
+  "detail:bath2": ["bath2", "br1"],
+  "detail:br1": ["br1", "bath2", "wic"],
   "detail:br2": ["br2", "hall"],
   "detail:br3": ["br3", "hall"],
   "detail:kitchen": ["great"],

@@ -371,6 +371,8 @@ export function applySelections(m: Materials, state: ConfiguratorState) {
 /** Surfaces only ever seen indoors. They reflect a neutral room rather than the outdoor sky. */
 export const INDOOR_SLOTS: Slot[] = [
   "wall",
+  // The wall strips above and below windows: they must be lit like the rest of the wall.
+  "wallThin",
   "ceiling",
   "floorMain",
   "floorTile",

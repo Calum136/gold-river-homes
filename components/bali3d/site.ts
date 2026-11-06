@@ -14,7 +14,18 @@ import { FT, P, wx, wz } from "./space";
 // those screens, so these choices change the picture too.
 // ============================================
 
-const ROAD_Y = -78;
+/**
+ * The modelled yard: an oval about 10 ft clear of the house all round, with
+ * room at the front for the steps, garden and walk. Plan feet. A scenery ring
+ * stands at its edge (engine.ts), so there's no field or road beyond it.
+ */
+export const LOT = { cx: 37, cy: 12, a: 52, b: 31 } as const;
+
+/** Where the yard's edge is along x, on the front (-1) or back (+1) side. */
+export function lotEdgeY(x: number, side: -1 | 1): number {
+  const k = 1 - ((x - LOT.cx) / LOT.a) ** 2;
+  return LOT.cy + side * LOT.b * Math.sqrt(Math.max(0, k));
+}
 
 export function terrainFor(state: ConfiguratorState): LotTerrain {
   if (state.landSituation === "gold-river") {
@@ -23,26 +34,16 @@ export function terrainFor(state: ConfiguratorState): LotTerrain {
   return "meadow";
 }
 
-/** Ground, driveway, walkway, garden beds and the road. */
+/** The yard: lawn out to the scenery ring and a paver walk from the steps to its edge. */
 export function buildLot(state: ConfiguratorState, m: Materials): THREE.Group {
   const GRADE = gradeFor(state.foundationType);
   const b = new Builder();
-  const terrain = terrainFor(state);
-  // Lawn: a disc of real grass texture reaching far past where the haze turns
-  // it the colour of the horizon, so it never shows an edge.
-  const lawn = new THREE.CircleGeometry(700 / FT, 128);
-  b.shape("grass", lawn, { x: 37, y: 0, h: GRADE }, { rotX: -Math.PI / 2, worldUV: true });
-
-  const drive = terrain === "town" ? "asphalt" : "gravel";
-  const lift = 0.06;
-  // Driveway to a parking pad at the left front, then out to the road.
-  b.box(4, 22, -26, -5, GRADE, GRADE + lift, drive);
-  b.box(8, 18, ROAD_Y + 6, -26, GRADE, GRADE + lift, drive);
-  // Paver walk from the pad to the front steps
-  b.box(22, 46, -16, -12.5, GRADE, GRADE + lift + 0.01, "paving");
-  b.box(41.6, 45.6, -12.5, -8, GRADE, GRADE + lift + 0.01, "paving");
-  // Road
-  b.box(-150, 230, ROAD_Y - 22, ROAD_Y, GRADE, GRADE + lift, "asphalt");
+  // Lawn: an oval disc (a unit circle stretched to the yard's shape).
+  const lawn = new THREE.CircleGeometry(1, 96);
+  b.shape("grass", lawn, { x: LOT.cx, y: LOT.cy, h: GRADE }, { rotX: -Math.PI / 2, scale: [LOT.a, LOT.b, 1], worldUV: true });
+  // Paver walk from the front steps straight out to the edge of the yard
+  const walkEnd = lotEdgeY(43.6, -1) + 0.6;
+  b.box(41.6, 45.6, walkEnd, -7.5, GRADE, GRADE + 0.07, "paving");
   // Garden beds and planting along the front are drawn in landscape.ts.
   const group = b.build(m, null, "lot");
   group.traverse((o) => {
@@ -67,6 +68,22 @@ export interface PropPlacement {
   replaces?: string;
 }
 
+/**
+ * Places a tree can't stand: on or beside the house, over the well or the
+ * septic tank and leach field (roots and pipes don't mix), or in the Back
+ * view's line of sight behind the living room.
+ */
+function treeBlocked(x: number, y: number): boolean {
+  const m = 4; // clearance for the crown
+  const L = PLAN.living;
+  if (x > -m && x < PLAN.length + m && y > -m && y < PLAN.width + m) return true;
+  if (x > L.x0 - m && x < L.x1 + m && y < L.y1 + m) return true;
+  if (Math.hypot(x + 6, y - 4) < 6) return true; // well
+  if (Math.hypot(x - 82, y - 6) < 7) return true; // septic tank
+  if (x > 52 && x < 76 && y > 17 && y < 35) return true; // leach field
+  return x > 20 && x < 55 && y > 30; // behind the living room
+}
+
 /** Trees, shrubs and rocks around the lot, by terrain. Positions in plan feet. */
 export function lotProps(state: ConfiguratorState): PropPlacement[] {
   const GRADE = gradeFor(state.foundationType);
@@ -79,16 +96,24 @@ export function lotProps(state: ConfiguratorState): PropPlacement[] {
       return s / 2147483647;
     };
   })();
-  const trees = terrain === "wooded" ? 22 : terrain === "meadow" ? 9 : terrain === "coastal" ? 5 : 6;
+  // A few trees just inside the scenery ring, off the two ends of the house
+  // and round toward its back corners. They frame the house: the front, and
+  // the Back view behind the living room, stay open to the camera.
+  const trees = terrain === "wooded" ? 11 : terrain === "meadow" ? 5 : terrain === "coastal" ? 3 : 4;
+  const onRight = Math.ceil(trees / 2);
   for (let i = 0; i < trees; i++) {
-    const a = rnd() * Math.PI * 2;
-    // Trees stand behind and beside the house: the front yard, where the
-    // driveway, well and septic field are (and where the camera stands), stays open.
-    const r = (terrain === "wooded" ? 55 : 75) + rnd() * (terrain === "wooded" ? 70 : 90);
-    const x = 37 + Math.cos(a) * r * 1.2;
-    const y = 12 + Math.sin(a) * r;
-    if (y < 8 && x > -75 && x < 150) continue;
-    out.push({ model: "pine", x, y, h: GRADE, rotY: rnd() * 6.28, scale: 4.5 + rnd() * 2.5 });
+    const right = i < onRight;
+    const u = ((right ? i : i - onRight) + 0.5) / (right ? onRight : trees - onRight);
+    // Right arc from behind the septic tank toward the back corner (the leach
+    // field takes the rest); left arc from the well round to the back corner.
+    const a = (right ? 0.12 + 0.4 * u : Math.PI + 0.15 - 0.95 * u) + (rnd() - 0.5) * 0.12;
+    const k = 0.84 + rnd() * 0.08;
+    const x = LOT.cx + Math.cos(a) * LOT.a * k;
+    const y = LOT.cy + Math.sin(a) * LOT.b * k;
+    const rotY = rnd() * 6.28;
+    const scale = 4.2 + rnd() * 2.2;
+    if (treeBlocked(x, y)) continue;
+    out.push({ model: "pine", x, y, h: GRADE, rotY, scale });
   }
   // Foundation shrubs in the beds
   // Shrubs and flowers by the house are drawn in code (landscape.ts).
@@ -147,7 +172,8 @@ export function buildFoundation(state: ConfiguratorState, m: Materials, ink: THR
       b.box(x + 1.7, x + 1.8, -2.4, 0, GRADE - 2.0, GRADE + 0.4, "steelPipe");
       b.box(x - 1.7, x + 1.7, -2.3, 0, GRADE - 2.0, GRADE - 1.9, "drainRock");
     }
-    // Stairs down inside, under the hall
+    // Stairs down inside, under the hall. To check with Matt: whether the Bali
+    // offers a basement at all, and where Supreme puts its stairs (Calum, Nov 2026).
     for (let i = 0; i < 12; i++) b.box(47.0, 50.0, 13.0 - i * 0.85, 13.85 - i * 0.85, -1 - (i + 1) * 0.68, -1 - i * 0.68, "wood");
   } else if (state.foundationType === "slab") {
     // Slab on grade with thickened edges; skirting closes in the floor system.
@@ -214,20 +240,26 @@ export function buildUtilities(state: ConfiguratorState, m: Materials, ink: THRE
   const b = new Builder();
   const frost = GRADE - 5.5;
 
+  // Everything sits inside the modelled yard. Distances are shortened from a
+  // real lot to fit; the parts and how they connect are what this shows.
+
   // Water supply
   if (state.waterType === "municipal") {
-    // Main under the road, a curb stop at the property line, a line to the house.
-    pipe(b, "pipeWater", [[-150, ROAD_Y - 11, frost - 1], [230, ROAD_Y - 11, frost - 1]], 0.45);
-    pipe(b, "pipeWater", [[8, ROAD_Y - 11, frost - 1], [8, ROAD_Y + 2, frost], [8, 1.5, frost], [8, 1.5, -1.2]]);
-    b.shape("lid", new THREE.CylinderGeometry(0.35, 0.35, 0.3, 16), { x: 8, y: ROAD_Y + 2, h: GRADE + 0.1 });
+    // A line out to the street main beyond the front of the yard, with a curb stop.
+    const edge = lotEdgeY(8, -1);
+    pipe(b, "pipeWater", [[-6, edge + 0.4, frost - 1], [22, edge + 0.4, frost - 1]], 0.45);
+    pipe(b, "pipeWater", [[8, edge + 0.4, frost - 1], [8, edge + 3, frost], [8, 1.5, frost], [8, 1.5, -1.2]]);
+    b.shape("lid", new THREE.CylinderGeometry(0.35, 0.35, 0.3, 16), { x: 8, y: edge + 3, h: GRADE + 0.1 });
   } else if (state.waterType === "drilled" || state.waterType === "dug") {
-    const wx0 = -16;
-    const wy0 = -30;
+    // The well stands off the left end of the house.
+    const wx0 = -6;
+    const wy0 = 4;
     if (state.waterType === "drilled") {
-      // A 6" steel casing standing 18" above grade, driven deep into bedrock.
-      pipe(b, "steelPipe", [[wx0, wy0, GRADE - 60], [wx0, wy0, GRADE + 1.5]], 0.3);
+      // A 6" steel casing standing 18" above grade, running down into bedrock
+      // (real wells go 100 to 250 ft; shown to the depth of the yard's soil base).
+      pipe(b, "steelPipe", [[wx0, wy0, GRADE - 19.5], [wx0, wy0, GRADE + 1.5]], 0.3);
       b.shape("steelPipe", new THREE.CylinderGeometry(0.36, 0.36, 0.25, 16), { x: wx0, y: wy0, h: GRADE + 1.6 });
-      b.box(wx0 - 2.5, wx0 + 2.5, wy0 - 0.2, wy0 + 0.2, GRADE - 62, GRADE - 20, "drainRock");
+      b.box(wx0 - 1.6, wx0 + 1.6, wy0 - 0.2, wy0 + 0.2, GRADE - 19.5, GRADE - 11, "drainRock");
     } else {
       // A dug well: 3' concrete crock rings with a lid, about 20' deep.
       for (let i = 0; i < 8; i++) {
@@ -235,32 +267,37 @@ export function buildUtilities(state: ConfiguratorState, m: Materials, ink: THRE
       }
       b.shape("concrete", new THREE.CylinderGeometry(1.95, 1.95, 0.35, 28), { x: wx0, y: wy0, h: GRADE + 2.75 }, { edges: true });
     }
-    pipe(b, "pipeWater", [[wx0, wy0, frost], [6, wy0, frost], [6, 1.5, frost], [6, 1.5, -1.2]]);
+    pipe(b, "pipeWater", [[wx0, wy0, frost], [0.6, wy0, frost], [0.6, wy0, -1.2]]);
   }
 
   // Wastewater
   if (state.sewerType === "municipal") {
-    pipe(b, "pipeSewer", [[-150, ROAD_Y - 7, frost - 3], [230, ROAD_Y - 7, frost - 3]], 0.6);
-    pipe(b, "pipeSewer", [[60, 1.5, -1.2], [60, 1.5, frost + 1], [60, ROAD_Y - 7, frost - 3]], 0.25);
-    b.shape("pipeSewer", new THREE.CylinderGeometry(0.25, 0.25, 0.4, 12), { x: 60, y: -3, h: GRADE + 0.15 });
+    // A lateral out to the street sewer beyond the front of the yard, with a cleanout.
+    const edge = lotEdgeY(60, -1);
+    pipe(b, "pipeSewer", [[46, edge + 0.4, frost - 3], [74, edge + 0.4, frost - 3]], 0.6);
+    pipe(b, "pipeSewer", [[60, 1.5, -1.2], [60, 1.5, frost + 1], [60, edge + 0.4, frost - 3]], 0.25);
+    b.shape("pipeSewer", new THREE.CylinderGeometry(0.25, 0.25, 0.4, 12), { x: 60, y: -6, h: GRADE + 0.15 });
   } else if (state.sewerType === "septic") {
-    // Septic tank with two access lids, a distribution box, and a leach field of
-    // perforated pipe in drain-rock trenches.
-    const tx = 60;
-    const ty = -26;
-    pipe(b, "pipeSewer", [[tx, 1.5, -1.2], [tx, 1.5, GRADE - 4.0], [tx, ty + 3, GRADE - 4.4]], 0.25);
-    b.box(tx - 3, tx + 3, ty - 5, ty + 3, GRADE - 9, GRADE - 3.5, "concrete", { edges: true });
-    for (const ly of [ty + 1.5, ty - 3.5]) b.shape("lid", new THREE.CylinderGeometry(0.9, 0.9, 3.7, 20), { x: tx, y: ly, h: GRADE - 1.8 });
-    pipe(b, "pipeSewer", [[tx, ty - 5, GRADE - 4.6], [tx, ty - 14, GRADE - 4.8]], 0.25);
-    b.box(tx - 1.2, tx + 1.2, ty - 16, ty - 14, GRADE - 5.6, GRADE - 4.2, "concrete", { edges: true });
-    for (let i = 0; i < 5; i++) {
-      const lx = tx - 14 + i * 7;
-      pipe(b, "pipeSewer", [[tx, ty - 16, GRADE - 4.9], [lx, ty - 18, GRADE - 3.2]], 0.2);
-      b.box(lx - 1.2, lx + 1.2, ty - 48, ty - 18, GRADE - 4.2, GRADE - 2.3, "drainRock", { edges: true });
-      pipe(b, "pipeSewer", [[lx, ty - 18, GRADE - 3.2], [lx, ty - 48, GRADE - 3.3]], 0.2);
+    // Septic tank off the right end of the house with two access lids, a
+    // distribution box behind the house, and a leach field of perforated pipe
+    // in drain-rock trenches.
+    const tx = 82;
+    const ty = 6;
+    pipe(b, "pipeSewer", [[73.6, ty, -1.2], [73.6, ty, GRADE - 4.0], [tx - 3.2, ty, GRADE - 4.4]], 0.25);
+    b.box(tx - 3, tx + 3, ty - 4, ty + 4, GRADE - 9, GRADE - 3.5, "concrete", { edges: true });
+    for (const ly of [ty - 2.4, ty + 2.4]) b.shape("lid", new THREE.CylinderGeometry(0.9, 0.9, 3.7, 20), { x: tx, y: ly, h: GRADE - 1.8 });
+    const dx = 66;
+    const dy = 19.5;
+    pipe(b, "pipeSewer", [[tx, ty + 4, GRADE - 4.6], [tx, dy, GRADE - 4.7], [dx + 1.2, dy, GRADE - 4.8]], 0.25);
+    b.box(dx - 1.2, dx + 1.2, dy - 1, dy + 1, GRADE - 5.6, GRADE - 4.2, "concrete", { edges: true });
+    for (let i = 0; i < 4; i++) {
+      const lx = 56.5 + i * 5;
+      pipe(b, "pipeSewer", [[dx, dy + 1, GRADE - 4.9], [lx, 21.5, GRADE - 3.2]], 0.2);
+      b.box(lx - 1.0, lx + 1.0, 21.5, 31, GRADE - 4.2, GRADE - 2.3, "drainRock", { edges: true });
+      pipe(b, "pipeSewer", [[lx, 21.5, GRADE - 3.2], [lx, 31, GRADE - 3.3]], 0.2);
     }
-    // The field reads on the surface as a low, wide rise in the lawn.
-    b.shape("grass", new THREE.SphereGeometry(1, 48, 10, 0, Math.PI * 2, 0, Math.PI / 2), { x: tx, y: ty - 33, h: GRADE - 0.3 }, { scale: [26, 0.75, 22], worldUV: true });
+    // The field reads on the surface as a low rise in the lawn behind the house.
+    b.shape("grass", new THREE.SphereGeometry(1, 48, 10, 0, Math.PI * 2, 0, Math.PI / 2), { x: 64, y: 26.5, h: GRADE - 0.25 }, { scale: [11, 0.6, 6.5], worldUV: true });
   }
   return b.build(m, ink, "utilities");
 }

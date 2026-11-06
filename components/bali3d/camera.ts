@@ -42,9 +42,10 @@ export const STOPS: Record<string, Pose> = {
   hardwareFinish: pose(30.9, 5.3, 3.9, 27.4, 1.0, 2.5, 46),
   insulation: pose(68.8, -10.5, 4.8, 71.0, 0.2, 4.0, 46),
   fireplace: pose(41.4, 22.2, 4.8, 30.2, 23.8, 3.6, 58),
-  foundation: pose(-20, -28, 0.5, 14, 6, -5, 48),
-  water: pose(-34, -66, 30, 4, -22, -7, 48),
-  sewer: pose(104, -60, 32, 58, -38, -6, 48),
+  // Close in at the left end, where no shrubs stand in front of the space under the house.
+  foundation: pose(-4, -17, 1.0, 18, 6, -4, 50),
+  water: pose(-34, -38, 26, 0, 4, -6, 48),
+  sewer: pose(110, -18, 34, 68, 18, -6, 48),
   summary: pose(6, -46, 5.5, 40, 6, 4.5, 42),
 };
 
@@ -52,22 +53,28 @@ export interface ViewPreset {
   id: string;
   label: string;
   pose: Pose;
+  /** Outside and overview views sit in the button row; rooms go in the Rooms menu. */
+  group: "view" | "room";
   /** Roof and ceilings lifted off so you can look down into the rooms. */
   cutaway?: boolean;
 }
 
 export const PRESETS: ViewPreset[] = [
-  { id: "aerial", label: "Aerial", pose: pose(-40, -90, 60, 37, 6, 0, 40) },
-  { id: "front", label: "Front", pose: STOPS.sidingColor },
-  { id: "back", label: "Back", pose: pose(30, 92, 6, 37, 14, 5, 36) },
-  { id: "dollhouse", label: "Dollhouse", pose: pose(66, -34, 58, 37, 12, 0, 40), cutaway: true },
-  { id: "top", label: "Top down", pose: pose(37, 15.9, 150, 37, 16, 0, 26), cutaway: true },
-  { id: "kitchen", label: "Kitchen", pose: STOPS.cabinetStyle },
-  { id: "living", label: "Living", pose: STOPS.paintPackage },
-  // From the front corner by the closet, so the open bedroom door is behind the camera's right shoulder.
-  { id: "bedroom", label: "Main bedroom", pose: pose(8.8, 2.4, 5.2, 15.6, 13.2, 2.6, 66) },
-  // Just inside the doorway, the open door alongside rather than in front.
-  { id: "bath", label: "Bathroom", pose: pose(66.0, 12.4, 5.3, 73.2, 11.3, 2.2, 78) },
+  { id: "aerial", label: "Aerial", group: "view", pose: pose(-40, -90, 60, 37, 6, 0, 40) },
+  { id: "front", label: "Front", group: "view", pose: STOPS.sidingColor },
+  { id: "back", label: "Back", group: "view", pose: pose(30, 92, 6, 37, 14, 5, 36) },
+  { id: "dollhouse", label: "Dollhouse", group: "view", pose: pose(66, -34, 58, 37, 12, 0, 40), cutaway: true },
+  { id: "top", label: "Top down", group: "view", pose: pose(37, 15.9, 150, 37, 16, 0, 26), cutaway: true },
+  // Rooms, named as on Supreme's plan. Each camera stands where open doors sit beside it, not in front.
+  { id: "kitchen", label: "Kitchen", group: "room", pose: STOPS.cabinetStyle },
+  { id: "living", label: "Living room", group: "room", pose: STOPS.paintPackage },
+  { id: "bedroom", label: "Main bedroom", group: "room", pose: pose(8.8, 2.4, 5.2, 15.6, 13.2, 2.6, 66) },
+  { id: "ensuite", label: "Main bath", group: "room", pose: pose(6.6, 12.6, 5.3, 1.2, 9.4, 2.4, 84) },
+  { id: "bedroom2", label: "Bedroom 2", group: "room", pose: pose(56.6, 10.6, 5.2, 50.4, 4.4, 2.4, 72) },
+  { id: "bedroom3", label: "Bedroom 3", group: "room", pose: pose(64.2, 8.6, 5.2, 71.6, 3.2, 2.4, 72) },
+  { id: "bath", label: "Bathroom", group: "room", pose: pose(66.0, 12.4, 5.3, 73.2, 11.3, 2.2, 78) },
+  { id: "laundry", label: "Laundry", group: "room", pose: pose(24.5, 8.6, 5.2, 21.6, 1.4, 2.4, 78) },
+  { id: "pantry", label: "Pantry", group: "room", pose: pose(24.5, 10.2, 5.2, 20.6, 14.6, 3.4, 80) },
 ];
 
 /** The plan sheet, straight down through a long lens, fitted to the viewport. */
@@ -90,14 +97,16 @@ export function planPose(aspect: number): Pose {
 
 // ---------- Getting around inside ----------
 
-type Zone = "out" | "great" | "hall" | "br1" | "br2" | "br3" | "bath1";
+type Zone = "out" | "great" | "hall" | "laundry" | "pantry" | "br1" | "bath2" | "wic" | "br2" | "br3" | "bath1";
 
 const EYE = 5.2;
 
 function zoneOf(v: THREE.Vector3): Zone {
   const q = toPlan(v);
   if (!insideFootprint(q.x, q.y) || q.h > PLAN.ceiling + 0.5 || q.h < -0.8) return "out";
-  if (q.x < 25.3) return "br1";
+  if (q.x < 7.7) return q.y > 6.6 ? "bath2" : "wic";
+  if (q.x < 19.7) return "br1";
+  if (q.x < 25.3) return q.y > 9.3 ? "pantry" : "laundry";
   if (q.x >= 65 && q.y > 9.9) return "bath1";
   if (q.x >= 62 && q.y <= 9.9) return "br3";
   if (q.x >= 48.3 && q.x < 59.3 && q.y < 11.9) return "br2";
@@ -112,7 +121,11 @@ const LINKS: [Zone, Zone, [number, number][]][] = [
   ["hall", "bath1", [[63.6, 12.9], [66.4, 12.9]]],
   ["hall", "br2", [[57.1, 13.1], [57.1, 10.0]]],
   ["hall", "br3", [[63.7, 11.2], [63.7, 8.2]]],
-  ["great", "br1", [[27.4, 5.6], [22.5, 5.8], [17.8, 6.2]]],
+  ["great", "laundry", [[26.8, 5.5], [23.9, 5.5]]],
+  ["great", "pantry", [[26.8, 10.8], [23.9, 10.8]]],
+  ["laundry", "br1", [[21.0, 5.9], [18.4, 6.0]]],
+  ["br1", "bath2", [[8.9, 8.7], [6.2, 8.9]]],
+  ["br1", "wic", [[8.9, 3.4], [6.2, 3.4]]],
 ];
 
 function zonePath(a: Zone, b: Zone): Zone[] {

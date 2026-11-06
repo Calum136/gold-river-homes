@@ -14,16 +14,25 @@ import { GUIDE } from "./guide";
 // a buyer picks the Bali; without WebGL the photo stage shows instead.
 // ============================================
 
+// Ids match PRESETS in camera.ts (kept here so this file doesn't pull in three.js).
 const VIEW_BUTTONS: { id: string; label: string }[] = [
   { id: "aerial", label: "Aerial" },
   { id: "front", label: "Front" },
   { id: "back", label: "Back" },
   { id: "dollhouse", label: "Dollhouse" },
   { id: "top", label: "Top down" },
+];
+
+const ROOMS: { id: string; label: string }[] = [
   { id: "kitchen", label: "Kitchen" },
-  { id: "living", label: "Living" },
-  { id: "bedroom", label: "Bedroom" },
+  { id: "living", label: "Living room" },
+  { id: "bedroom", label: "Main bedroom" },
+  { id: "ensuite", label: "Main bath" },
+  { id: "bedroom2", label: "Bedroom 2" },
+  { id: "bedroom3", label: "Bedroom 3" },
   { id: "bath", label: "Bathroom" },
+  { id: "laundry", label: "Laundry" },
+  { id: "pantry", label: "Pantry" },
 ];
 
 const ZOOMABLE = new Set(["dollhouse", "top"]);
@@ -47,6 +56,8 @@ export default function BaliStage({ state, focusId, onPrev, onNext, fallback }: 
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [preset, setPreset] = useState<string | null>(null);
+  const [roomsOpen, setRoomsOpen] = useState(false);
+  const roomPreset = ROOMS.find((r) => r.id === preset);
   const guide = GUIDE[focusId];
   const anchor = guide?.anchor?.(state) ?? null;
   const anchorKey = anchor ? anchor.join(",") : "";
@@ -149,24 +160,63 @@ export default function BaliStage({ state, focusId, onPrev, onNext, fallback }: 
         </p>
       )}
 
+      {/* Rooms menu, opening upward from its button */}
+      {roomsOpen && (
+        <div className="absolute bottom-12 left-2 z-20 flex flex-col border border-white/15 bg-black/80 py-1 backdrop-blur-sm" role="menu">
+          {ROOMS.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                engineRef.current?.setPreset(r.id);
+                setRoomsOpen(false);
+              }}
+              className={`focus-ring px-3 py-1.5 text-left text-caption transition-colors ${
+                r.id === preset ? "text-gold" : "text-white/85 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Views. "Back to …" returns to the current step's own view. */}
       <div className="absolute inset-x-0 bottom-0 flex gap-1 overflow-x-auto p-2 [scrollbar-width:none]">
         {preset && (
           <button
             type="button"
-            onClick={() => engineRef.current?.setPreset(null)}
+            onClick={() => {
+              engineRef.current?.setPreset(null);
+              setRoomsOpen(false);
+            }}
             className="focus-ring shrink-0 bg-gold px-2.5 py-1.5 text-caption font-semibold text-white"
           >
             ← Back to {stepTitle}
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => setRoomsOpen((o) => !o)}
+          aria-expanded={roomsOpen}
+          aria-haspopup="menu"
+          className={`focus-ring shrink-0 px-2.5 py-1.5 text-caption font-medium backdrop-blur-sm transition-colors ${
+            roomPreset ? "bg-white text-black" : "bg-black/55 text-white/85 hover:bg-black/75 hover:text-white"
+          }`}
+        >
+          {roomPreset ? roomPreset.label : "Rooms"} ▴
+        </button>
         {VIEW_BUTTONS.map((v) => {
           const active = v.id === preset;
           return (
             <button
               key={v.id}
               type="button"
-              onClick={() => engineRef.current?.setPreset(v.id)}
+              onClick={() => {
+                engineRef.current?.setPreset(v.id);
+                setRoomsOpen(false);
+              }}
               aria-pressed={active}
               className={`focus-ring shrink-0 px-2.5 py-1.5 text-caption font-medium backdrop-blur-sm transition-colors ${
                 active ? "bg-white text-black" : "bg-black/55 text-white/85 hover:bg-black/75 hover:text-white"

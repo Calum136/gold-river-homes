@@ -17,7 +17,7 @@ import { PULSE_FOR } from "./guide";
 import { buildCeiling, buildEntry, buildFeatureWall, buildFixtures, buildFloors, buildFurniture, buildKitchen, buildLabels, buildRoof, buildShell } from "./house";
 import type { LightSpot } from "./house";
 import { disposeGroup } from "./builder";
-import { FURNITURE_PROPS, buildCutaway, buildFoundation, buildLot, buildUtilities, cutawayPlanes, lotProps, terrainFor, CUTAWAY } from "./site";
+import { FURNITURE_PROPS, buildCutaway, buildFoundation, buildLot, buildUtilities, cutawayPlanes, lotProps, terrainFor, CUTAWAY, LOT } from "./site";
 import type { PropPlacement } from "./site";
 import { PLAN, gradeFor } from "./plan";
 import { FLOOR_Y, P, wx, wy, wz } from "./space";
@@ -42,6 +42,10 @@ export interface EngineOptions {
 }
 
 const GOLD = new THREE.Color("#c4882a");
+/** How deep the yard's soil base goes; everything buried is drawn within it. */
+const SOIL_DEPTH_FT = 20;
+/** Away from the underground steps, the base is cut to a thin plinth this deep (deep enough for basement window wells). */
+const PLINTH_FT = 2.5;
 /** Views where the wheel zooms and dragging with Shift (or the right button) pans. */
 const ZOOMABLE = new Set(["dollhouse", "top"]);
 /** Lot models drawn as baked cut-outs rather than full meshes. */
@@ -100,11 +104,8 @@ export class BaliEngine {
   private hemi = new THREE.HemisphereLight(0xe4ebf2, 0xb3aa9c, 0.35);
   private roomLights: THREE.PointLight[] = [];
   private spots: LightSpot[] = [];
-  private horizon = new THREE.Color().setRGB(0.8, 0.83, 0.85, THREE.LinearSRGBColorSpace);
-  // Exponential, so the fade spreads gradually over distance; linear fog seen
-  // from a raised camera squeezes into a few pixels at the horizon and reads as an edge.
-  private fog = new THREE.FogExp2(0xcccccc, 0);
   private sky: THREE.Mesh | null = null;
+  private ring: THREE.Mesh | null = null;
   private roomEnv: THREE.Texture;
   private props = new THREE.Group();
   private lotPropGroup = new THREE.Group();
@@ -156,6 +157,12 @@ export class BaliEngine {
   private groundY = 0;
   /** Deep soil under the see-through lawn, so underground pieces read against earth, not sky. */
   private soil: THREE.Mesh;
+  /**
+   * Cuts away everything below the plinth (soil, footings, the well, the
+   * septic tank) except on the underground steps, so eye-level views from
+   * outside the yard see a thin model base, not a wall of earth.
+   */
+  private groundClip = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private impostors = new Map<string, { geometry: THREE.BufferGeometry; material: THREE.MeshBasicMaterial }>();
   private impostorTargets: THREE.WebGLRenderTarget[] = [];
 
@@ -175,6 +182,9 @@ export class BaliEngine {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.localClippingEnabled = true;
+    // Global, so it applies to every built-in material; the sky dome and the
+    // scenery ring are custom shaders and ignore it.
+    this.renderer.clippingPlanes = [this.groundClip];
     this.renderer.domElement.style.display = "block";
     this.renderer.domElement.style.width = "100%";
     this.renderer.domElement.style.height = "100%";
@@ -240,12 +250,13 @@ export class BaliEngine {
 
     INK.uInkCenter.value.set(wx(PLAN.frontDoor.x), wz(0));
     this.landKit = createLandscapeKit();
-    this.soil = new THREE.Mesh(new THREE.CircleGeometry(220, 64).rotateX(-Math.PI / 2), this.m.soil);
-    this.soil.visible = false;
+    // The yard sits on a block of soil, like the base of an architect's model:
+    // its sides close off everything below ground (footings, pipes, the well),
+    // and its floor is what the see-through lawn shows beneath them.
+    this.soil = this.makeSoilBlock();
     this.scene.add(this.soil);
     this.scene.add(this.props, this.lotPropGroup);
-    this.scene.background = new THREE.Color("#cfd8de");
-    this.scene.fog = this.fog;
+    this.scene.background = new THREE.Color("#d9d8d4");
 
     // Static parts of the house.
     this.setGroup("floors", buildFloors(this.m, this.inkLines), this.scene);
@@ -443,17 +454,61 @@ export class BaliEngine {
     for (let i = 0; i < this.stops.length - 1; i++) this.segments.push(makeRoute(this.stops[i], this.stops[i + 1]));
   }
 
-  /** Move the ground-level pieces (the soil seen in the see-through view). */
+  /** The yard's soil base: an oval wall 20 ft deep with a floor, top at ground level. */
+  private makeSoilBlock(): THREE.Mesh {
+    const depth = SOIL_DEPTH_FT * 0.3048;
+    const segs = 128;
+    const pos: number[] = [];
+    const uv: number[] = [];
+    const index: number[] = [];
+    let run = 0;
+    let prev: THREE.Vector2 | null = null;
+    for (let i = 0; i <= segs; i++) {
+      const t = (i / segs) * Math.PI * 2;
+      const x = wx(LOT.cx + Math.cos(t) * LOT.a);
+      const z = wz(LOT.cy + Math.sin(t) * LOT.b);
+      const p = new THREE.Vector2(x, z);
+      if (prev) run += p.distanceTo(prev);
+      prev = p;
+      pos.push(x, 0, z, x, -depth, z);
+      uv.push(run, 0, run, -depth);
+      if (i < segs) {
+        const k = i * 2;
+        index.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+      }
+    }
+    const sides = new THREE.BufferGeometry();
+    sides.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    sides.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    sides.setIndex(index);
+    // The sides face outward and the floor faces down, so drawing back faces
+    // (on the underground steps) shows the box's inside: the far walls and
+    // the floor, with the near wall out of the way of the pipes.
+    const floor = new THREE.CircleGeometry(1, 64)
+      .scale(LOT.a * 0.3048, LOT.b * 0.3048, 1)
+      .rotateX(Math.PI / 2)
+      .translate(wx(LOT.cx), -depth, wz(LOT.cy));
+    floor.deleteAttribute("normal");
+    const merged = mergeGeometries([sides.toNonIndexed(), floor.toNonIndexed()], false)!;
+    merged.computeVertexNormals();
+    const mesh = new THREE.Mesh(merged, this.m.soil);
+    mesh.name = "soil-block";
+    this.m.soil.side = THREE.DoubleSide;
+    return mesh;
+  }
+
+  /** Move the ground-level pieces: the soil base and the scenery ring. */
   private placeGround(grade: number) {
     this.groundY = wy(grade);
-    this.soil.position.y = this.groundY - 18 * 0.3048;
+    this.soil.position.y = this.groundY;
+    this.placeScenery(this.ring);
     this.shadowDirty = true;
   }
 
-  // The sky image is the backdrop at infinity. The lawn runs about 400 m out
-  // and fades into a haze the colour of the sky's horizon, so the ground has
-  // no edge to see from any height (a projected sky dome showed a pale ring
-  // where the lawn ended, from the higher views).
+  // The scenery is a ring at the edge of the yard carrying the sky image,
+  // projected as it looks from eye height in the middle of the lot, so its
+  // trees stand in proportion to the house. Above the ring is the sky; below
+  // the horizon, beyond the yard, a plain studio floor colour (no haze).
   private async loadSky() {
     try {
       const tex = await new HDRLoader().loadAsync("/3d/hdri/lilienstein_2k.hdr");
@@ -463,9 +518,9 @@ export class BaliEngine {
       }
       tex.mapping = THREE.EquirectangularReflectionMapping;
       this.scene.environment = tex;
-      this.horizon.copy(this.hazeColour(tex));
       this.sky = this.makeSkyDome(tex);
-      this.scene.add(this.sky);
+      this.ring = this.makeScenery(tex);
+      this.scene.add(this.sky, this.ring);
       this.scene.background = null;
       this.aimSunAtBrightestPixel(tex);
     } catch {
@@ -474,46 +529,10 @@ export class BaliEngine {
     this.invalidate(4);
   }
 
-  /**
-   * A light haze colour from the open sky a little above the horizon, as it
-   * looks on screen. Fog is mixed in after tone mapping and sRGB conversion,
-   * so the value is stored as a display colour.
-   */
-  private hazeColour(tex: THREE.DataTexture): THREE.Color {
-    const { data, width, height } = tex.image as { data: Uint16Array | Float32Array; width: number; height: number };
-    const half = data instanceof Uint16Array;
-    const read = (i: number) => (half ? THREE.DataUtils.fromHalfFloat(data[i]) : data[i]);
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    let n = 0;
-    // Rows about 10 to 25 degrees up (row 0 is the zenith), above the tree line.
-    for (let y = Math.floor(height * 0.36); y < Math.floor(height * 0.44); y += 2) {
-      for (let x = 0; x < width; x += 8) {
-        const i = (y * width + x) * 4;
-        r += read(i);
-        g += read(i + 1);
-        b += read(i + 2);
-        n++;
-      }
-    }
-    const show = (v: number) => {
-      const lin = v / n;
-      const tone = lin / (1 + lin);
-      // To display values, then lifted a little toward white: distant air is pale.
-      return Math.min(1, Math.pow(tone, 1 / 2.2) * 0.8 + 0.2);
-    };
-    return new THREE.Color().setRGB(show(r), show(g), show(b), THREE.LinearSRGBColorSpace);
-  }
-
-  /**
-   * The sky image on a dome that follows the camera. Below the horizon it
-   * turns into the same haze the far lawn fades into, with a soft band just
-   * above it, so the ground and sky meet without a line from any height.
-   */
+  /** The sky image on a dome that follows the camera; a plain light floor below the horizon. */
   private makeSkyDome(tex: THREE.Texture): THREE.Mesh {
     const material = new THREE.ShaderMaterial({
-      uniforms: { map: { value: tex }, haze: { value: this.fog.color }, intensity: { value: 1 } },
+      uniforms: { map: { value: tex }, floor: { value: new THREE.Color().setRGB(0.85, 0.845, 0.83, THREE.LinearSRGBColorSpace) }, intensity: { value: 1 } },
       vertexShader: `
         varying vec3 vDir;
         void main() {
@@ -522,7 +541,7 @@ export class BaliEngine {
         }`,
       fragmentShader: `
         uniform sampler2D map;
-        uniform vec3 haze;
+        uniform vec3 floor;
         uniform float intensity;
         varying vec3 vDir;
         #include <common>
@@ -531,7 +550,7 @@ export class BaliEngine {
           gl_FragColor = vec4(texture2D(map, equirectUv(dir)).rgb * intensity, 1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
-          gl_FragColor.rgb = mix(haze, gl_FragColor.rgb, smoothstep(-0.005, 0.12, dir.y));
+          gl_FragColor.rgb = mix(floor * (0.75 + 0.25 * intensity), gl_FragColor.rgb, smoothstep(-0.02, 0.06, dir.y));
         }`,
       side: THREE.BackSide,
       depthWrite: false,
@@ -542,6 +561,85 @@ export class BaliEngine {
     dome.frustumCulled = false;
     dome.userData.noAO = true;
     return dome;
+  }
+
+  /**
+   * The scenery ring: an oval wall at the yard's edge showing the sky image
+   * as seen from eye height at the centre of the lot, fading out at the top
+   * into the sky above. Seen from inside the yard it surrounds you; from
+   * further out only the far side shows, behind the house.
+   */
+  private makeScenery(tex: THREE.Texture): THREE.Mesh {
+    const segs = 160;
+    const height = 60; // feet
+    const positions: number[] = [];
+    const index: number[] = [];
+    for (let i = 0; i <= segs; i++) {
+      const t = (i / segs) * Math.PI * 2;
+      const x = wx(LOT.cx + Math.cos(t) * LOT.a * 1.005);
+      const z = wz(LOT.cy + Math.sin(t) * LOT.b * 1.005);
+      positions.push(x, -2 * 0.3048, z, x, height * 0.3048, z);
+      if (i < segs) {
+        const k = i * 2;
+        index.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(index);
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        map: { value: tex },
+        eye: { value: new THREE.Vector3() },
+        intensity: { value: 1 },
+        top: { value: height * 0.3048 },
+      },
+      vertexShader: `
+        varying vec3 vWorld;
+        void main() {
+          vec4 w = modelMatrix * vec4(position, 1.0);
+          vWorld = w.xyz;
+          gl_Position = projectionMatrix * viewMatrix * w;
+        }`,
+      fragmentShader: `
+        uniform sampler2D map;
+        uniform vec3 eye;
+        uniform float intensity;
+        uniform float top;
+        varying vec3 vWorld;
+        #include <common>
+        void main() {
+          vec3 dir = normalize(vWorld - eye);
+          gl_FragColor = vec4(texture2D(map, equirectUv(dir)).rgb * intensity, 1.0);
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+          float h = (vWorld.y - eye.y) / (top - eye.y);
+          gl_FragColor.a = 1.0 - smoothstep(0.55, 0.95, h);
+        }`,
+      // The ring's faces point outward, so drawing back faces shows its inside
+      // from within the yard, and from outside only the far side (the near
+      // side, which would stand between the camera and the house, is culled).
+      side: THREE.BackSide,
+      transparent: true,
+      depthWrite: false,
+      toneMapped: true,
+    });
+    const ring = new THREE.Mesh(geometry, material);
+    ring.name = "scenery";
+    ring.frustumCulled = false;
+    ring.userData.noAO = true;
+    ring.userData.height = height * 0.3048;
+    this.placeScenery(ring);
+    return ring;
+  }
+
+  /** Stand the ring on the ground, its view taken from eye height at the yard's centre. */
+  private placeScenery(ring: THREE.Mesh | null) {
+    if (!ring) return;
+    ring.position.y = this.groundY;
+    const u = (ring.material as THREE.ShaderMaterial).uniforms;
+    (u.eye.value as THREE.Vector3).set(wx(LOT.cx), this.groundY + 1.7, wz(LOT.cy));
+    u.top.value = this.groundY + (ring.userData.height as number);
   }
 
   /** Point the sun light where the sun is in the sky image, so shadows agree with the sky. */
@@ -580,7 +678,11 @@ export class BaliEngine {
   private setupComposer() {
     try {
       const size = this.renderer.getSize(new THREE.Vector2());
-      const composer = new EffectComposer(this.renderer);
+      // A multisampled buffer: without it, rendering through the composer
+      // loses anti-aliasing and every edge turns into a staircase.
+      const pr = this.renderer.getPixelRatio();
+      const target = new THREE.WebGLRenderTarget(size.x * pr, size.y * pr, { type: THREE.HalfFloatType, samples: 4 });
+      const composer = new EffectComposer(this.renderer, target);
       composer.addPass(new RenderPass(this.scene, this.camera));
       const gtao = new GTAOPass(this.scene, this.camera, size.x / 2, size.y / 2);
       gtao.blendIntensity = 0.85;
@@ -1032,14 +1134,16 @@ export class BaliEngine {
     this.hemi.intensity = 0.35 * (1 - 0.7 * evening);
     this.scene.environmentIntensity = 1 - 0.85 * evening;
     this.scene.backgroundIntensity = 1 - 0.75 * evening;
-    // Haze over the far lawn: off on the plan sheet (the camera is high above it), dimmer at evening.
-    this.fog.color.copy(this.horizon).multiplyScalar(1 - 0.75 * evening);
-    this.fog.density = inkActive ? 0 : 0.0052;
+    // Sky and scenery ring: dimmer at evening, and hidden while the plan sheet's paper covers everything.
+    const outdoorsShown = !inkActive || (this.paper.material as THREE.MeshBasicMaterial).opacity < 0.99;
     if (this.sky) {
       this.sky.position.copy(pos);
       (this.sky.material as THREE.ShaderMaterial).uniforms.intensity.value = 1 - 0.75 * evening;
-      // The plan sheet sits on paper, not under a sky.
-      this.sky.visible = !inkActive || (this.paper.material as THREE.MeshBasicMaterial).opacity < 0.99;
+      this.sky.visible = outdoorsShown;
+    }
+    if (this.ring) {
+      (this.ring.material as THREE.ShaderMaterial).uniforms.intensity.value = 1 - 0.75 * evening;
+      this.ring.visible = outdoorsShown && reveal > 0.6;
     }
     this.m.lamp.emissiveIntensity = 0.35 + 2.8 * evening;
     if (Math.abs(evening - this.lastEvening) > 1e-3) {
@@ -1052,10 +1156,8 @@ export class BaliEngine {
     const premium = this.state?.lightingPackageId === "premium";
     this.m.led.emissiveIntensity = premium ? 0.8 + 3.0 * evening : 0;
     this.updateRoomLights(evening, premium);
-    // Baked tree cut-outs carry their own light, so dim them by hand at evening;
-    // and keep the lot's trees off the plan sheet.
+    // Baked tree cut-outs carry their own light, so dim them by hand at evening.
     for (const { material } of this.impostors.values()) material.color.setScalar(1 - 0.72 * evening);
-    this.lotPropGroup.visible = reveal > 0.6;
 
     // See-through ground for the foundation, water and wastewater decisions
     const xray = atPreset ? 0 : Math.max(near1("foundation", 0.3, 0.85), near1("water", 0.3, 0.85), near1("sewer", 0.3, 0.85));
@@ -1069,10 +1171,22 @@ export class BaliEngine {
       }
       mat.opacity = 1 - 0.8 * xray;
     }
-    this.soil.visible = seeThrough;
+    // The soil base deepens from a thin plinth to its full depth as the ground turns see-through.
+    // Plane: keeps y >= groundY - depth.
+    const baseFt = THREE.MathUtils.lerp(PLINTH_FT, SOIL_DEPTH_FT + 1, xray);
+    this.groundClip.constant = baseFt * 0.3048 - this.groundY;
+    // As a plinth it's solid from every side; see-through, only its inside shows.
+    const soilSide = seeThrough ? THREE.BackSide : THREE.DoubleSide;
+    if (this.m.soil.side !== soilSide) {
+      this.m.soil.side = soilSide;
+      this.m.soil.needsUpdate = true;
+    }
     // Under a crawlspace house, the road-facing wall opens to show the space beneath.
     const crawlFront = this.groups.foundation?.getObjectByName("foundation-front");
     if (crawlFront) crawlFront.visible = xray < 0.5;
+    // The lot's trees stay off the plan sheet, and step aside on the
+    // underground steps so none stands over the well or the leach field.
+    this.lotPropGroup.visible = reveal > 0.6 && xray < 0.5;
     if (this.groups.utilities) this.groups.utilities.visible = xray > 0.01 || reveal > 0.99;
     if (this.groups.foundation) this.groups.foundation.visible = rise > 0.5;
 

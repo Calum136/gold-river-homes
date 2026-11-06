@@ -16,7 +16,8 @@
 
 export type Pt = [number, number];
 
-export type OpeningKind = "window" | "door" | "front-door" | "patio" | "opening" | "closet";
+/** "pocket" is a door that slides into the wall: open, no leaf to block the room. */
+export type OpeningKind = "window" | "door" | "pocket" | "front-door" | "patio" | "opening" | "closet";
 
 export interface Opening {
   /** Distance along the wall from its start point to the opening's centre. */
@@ -121,25 +122,36 @@ export const WALLS: WallDef[] = [
 
   // ---- Interior ----
   // Bathroom 2 and the walk-in closet against Bedroom 1
-  // Bathroom 2's door hinges at its far end so the open leaf clears the vanity.
-  { id: "bath2-br1", a: [7.7, 0.5], b: [7.7, 15.5], t: INT, openings: [DOOR(3.4, 2.4), DOOR(8.7, 2.4, -1, "end")] },
+  // The walk-in closet door, and a pocket door to Bathroom 2 (the ensuite) so no leaf crowds the vanity.
+  { id: "bath2-br1", a: [7.7, 0.5], b: [7.7, 15.5], t: INT, openings: [DOOR(3.4, 2.4), { at: 8.7, w: 2.4, kind: "pocket", head: 6.8 }] },
   { id: "bath2-wic", a: [0.5, 6.6], b: [7.525, 6.6], t: INT },
   // Bedroom 1 to the laundry
   { id: "br1-laundry", a: [19.7, 0.5], b: [19.7, 15.5], t: INT, openings: [DOOR(5.9, 2.6)] },
-  // Laundry and pantry to the kitchen
-  { id: "laundry-kitchen", a: [25.3, 0.5], b: [25.3, 15.5], t: INT, openings: [DOOR(5.5, 2.6), DOOR(10.8, 2.4)] },
+  // Laundry and pantry to the kitchen, both on pocket doors
+  {
+    id: "laundry-kitchen",
+    a: [25.3, 0.5],
+    b: [25.3, 15.5],
+    t: INT,
+    openings: [
+      { at: 5.5, w: 2.6, kind: "pocket", head: 6.8 },
+      { at: 10.8, w: 2.4, kind: "pocket", head: 6.8 },
+    ],
+  },
   { id: "pantry-laundry", a: [19.875, 9.3], b: [25.125, 9.3], t: INT },
   // Short wall closing the end of the kitchen counters beside the foyer
   { id: "kitchen-stub", a: [41.6, 0.5], b: [41.6, 3.6], t: INT },
   // Foyer coat closet
   { id: "coat-front", a: [46.55, 0.5], b: [46.55, 8.7], t: INT, openings: [CLOSET(4.6, 5.0)] },
-  { id: "coat-top", a: [46.375, 8.7], b: [48.125, 8.7], t: INT },
+  // Runs the full width of the HRV and water heater closet behind the coat closet.
+  { id: "coat-top", a: [45.125, 8.7], b: [48.125, 8.7], t: INT },
   // HRV and water heater closet
   { id: "mech-left", a: [45.3, 8.875], b: [45.3, 11.9], t: INT },
   { id: "mech-top", a: [45.125, 11.9], b: [48.125, 11.9], t: INT, openings: [DOOR(1.6, 2.2)] },
   // Bedroom 2
   { id: "br2-left", a: [48.3, 0.5], b: [48.3, 12.075], t: INT },
-  { id: "br2-top", a: [48.125, 11.9], b: [62.175, 11.9], t: INT, openings: [DOOR(8.8, 2.4)] },
+  // Hinged at its far end, so the open leaf lies along the closet wall, out of the bedroom view.
+  { id: "br2-top", a: [48.125, 11.9], b: [62.175, 11.9], t: INT, openings: [DOOR(8.8, 2.4, -1, "end")] },
   { id: "br2-closet", a: [59.3, 0.5], b: [59.3, 11.725], t: INT, openings: [CLOSET(2.8, 3.2)] },
   // Bedroom 3
   { id: "br3-closet", a: [62.0, 0.5], b: [62.0, 11.725], t: INT, openings: [CLOSET(6.5, 3.6)] },

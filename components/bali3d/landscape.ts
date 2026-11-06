@@ -378,8 +378,9 @@ export function buildLandscape(state: ConfiguratorState, kit: LandscapeKit, m: M
     { x: fd.x - 3.4, y: planterY, scale: 1, rot: 0 },
     { x: fd.x + 3.4, y: planterY, scale: 1, rot: 0 },
   ];
-  const lights: Placement[] = [24, 30, 36].map((x) => ({ x, y: -17.0, scale: 1, rot: 0 }));
-  lights.push({ x: 40.8, y: -12.0, scale: 1, rot: 0 }, { x: 46.4, y: -12.0, scale: 1, rot: 0 });
+  // Path lights in pairs along the walk from the steps to the edge of the yard.
+  const lights: Placement[] = [];
+  for (const y of [-11.5, -16.0]) lights.push({ x: 40.8, y, scale: 1, rot: 0 }, { x: 46.4, y, scale: 1, rot: 0 });
   for (const l of lights) b.shape("lamp", new THREE.CylinderGeometry(0.16, 0.16, 0.22, 12), { x: l.x, y: l.y, h: GRADE + 1.95 });
 
   const built = b.build(m, null, "landscape-beds");
