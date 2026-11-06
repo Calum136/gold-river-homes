@@ -1,0 +1,304 @@
+﻿[
+    {
+        "name":  "lawn",
+        "use":  "Lawn around the house (green mown grass); the leafy grass set is kept for wooded lots",
+        "source":  "ambientCG",
+        "id":  "Grass004",
+        "url":  "https://ambientcg.com/view?id=Grass004",
+        "licence":  "CC0",
+        "author":  "ambientCG",
+        "files":  [
+                      "tex/lawn/diff.jpg",
+                      "tex/lawn/nor.jpg",
+                      "tex/lawn/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (colour, normal OpenGL, roughness)",
+        "bytes":  5176837
+    },
+    {
+        "name":  "floor-laminate",
+        "use":  "Flooring: standard laminate in living areas, bedrooms, halls (light oak plank look)",
+        "source":  "Poly Haven",
+        "id":  "laminate_floor_02",
+        "url":  "https://polyhaven.com/a/laminate_floor_02",
+        "licence":  "CC0",
+        "author":  "Dario Barresi, Charlotte Baglioni",
+        "files":  [
+                      "tex/floor-laminate/diff.jpg",
+                      "tex/floor-laminate/nor.jpg",
+                      "tex/floor-laminate/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  1798181
+    },
+    {
+        "name":  "floor-hardwood",
+        "use":  "Flooring: engineered hardwood upgrade (oak)",
+        "source":  "Poly Haven",
+        "id":  "oak_wood_planks",
+        "url":  "https://polyhaven.com/a/oak_wood_planks",
+        "licence":  "CC0",
+        "author":  "Dimitrios Savva",
+        "files":  [
+                      "tex/floor-hardwood/diff.jpg",
+                      "tex/floor-hardwood/nor.jpg",
+                      "tex/floor-hardwood/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  1934617
+    },
+    {
+        "name":  "floor-vinyl-tile",
+        "use":  "Flooring: standard vinyl tile in kitchen, dining, bathrooms (large grey stone-look tile)",
+        "source":  "Poly Haven",
+        "id":  "large_grey_tiles",
+        "url":  "https://polyhaven.com/a/large_grey_tiles",
+        "licence":  "CC0",
+        "author":  "Rob Tuytel",
+        "files":  [
+                      "tex/floor-vinyl-tile/diff.jpg",
+                      "tex/floor-vinyl-tile/nor.jpg",
+                      "tex/floor-vinyl-tile/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  1210931
+    },
+    {
+        "name":  "floor-bath-tile",
+        "use":  "Bathroom floor and tub-surround tile (small white rectangular tile)",
+        "source":  "Poly Haven",
+        "id":  "long_white_tiles",
+        "url":  "https://polyhaven.com/a/long_white_tiles",
+        "licence":  "CC0",
+        "author":  "Jenelle van Heerden, Sergej Majboroda",
+        "files":  [
+                      "tex/floor-bath-tile/diff.jpg",
+                      "tex/floor-bath-tile/nor.jpg",
+                      "tex/floor-bath-tile/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  1761921
+    },
+    {
+        "name":  "wall-interior",
+        "use":  "Interior wall: neutral smooth painted plaster; colour applied in code",
+        "source":  "Poly Haven",
+        "id":  "plastered_wall_04",
+        "url":  "https://polyhaven.com/a/plastered_wall_04",
+        "licence":  "CC0",
+        "author":  "Rob Tuytel",
+        "files":  [
+                      "tex/wall-interior/diff.jpg",
+                      "tex/wall-interior/nor.jpg",
+                      "tex/wall-interior/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  969559
+    },
+    {
+        "name":  "concrete",
+        "use":  "Foundation and skirting concrete",
+        "source":  "Poly Haven",
+        "id":  "concrete_wall_007",
+        "url":  "https://polyhaven.com/a/concrete_wall_007",
+        "licence":  "CC0",
+        "author":  "Dario Barresi, Rico Cilliers, Charlotte Baglioni",
+        "files":  [
+                      "tex/concrete/diff.jpg",
+                      "tex/concrete/nor.jpg",
+                      "tex/concrete/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  1820646
+    },
+    {
+        "name":  "stone",
+        "use":  "Fireplace surround stone",
+        "source":  "Poly Haven",
+        "id":  "stacked_stone_wall",
+        "url":  "https://polyhaven.com/a/stacked_stone_wall",
+        "licence":  "CC0",
+        "author":  "Dimitrios Savva",
+        "files":  [
+                      "tex/stone/diff.jpg",
+                      "tex/stone/nor.jpg",
+                      "tex/stone/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  2504854
+    },
+    {
+        "name":  "grass",
+        "use":  "Ground: lawn",
+        "source":  "Poly Haven",
+        "id":  "leafy_grass",
+        "url":  "https://polyhaven.com/a/leafy_grass",
+        "licence":  "CC0",
+        "author":  "Charlotte Baglioni",
+        "files":  [
+                      "tex/grass/diff.jpg",
+                      "tex/grass/nor.jpg",
+                      "tex/grass/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  3172828
+    },
+    {
+        "name":  "gravel",
+        "use":  "Ground: gravel driveway",
+        "source":  "Poly Haven",
+        "id":  "gravel_floor_02",
+        "url":  "https://polyhaven.com/a/gravel_floor_02",
+        "licence":  "CC0",
+        "author":  "Jenelle van Heerden, Dimitrios Savva",
+        "files":  [
+                      "tex/gravel/diff.jpg",
+                      "tex/gravel/nor.jpg",
+                      "tex/gravel/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  3467047
+    },
+    {
+        "name":  "paving",
+        "use":  "Ground: paving stone walkway or patio",
+        "source":  "Poly Haven",
+        "id":  "rectangular_paving",
+        "url":  "https://polyhaven.com/a/rectangular_paving",
+        "licence":  "CC0",
+        "author":  "Dimitrios Savva",
+        "files":  [
+                      "tex/paving/diff.jpg",
+                      "tex/paving/nor.jpg",
+                      "tex/paving/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  1719486
+    },
+    {
+        "name":  "asphalt",
+        "use":  "Ground: asphalt driveway (light grey)",
+        "source":  "Poly Haven",
+        "id":  "asphalt_04",
+        "url":  "https://polyhaven.com/a/asphalt_04",
+        "licence":  "CC0",
+        "author":  "Jenelle van Heerden, Sergej Majboroda",
+        "files":  [
+                      "tex/asphalt/diff.jpg",
+                      "tex/asphalt/nor.jpg",
+                      "tex/asphalt/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  2349586
+    },
+    {
+        "name":  "mulch",
+        "use":  "Ground: bark mulch garden beds",
+        "source":  "Poly Haven",
+        "id":  "yellow_flower_mulch",
+        "url":  "https://polyhaven.com/a/yellow_flower_mulch",
+        "licence":  "CC0",
+        "author":  "Dimitrios Savva",
+        "files":  [
+                      "tex/mulch/diff.jpg",
+                      "tex/mulch/nor.jpg",
+                      "tex/mulch/rough.jpg"
+                  ],
+        "resolution":  "1k JPG (diffuse, normal OpenGL, roughness)",
+        "bytes":  2715767
+    },
+    {
+        "name":  "counter-quartz",
+        "use":  "Countertop: quartz option (white marble-like stone)",
+        "source":  "ambientCG",
+        "id":  "Marble005",
+        "url":  "https://ambientcg.com/a/Marble005",
+        "licence":  "CC0",
+        "author":  "ambientCG (Lennart Demes)",
+        "files":  [
+                      "tex/counter-quartz/diff.jpg",
+                      "tex/counter-quartz/nor.jpg",
+                      "tex/counter-quartz/rough.jpg"
+                  ],
+        "resolution":  "1K JPG (Color, NormalGL, Roughness)",
+        "bytes":  2739083
+    },
+    {
+        "name":  "counter-laminate",
+        "use":  "Countertop: laminate option (speckled granite-pattern laminate look, warm beige)",
+        "source":  "ambientCG",
+        "id":  "Granite001A",
+        "url":  "https://ambientcg.com/a/Granite001A",
+        "licence":  "CC0",
+        "author":  "ambientCG (Lennart Demes)",
+        "files":  [
+                      "tex/counter-laminate/diff.jpg",
+                      "tex/counter-laminate/nor.jpg",
+                      "tex/counter-laminate/rough.jpg"
+                  ],
+        "resolution":  "1K JPG (Color, NormalGL, Roughness)",
+        "bytes":  2994964
+    },
+    {
+        "name":  "cabinet-wood",
+        "use":  "Cabinet: stained wood grain (solid wood shaker option)",
+        "source":  "ambientCG",
+        "id":  "Wood051",
+        "url":  "https://ambientcg.com/a/Wood051",
+        "licence":  "CC0",
+        "author":  "ambientCG (Lennart Demes)",
+        "files":  [
+                      "tex/cabinet-wood/diff.jpg",
+                      "tex/cabinet-wood/nor.jpg",
+                      "tex/cabinet-wood/rough.jpg"
+                  ],
+        "resolution":  "1K JPG (Color, NormalGL, Roughness)",
+        "bytes":  3135731
+    },
+    {
+        "name":  "cabinet-painted",
+        "use":  "Cabinet: painted MDF shaker (smooth matte, very subtle normal)",
+        "source":  "ambientCG",
+        "id":  "Plastic013A",
+        "url":  "https://ambientcg.com/a/Plastic013A",
+        "licence":  "CC0",
+        "author":  "ambientCG (Lennart Demes)",
+        "files":  [
+                      "tex/cabinet-painted/diff.jpg",
+                      "tex/cabinet-painted/nor.jpg",
+                      "tex/cabinet-painted/rough.jpg"
+                  ],
+        "resolution":  "1K JPG (Color, NormalGL, Roughness)",
+        "bytes":  2585472
+    },
+    {
+        "name":  "roof-shakes",
+        "use":  "Cedar shake style cladding or accent (weathered grey wood shingles; tint in code)",
+        "source":  "ambientCG",
+        "id":  "WoodSiding010",
+        "url":  "https://ambientcg.com/a/WoodSiding010",
+        "licence":  "CC0",
+        "author":  "ambientCG (Lennart Demes)",
+        "files":  [
+                      "tex/roof-shakes/diff.jpg",
+                      "tex/roof-shakes/nor.jpg",
+                      "tex/roof-shakes/rough.jpg"
+                  ],
+        "resolution":  "1K JPG (Color, NormalGL, Roughness)",
+        "bytes":  3390073
+    },
+    {
+        "name":  "lilienstein",
+        "use":  "Outdoor HDRI: late-afternoon meadow with visible sun, partly cloudy",
+        "source":  "Poly Haven",
+        "id":  "lilienstein",
+        "url":  "https://polyhaven.com/a/lilienstein",
+        "licence":  "CC0",
+        "author":  "Andreas Mischok",
+        "files":  [
+                      "hdri/lilienstein_2k.hdr"
+                  ],
+        "resolution":  "2k HDR",
+        "bytes":  6953927
+    }
+]

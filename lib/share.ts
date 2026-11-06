@@ -48,6 +48,7 @@ const FIELD_CODECS: Record<TopField, { key: string; codec: Codec }> = {
   roofTypeId: { key: "rt", codec: "id" },
   metalRoofColorId: { key: "rc", codec: "id" },
   hasFrontPorch: { key: "p", codec: "flag" },
+  hasVestibule: { key: "vb", codec: "flag" },
   exteriorTrimId: { key: "et", codec: "id" },
   flooringId: { key: "f", codec: "id" },
   countertopsId: { key: "ct", codec: "id" },

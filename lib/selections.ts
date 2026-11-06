@@ -12,10 +12,11 @@ import {
   metalRoofColors,
   sewerCosts,
   sidingColors,
+  vestibuleAvailable,
   waterCosts,
 } from "./defaults";
 import type { OptionItem } from "./defaults";
-import { FIREPLACE_LABELS, PORCH_LABELS } from "./stage";
+import { FIREPLACE_LABELS, PORCH_LABELS, VESTIBULE_LABELS } from "./stage";
 import { getLotAsset, getModelHero, getOptionAsset } from "./visual-assets";
 import type { VisualAsset } from "./visual-assets";
 
@@ -204,13 +205,17 @@ export function selectionFor(
       });
     }
 
-    case "porch":
+    case "porch": {
+      const vestibule = state.hasVestibule && vestibuleAvailable(state.modelId);
+      const porchText = state.hasFrontPorch ? extensionOptions.find((e) => e.id === "front-porch")?.description : undefined;
+      const vestibuleText = vestibule ? extensionOptions.find((e) => e.id === "entry-vestibule")?.description : undefined;
       return detail({
-        value: state.hasFrontPorch ? PORCH_LABELS.with : PORCH_LABELS.without,
+        value: `${state.hasFrontPorch ? PORCH_LABELS.with : PORCH_LABELS.without}${vestibule ? `, ${VESTIBULE_LABELS.with.toLowerCase()}` : ""}`,
         thumb: getOptionAsset(`porch:${state.hasFrontPorch ? "with" : "without"}`),
-        description: state.hasFrontPorch ? extensionOptions.find((e) => e.id === "front-porch")?.description : undefined,
-        price: overStandard({ hasFrontPorch: standard.hasFrontPorch }),
+        description: [porchText, vestibuleText].filter(Boolean).join(" ") || undefined,
+        price: overStandard({ hasFrontPorch: standard.hasFrontPorch, hasVestibule: standard.hasVestibule }),
       });
+    }
 
     case "fireplace":
       return detail({

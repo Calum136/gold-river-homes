@@ -9,6 +9,7 @@ import {
   foundationCosts,
   siteEstimates,
   extensionOptions,
+  vestibuleAvailable,
 } from "./defaults";
 import { calculateMortgage, formatMortgageAssumption, monthlyPaymentFor } from "./calculator";
 import type { CostBreakdown } from "./calculator";
@@ -81,6 +82,8 @@ export interface ConfiguratorState {
   roofTypeId: string;
   metalRoofColorId: string;
   hasFrontPorch: boolean;
+  /** Enclosed entry vestibule; offered only where vestibuleAvailable() says so. */
+  hasVestibule: boolean;
   exteriorTrimId: string;
 
   // Step 4 — Interior
@@ -120,6 +123,7 @@ export function defaultState(): ConfiguratorState {
     roofTypeId: "shingles",
     metalRoofColorId: "charcoal",
     hasFrontPorch: false,
+    hasVestibule: false,
     exteriorTrimId: "standard",
     flooringId: "standard",
     countertopsId: "laminate",
@@ -269,7 +273,10 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
 
   // Roof cost (per sqft)
   const porchRoofAdded = state.hasFrontPorch ? (PRICING_SHEET.extensions["front-porch"].addedRoofSqft) : 0;
-  const totalRoofSqft = roofSqft + porchRoofAdded;
+  const vestibule = state.hasVestibule && vestibuleAvailable(state.modelId)
+    ? extensionOptions.find((e) => e.id === "entry-vestibule")
+    : undefined;
+  const totalRoofSqft = roofSqft + porchRoofAdded + (vestibule?.addedRoofSqft ?? 0);
   const roofRate = state.roofTypeId === "metal"
     ? PRICING_SHEET.roof.metal.perSqft
     : PRICING_SHEET.roof.shingles.perSqft;
@@ -303,6 +310,11 @@ export function calculateConfiguratorPrice(state: ConfiguratorState): Configurat
   if (state.hasFrontPorch) {
     const porchExt = extensionOptions.find((e) => e.id === "front-porch");
     items.push({ label: "Covered Front Porch", amount: porchExt?.mid ?? 18000 });
+  }
+
+  // Enclosed entry vestibule
+  if (vestibule) {
+    items.push({ label: vestibule.label, amount: vestibule.mid });
   }
 
   // Interior: flooring (per sqft)

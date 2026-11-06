@@ -27,8 +27,9 @@ export default function CostBreakdown({ state }: { state: ConfiguratorState }) {
       </p>
 
       <dl className="mt-4 divide-y divide-border border-y border-border">
-        {items.map((item) => (
-          <div key={item.label} className="flex items-baseline justify-between gap-4 py-3">
+        {items.map((item, i) => (
+          // Labels can repeat (two option groups both named "Premium"), so the position joins the key.
+          <div key={`${i}:${item.label}`} className="flex items-baseline justify-between gap-4 py-3">
             <dt className="min-w-0">
               <span className="block text-body-sm text-text-secondary">{item.label}</span>
               {item.desc && <span className="mt-0.5 block text-caption text-text-muted">{item.desc}</span>}

@@ -9,6 +9,7 @@ import { monthlyDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { getLotAsset } from "@/lib/visual-assets";
 import ChoiceRow, { ChoiceGroup, MonthlyDelta, RadioMark, Tag, choiceRowClass } from "@/components/configurator/ui/ChoiceRow";
+import { usePricesShown } from "@/components/configurator/ui/PriceVisibility";
 
 interface LotStepProps {
   state: ConfiguratorState;
@@ -35,6 +36,7 @@ export default function LotStep({ state, onChange }: LotStepProps) {
   // one shows no photo but keeps the column, so the rows stay aligned.
   const reservePhoto = lotOptions.some((lot) => getLotAsset(lot.terrain));
   const monthlyDelta = monthlyDeltaFor(state);
+  const pricesShown = usePricesShown();
 
   return (
     <div className="space-y-8">
@@ -99,11 +101,13 @@ export default function LotStep({ state, onChange }: LotStepProps) {
                       </span>
                       <RadioMark checked={selected} />
                     </span>
-                    <span className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="text-caption text-text-muted">Example price</span>
-                      <span className="font-accent text-figure text-text-primary">{formatCurrency(lot.price)}</span>
-                      <MonthlyDelta amount={monthlyDelta(patch)} />
-                    </span>
+                    {pricesShown && (
+                      <span className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-caption text-text-muted">Example price</span>
+                        <span className="font-accent text-figure text-text-primary">{formatCurrency(lot.price)}</span>
+                        <MonthlyDelta amount={monthlyDelta(patch)} />
+                      </span>
+                    )}
                     <span className="text-body-sm text-text-secondary">{lot.location}</span>
                     <span className="mt-1 text-caption uppercase tracking-eyebrow text-text-muted">Example values</span>
                     <span className="font-accent text-figure-sm uppercase tracking-wide text-text-secondary">

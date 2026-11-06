@@ -29,6 +29,16 @@ import ChapterNav from "@/components/configurator/ChapterNav";
 import DecisionChoices from "@/components/configurator/DecisionChoices";
 import SummaryStep from "@/components/configurator/steps/SummaryStep";
 import SpecSheet from "@/components/configurator/SpecSheet";
+import { PriceVisibility } from "@/components/configurator/ui/PriceVisibility";
+import BaliStage from "@/components/bali3d/BaliStage";
+
+// Models with a live 3D stage. Every other model keeps the photo stage.
+const MODELS_IN_3D = new Set(["bali"]);
+
+const STAGE_3D_CAPTION = {
+  text: "Live 3D model of the Supreme Bali, built from Supreme's published floor plan. Scroll over it or press Next to walk through; drag to look around.",
+  note: "The 3D model is illustrative: colours and materials are representative, not exact products. Real photos are under More photos.",
+};
 
 // state.step is a SCREEN index (1-based) into SCREENS (lib/screens.ts): one
 // decision per screen. Bump the version whenever ConfiguratorState changes
@@ -139,7 +149,11 @@ export default function ConfigurePage() {
   const reachedScreen = ready ? Math.max(furthestScreen, screenIndex) : screenIndex;
   const model = homeModels.find((m) => m.id === state.modelId) ?? null;
   // The review page's stage follows the decision open for editing.
-  const stage = resolveStage(state, isLast && openDecision ? openDecision : screen.id);
+  const focusId = isLast && openDecision ? openDecision : screen.id;
+  const stage = resolveStage(state, focusId);
+  const in3d = !!model && MODELS_IN_3D.has(model.id);
+  // Scrolling the 3D tour can't skip a decision the flow requires.
+  const tourLimit = !canAdvance(state, "land") ? 1 : !canAdvance(state, "model") ? 2 : SCREENS.length;
 
   function goToScreen(target: number) {
     setFurthestScreen((prev) => Math.max(prev, screenIndex, target));
@@ -204,7 +218,10 @@ export default function ConfigurePage() {
         enquiryHref={enquiryHref}
       />
     ) : (
-      <DecisionChoices screenId={screen.id} chapter={screen.chapter} state={state} onChange={patch} />
+      // Prices wait for the final page, so the home has the room while the buyer designs.
+      <PriceVisibility value={false}>
+        <DecisionChoices screenId={screen.id} chapter={screen.chapter} state={state} onChange={patch} />
+      </PriceVisibility>
     );
 
   return (
@@ -235,11 +252,25 @@ export default function ConfigurePage() {
         {/* The stage: the home photo with nothing on it, its chrome underneath */}
         <section aria-label="Home photo" className="flex shrink-0 flex-col lg:w-[64%]">
           <div className="relative aspect-[4/3] w-full sm:aspect-[16/10] lg:aspect-auto lg:min-h-0 lg:flex-1">
-            <HomeVisualizer stage={stage} />
+            {in3d ? (
+              <BaliStage
+                state={state}
+                focusId={focusId}
+                onStepRequest={(target) => {
+                  if (target !== screenIndex) goToScreen(target);
+                }}
+                maxScreen={tourLimit}
+                scrollEnabled={!isLast}
+                fallback={<HomeVisualizer stage={stage} />}
+              />
+            ) : (
+              <HomeVisualizer stage={stage} />
+            )}
           </div>
           <StageChrome
             stage={stage}
             model={model}
+            caption={in3d ? STAGE_3D_CAPTION : undefined}
             className="border-b border-border px-4 py-3 lg:border-b-0 lg:px-6"
           />
         </section>
@@ -276,7 +307,10 @@ export default function ConfigurePage() {
               </header>
 
               {/* The review page shows an open decision's example inside that decision. */}
-              {!isLast && stage.example && <OptionExample example={stage.example} className="mb-8" />}
+              {/* With the 3D stage, the home itself shows each choice, so the example photo steps aside. */}
+              {!isLast && stage.example && (!in3d || screen.id === "land") && (
+                <OptionExample example={stage.example} className="mb-8" />
+              )}
 
               {renderScreen()}
 
@@ -305,10 +339,10 @@ export default function ConfigurePage() {
                 ← Back
               </button>
 
-              {/* The running figures: the monthly payment leads, the total follows, and the
-                  mortgage terms behind them are stated once, here, not on every choice. */}
+              {/* The running figures, on the final page only: the monthly payment leads, the
+                  total follows, and the mortgage terms behind them are stated once, here. */}
               <div className="min-w-0 text-center">
-                {estimate && (
+                {isLast && estimate && (
                   <>
                     <p>
                       <span className="sr-only">Estimated monthly payment </span>

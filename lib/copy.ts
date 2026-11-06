@@ -46,6 +46,12 @@ export const porchCopy = {
   without: "Without a porch, the entry is steps and a landing with no roof overhead, so there's no sheltered spot at the door.",
 };
 
+// Not yet in the approved copy doc (added Nov 6, 2026 with the Bali 3D demo).
+export const vestibuleCopy = {
+  with: "An enclosed vestibule gives you a sheltered spot to take off boots and coats, and keeps winter drafts out of the house each time the door opens.",
+  without: "Without a vestibule, the front door opens straight into the foyer.",
+};
+
 export const fireplaceCopy = {
   with: "An electric fireplace insert adds a warm focal point to the living room without the upkeep of a wood-burning unit.",
   without: "Skipping the fireplace keeps the living room layout simpler and open.",

@@ -115,6 +115,7 @@ export function sanitizeState(raw: unknown): ConfiguratorState {
     roofTypeId: validEnum(src.roofTypeId, groupOptionIds("roofType"), base.roofTypeId),
     metalRoofColorId: validEnum(src.metalRoofColorId, metalRoofColorIds, base.metalRoofColorId),
     hasFrontPorch: validBoolean(src.hasFrontPorch, base.hasFrontPorch),
+    hasVestibule: validBoolean(src.hasVestibule, base.hasVestibule),
     exteriorTrimId: validEnum(src.exteriorTrimId, groupOptionIds("exteriorTrim"), base.exteriorTrimId),
 
     flooringId: validEnum(src.flooringId, groupOptionIds("flooring"), base.flooringId),

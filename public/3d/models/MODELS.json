@@ -1,0 +1,194 @@
+﻿[
+    {
+        "name":  "pine",
+        "use":  "Lot: conifer (pine sapling, 3 trunks)",
+        "id":  "pine_sapling_small",
+        "url":  "https://polyhaven.com/a/pine_sapling_small",
+        "licence":  "CC0",
+        "authors":  "Rob Tuytel, Rico Cilliers",
+        "gltf":  "/3d/models/pine/pine_sapling_small_1k.gltf",
+        "sizeMeters":  {
+                           "x":  2.64,
+                           "y":  1.3,
+                           "z":  0.77
+                       },
+        "notes":  "Sapling about 1.3 m tall; scale 4x to 6x for a mature tree. Heaviest file (22 MB, mostly textures). Origin at trunk base. Node transforms: pine_sapling_small_b:translation; pine_sapling_small_c:translation.",
+        "bytes":  21891339
+    },
+    {
+        "name":  "shrub_a",
+        "use":  "Lot: low shrub",
+        "id":  "shrub_04",
+        "url":  "https://polyhaven.com/a/shrub_04",
+        "licence":  "CC0",
+        "authors":  "Rico Cilliers",
+        "gltf":  "/3d/models/shrub_a/shrub_04_1k.gltf",
+        "sizeMeters":  {
+                           "x":  0.58,
+                           "y":  0.22,
+                           "z":  0.15
+                       },
+        "notes":  "Ground-cover shrub, 0.58 m wide; scale up 2x to 4x. Origin near base. Node transforms: shrub_04:translation.",
+        "bytes":  1907514
+    },
+    {
+        "name":  "shrub_b",
+        "use":  "Lot: shrub cluster (several plants in one file)",
+        "id":  "shrub_02",
+        "url":  "https://polyhaven.com/a/shrub_02",
+        "licence":  "CC0",
+        "authors":  "Rico Cilliers",
+        "gltf":  "/3d/models/shrub_b/shrub_02_1k.gltf",
+        "sizeMeters":  {
+                           "x":  6.57,
+                           "y":  2.55,
+                           "z":  2.54
+                       },
+        "notes":  "Contains 3 plants offset in nodes (bounds -2.3 to 4.3 m on X); use whole file as a clump, or scale 0.3x. Node transforms: shrub_02_a:rotation+translation; shrub_02_b:rotation+translation; shrub_02_c:rotation+translation; shrub_02_d:rotation+translation.",
+        "bytes":  1966425
+    },
+    {
+        "name":  "sofa",
+        "use":  "Living room: 3-seat sofa",
+        "id":  "sofa_02",
+        "url":  "https://polyhaven.com/a/sofa_02",
+        "licence":  "CC0",
+        "authors":  "Kirill Sannikov",
+        "gltf":  "/3d/models/sofa/sofa_02_1k.gltf",
+        "sizeMeters":  {
+                           "x":  1.81,
+                           "y":  0.71,
+                           "z":  0.82
+                       },
+        "notes":  "Y up, origin at floor centre. Front direction not stated by the source; likely faces +Z (verify visually). Node transforms: sofa_02_Base:translation; sofa_02_Seat:translation.",
+        "bytes":  427171
+    },
+    {
+        "name":  "armchair",
+        "use":  "Living room: armchair",
+        "id":  "mid_century_lounge_chair",
+        "url":  "https://polyhaven.com/a/mid_century_lounge_chair",
+        "licence":  "CC0",
+        "authors":  "Kuutti Siitonen",
+        "gltf":  "/3d/models/armchair/mid_century_lounge_chair_1k.gltf",
+        "sizeMeters":  {
+                           "x":  1.01,
+                           "y":  1.17,
+                           "z":  1.19
+                       },
+        "notes":  "Y up, origin at floor centre. Front direction not stated by the source; likely faces +Z (verify visually). Node transforms: none.",
+        "bytes":  2087019
+    },
+    {
+        "name":  "coffee_table",
+        "use":  "Living room: round coffee table",
+        "id":  "coffee_table_round_01",
+        "url":  "https://polyhaven.com/a/coffee_table_round_01",
+        "licence":  "CC0",
+        "authors":  "Ulan Cabanilla",
+        "gltf":  "/3d/models/coffee_table/coffee_table_round_01_1k.gltf",
+        "sizeMeters":  {
+                           "x":  1.3,
+                           "y":  0.49,
+                           "z":  1.3
+                       },
+        "notes":  "Y up, origin at floor centre. Front direction not stated by the source; likely faces +Z (verify visually). Node transforms: none.",
+        "bytes":  1563153
+    },
+    {
+        "name":  "side_table",
+        "use":  "Living room: side table",
+        "id":  "side_table_01",
+        "url":  "https://polyhaven.com/a/side_table_01",
+        "licence":  "CC0",
+        "authors":  "James Ray Cock",
+        "gltf":  "/3d/models/side_table/side_table_01_1k.gltf",
+        "sizeMeters":  {
+                           "x":  0.55,
+                           "y":  0.55,
+                           "z":  0.45
+                       },
+        "notes":  "Y up, origin at floor centre. Front direction not stated by the source; likely faces +Z (verify visually). Node transforms: none.",
+        "bytes":  505268
+    },
+    {
+        "name":  "plant",
+        "use":  "Living room: potted succulent",
+        "id":  "potted_plant_04",
+        "url":  "https://polyhaven.com/a/potted_plant_04",
+        "licence":  "CC0",
+        "authors":  "James Ray Cock",
+        "gltf":  "/3d/models/plant/potted_plant_04_1k.gltf",
+        "sizeMeters":  {
+                           "x":  0.17,
+                           "y":  0.27,
+                           "z":  0.18
+                       },
+        "notes":  "Node transforms: none.",
+        "bytes":  2122625
+    },
+    {
+        "name":  "dining_table",
+        "use":  "Dining: table (seats 6)",
+        "id":  "dining_table",
+        "url":  "https://polyhaven.com/a/dining_table",
+        "licence":  "CC0",
+        "authors":  "Aron Åyczek",
+        "gltf":  "/3d/models/dining_table/dining_table_1k.gltf",
+        "sizeMeters":  {
+                           "x":  2.26,
+                           "y":  0.88,
+                           "z":  1.39
+                       },
+        "notes":  "Y up, origin at floor centre. Front direction not stated by the source; likely faces +Z (verify visually). Node transforms: none.",
+        "bytes":  2283933
+    },
+    {
+        "name":  "dining_chair",
+        "use":  "Dining: chair",
+        "id":  "dining_chair_02",
+        "url":  "https://polyhaven.com/a/dining_chair_02",
+        "licence":  "CC0",
+        "authors":  "James Ray Cock",
+        "gltf":  "/3d/models/dining_chair/dining_chair_02_1k.gltf",
+        "sizeMeters":  {
+                           "x":  0.43,
+                           "y":  0.97,
+                           "z":  0.58
+                       },
+        "notes":  "Y up, origin at floor centre. Front direction not stated by the source; likely faces +Z (verify visually). Node transforms: none.",
+        "bytes":  921075
+    },
+    {
+        "name":  "stool",
+        "use":  "Kitchen: bar or counter stool",
+        "id":  "metal_stool_03",
+        "url":  "https://polyhaven.com/a/metal_stool_03",
+        "licence":  "CC0",
+        "authors":  "Flo Tasser",
+        "gltf":  "/3d/models/stool/metal_stool_03_1k.gltf",
+        "sizeMeters":  {
+                           "x":  0.46,
+                           "y":  1.02,
+                           "z":  0.47
+                       },
+        "notes":  "Y up, origin at floor centre. Front direction not stated by the source; likely faces +Z (verify visually). Node transforms: none.",
+        "bytes":  2289619
+    },
+    {
+        "name":  "vase",
+        "use":  "Decor: ceramic vase",
+        "id":  "ceramic_vase_01",
+        "url":  "https://polyhaven.com/a/ceramic_vase_01",
+        "licence":  "CC0",
+        "authors":  "James Ray Cock",
+        "gltf":  "/3d/models/vase/ceramic_vase_01_1k.gltf",
+        "sizeMeters":  {
+                           "x":  0.2,
+                           "y":  0.4,
+                           "z":  0.2
+                       },
+        "notes":  "Node transforms: none.",
+        "bytes":  418457
+    }
+]

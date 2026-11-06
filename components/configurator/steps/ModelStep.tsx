@@ -8,6 +8,7 @@ import { monthlyDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
 import { getModelHero, sourceLabel } from "@/lib/visual-assets";
 import { MonthlyDelta, RadioMark, choiceRowClass } from "@/components/configurator/ui/ChoiceRow";
+import { usePricesShown } from "@/components/configurator/ui/PriceVisibility";
 
 interface ModelStepProps {
   state: ConfiguratorState;
@@ -19,6 +20,7 @@ interface ModelStepProps {
 // its price, how it moves the monthly payment and its approved reason.
 export default function ModelStep({ state, onChange }: ModelStepProps) {
   const monthlyDelta = monthlyDeltaFor(state);
+  const pricesShown = usePricesShown();
   // A model without a fireplace option drops a fireplace chosen for another model.
   const patchFor = (model: HomeModel): Partial<ConfiguratorState> => ({
     modelId: model.id,
@@ -67,11 +69,13 @@ export default function ModelStep({ state, onChange }: ModelStepProps) {
                         <span className="text-body font-medium text-text-primary">{model.name}</span>
                         <RadioMark checked={selected} />
                       </span>
-                      <span className="flex flex-wrap items-baseline gap-x-2">
-                        <span className="text-caption text-text-muted">Est.</span>
-                        <span className="font-accent text-figure text-text-primary">{formatCurrency(model.price)}</span>
-                        <MonthlyDelta amount={monthlyDelta(patch)} />
-                      </span>
+                      {pricesShown && (
+                        <span className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="text-caption text-text-muted">Est.</span>
+                          <span className="font-accent text-figure text-text-primary">{formatCurrency(model.price)}</span>
+                          <MonthlyDelta amount={monthlyDelta(patch)} />
+                        </span>
+                      )}
                       <span className="mt-1 font-accent text-figure-sm uppercase tracking-wide text-text-secondary">
                         {model.beds} bed · {model.baths} bath · {model.sqft.toLocaleString("en-CA")} sq ft
                       </span>

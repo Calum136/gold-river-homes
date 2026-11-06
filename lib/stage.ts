@@ -71,6 +71,7 @@ export interface StageResolution {
 }
 
 export const PORCH_LABELS = { without: "No porch", with: "Covered front porch" } as const;
+export const VESTIBULE_LABELS = { without: "Open entry landing", with: "Enclosed entry vestibule" } as const;
 export const FIREPLACE_LABELS = { without: "No fireplace", with: "Electric fireplace insert" } as const;
 
 // Interior decisions and the room whose photo best shows them.

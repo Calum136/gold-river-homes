@@ -157,8 +157,8 @@ export default function SpecSheet({ state, shareLink, savedName }: SpecSheetProp
             <h3 className="border-b border-[#bbb] pb-0.5 text-[8.5pt] font-semibold">Cost breakdown</h3>
             <table className="w-full border-collapse text-[7pt] leading-[1.3]">
               <tbody>
-                {items.map((item) => (
-                  <tr key={item.label} className="border-b border-[#e2e2e2] align-baseline">
+                {items.map((item, i) => (
+                  <tr key={`${i}:${item.label}`} className="border-b border-[#e2e2e2] align-baseline">
                     <td className="py-0 pr-3">{item.label}</td>
                     <td className="whitespace-nowrap py-0 text-right tabular-nums">{lineAmount(item)}</td>
                   </tr>

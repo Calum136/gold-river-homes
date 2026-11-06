@@ -1,10 +1,10 @@
 "use client";
 
-import { exteriorGroups, sidingColors, metalRoofColors } from "@/lib/defaults";
+import { exteriorGroups, sidingColors, metalRoofColors, vestibuleAvailable } from "@/lib/defaults";
 import { monthlyDeltaFor, priceDeltaFor } from "@/lib/pricing";
 import type { ConfiguratorState } from "@/lib/pricing";
-import { porchCopy } from "@/lib/copy";
-import { PORCH_LABELS } from "@/lib/stage";
+import { porchCopy, vestibuleCopy } from "@/lib/copy";
+import { PORCH_LABELS, VESTIBULE_LABELS } from "@/lib/stage";
 import { getOptionAsset } from "@/lib/visual-assets";
 import ChoiceRow, { ChoiceGroup, PriceDelta } from "@/components/configurator/ui/ChoiceRow";
 import OptionRows from "@/components/configurator/ui/OptionRows";
@@ -77,7 +77,7 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
       const reserveThumb = !!(without || withPorch);
       const monthlyDelta = monthlyDeltaFor(state);
       const priceDelta = priceDeltaFor(state);
-      return (
+      const porchRows = (
         <ChoiceGroup legend="Front porch">
           <ChoiceRow
             name="porch"
@@ -104,6 +104,35 @@ export default function ExteriorStep({ state, onChange, only }: ExteriorStepProp
             reserveThumb={reserveThumb}
           />
         </ChoiceGroup>
+      );
+      if (!vestibuleAvailable(state.modelId)) return porchRows;
+      // Models drawn in 3D also offer an enclosed entry vestibule.
+      return (
+        <div className="space-y-8">
+          {porchRows}
+          <ChoiceGroup legend="Entry vestibule" showLegend>
+            <ChoiceRow
+              name="vestibule"
+              value="without"
+              label={VESTIBULE_LABELS.without}
+              reason={vestibuleCopy.without}
+              price={<PriceDelta amount={priceDelta({ hasVestibule: false })} />}
+              monthlyDelta={monthlyDelta({ hasVestibule: false })}
+              checked={!state.hasVestibule}
+              onSelect={() => onChange({ hasVestibule: false })}
+            />
+            <ChoiceRow
+              name="vestibule"
+              value="with"
+              label={VESTIBULE_LABELS.with}
+              reason={vestibuleCopy.with}
+              price={<PriceDelta amount={priceDelta({ hasVestibule: true })} />}
+              monthlyDelta={monthlyDelta({ hasVestibule: true })}
+              checked={state.hasVestibule}
+              onSelect={() => onChange({ hasVestibule: true })}
+            />
+          </ChoiceGroup>
+        </div>
       );
     }
 

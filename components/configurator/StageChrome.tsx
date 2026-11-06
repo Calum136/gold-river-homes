@@ -10,6 +10,8 @@ interface StageChromeProps {
   stage: StageResolution;
   model: { id: string; name: string } | null;
   className?: string;
+  /** Replaces the photo caption and note, for a stage that shows something other than a photo. */
+  caption?: { text: string; note: string };
 }
 
 // The one quiet region for everything about the stage photo: what it shows,
@@ -17,7 +19,7 @@ interface StageChromeProps {
 // single note on where photos come from. Narrower screens show that note once
 // at the foot of the decision panel instead, so it never pushes the question
 // below the fold. Nothing is ever drawn over the photo itself.
-export default function StageChrome({ stage, model, className = "" }: StageChromeProps) {
+export default function StageChrome({ stage, model, className = "", caption }: StageChromeProps) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const gallery = getModelGallery(model?.id ?? null);
   const { primary } = stage;
@@ -26,13 +28,22 @@ export default function StageChrome({ stage, model, className = "" }: StageChrom
   return (
     <div className={`flex items-center justify-between gap-4 ${className}`}>
       <div className="min-w-0">
-        {primary && (
-          <p className="text-caption text-text-secondary">
-            {primary.caption}
-            {credit && <span className="text-text-muted"> · {credit}</span>}
-          </p>
+        {caption ? (
+          <>
+            <p className="text-caption text-text-secondary">{caption.text}</p>
+            <p className="hidden text-caption text-text-muted xl:block">{caption.note}</p>
+          </>
+        ) : (
+          <>
+            {primary && (
+              <p className="text-caption text-text-secondary">
+                {primary.caption}
+                {credit && <span className="text-text-muted"> · {credit}</span>}
+              </p>
+            )}
+            <p className="hidden text-caption text-text-muted xl:block">{stageNote}</p>
+          </>
         )}
-        <p className="hidden text-caption text-text-muted xl:block">{stageNote}</p>
       </div>
 
       {model && gallery.length > 1 && (

@@ -940,6 +940,13 @@ export const siteEstimates: Record<string, CostEstimate> = {
 
 // --- Extensions ---
 
+/** Models whose plan has been drawn with an optional enclosed entry vestibule (the 3D demo model). */
+export const VESTIBULE_MODELS: readonly string[] = ["bali"];
+
+export function vestibuleAvailable(modelId: string | null): boolean {
+  return !!modelId && VESTIBULE_MODELS.includes(modelId);
+}
+
 export interface Extension {
   id: string;
   label: string;
@@ -959,6 +966,15 @@ export const extensionOptions: Extension[] = [
     mid: 18000,
     high: 28000,
     addedRoofSqft: 200,
+  },
+  {
+    id: "entry-vestibule",
+    label: "Enclosed Entry Vestibule",
+    description: "An enclosed 8' by 6' entry built onto the front door, with its own door, side windows and a steep gable roof.",
+    low: 9000,
+    mid: 14000,
+    high: 20000,
+    addedRoofSqft: 70,
   },
   {
     id: "garage",

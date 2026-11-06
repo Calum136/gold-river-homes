@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { formatCurrency } from "@/lib/calculator";
 import type { VisualAsset } from "@/lib/visual-assets";
+import { usePricesShown } from "./PriceVisibility";
 
 /**
  * "Included" for no added cost (the choice already selected shows this, since
@@ -10,6 +11,8 @@ import type { VisualAsset } from "@/lib/visual-assets";
  * every figure here is an estimate, not a quote.
  */
 export function PriceDelta({ amount }: { amount: number }) {
+  const shown = usePricesShown();
+  if (!shown) return null;
   if (amount === 0) {
     return <span className="text-caption text-text-muted">Included</span>;
   }
@@ -29,7 +32,8 @@ export function PriceDelta({ amount }: { amount: number }) {
  * from monthlyDeltaFor() in lib/pricing.ts.
  */
 export function MonthlyDelta({ amount }: { amount: number | null | undefined }) {
-  if (!amount) return null;
+  const shown = usePricesShown();
+  if (!amount || !shown) return null;
   return (
     <span className="whitespace-nowrap font-accent text-figure-sm tabular-nums text-text-secondary">
       {amount > 0 ? "+" : "−"}
@@ -150,6 +154,7 @@ export default function ChoiceRow({
   paletteHexes,
 }: ChoiceRowProps) {
   const showThumbSlot = reserveThumb || !!thumb || !!swatchHex;
+  const pricesShown = usePricesShown();
 
   return (
     <label className={`flex items-start gap-3 px-4 py-4 sm:gap-4 ${choiceRowClass(checked, disabled)}`}>
@@ -199,7 +204,7 @@ export default function ChoiceRow({
             {label}
             {tag && <Tag>{tag}</Tag>}
           </span>
-          {(price || !!monthlyDelta) && (
+          {pricesShown && (price || !!monthlyDelta) && (
             <span className="flex shrink-0 flex-col items-end tabular-nums">
               {price}
               <MonthlyDelta amount={monthlyDelta} />

@@ -1,11 +1,11 @@
 # Gold River Homes — Total Cost Calculator
-# Last updated: Sep 13, 2026
+# Last updated: Nov 6, 2026
 
 @AGENTS.md
 
-## Status: ACTIVE — Premium configurator handoff complete and live on `main` (5eda7d5, Sep 14, 2026): photo-first stage, named chapters, price + monthly payment + reason on every choice, example-lot and estimate labels, review-and-refine page, named saves, share link, printable spec sheet, enquiry email.
-## Next: (1) Calum's manual pass on the live site (400 px, keyboard-only, print preview, share link in a private window); the final stage was verified by build and scripts, not in a browser. (2) Owner sends the Supreme data request, including written permission for Supreme's photos (`docs/visualization/03-asset-pipeline.md`). (3) Swap in real lots, model prices and the factory option price list when Gold River supplies them, and fill the 22 photo gaps (`npm run assets:report`).
-## Completion: All premium handoff workstreams shipped; remaining items are blocked on owner data (lots, prices, options, photo permission)
+## Status: ACTIVE — Bali 3D walkthrough built on branch `feat/bali-3d` (Nov 6, 2026), not merged: scroll-driven plan sheet, walls rise, camera tours the house, every choice changes the 3D scene live, prices moved to the final page. `main` is still the photo-first configurator (5eda7d5, Sep 14).
+## Next: (1) Calum reviews the Bali 3D demo locally (`npm run dev`, /configure, pick the Bali) and decides whether to merge. (2) Before a public launch, cut the 3D page weight (about 70 MB; KTX2 textures, Draco meshes, lighter pine). (3) Owner data request still open: real prices, lots, option list, Supreme permission for photos and plans.
+## Completion: Photo-first configurator shipped on main; Bali 3D demo built and browser-checked on its branch; remaining items blocked on Calum's review and owner data
 
 - **Client:** Gold River Homes (Supreme Homes retailer)
 - **Location:** 219 NS-12, Chester Basin, NS B0J 1K0
@@ -68,11 +68,19 @@ docs/
 3. Design must match supremehomes.ca dark/gold aesthetic
 4. Keep POC scope tight — owner will steer direction for Phase 2+
 5. Docs in `docs/` folder — update MASTER.md index when adding new docs
-6. Visuals are real photos only: no drawings, and photos are never tinted or edited. Every image goes in `lib/visual-assets.json` with source, licence and a caption that says exactly what it shows. Choices without an approved photo show just the choice.
+6. Visuals are real photos only: no drawings, and photos are never tinted or edited. Every image goes in `lib/visual-assets.json` with source, licence and a caption that says exactly what it shows. Choices without an approved photo show just the choice. **Exception (Nov 6, 2026): models in `MODELS_IN_3D` (the Bali) use the live 3D walkthrough, and every choice must change the 3D scene; underground and in-wall choices use the see-through ground or the insulation cutaway. The stage says it's a model built from Supreme's plan with representative finishes. 3D assets are CC0, logged in `public/3d/ASSETS.json` and `public/3d/models/MODELS.json`.**
 7. Never present a price or lot as real: model and option prices are estimates and the lots are examples until Gold River supplies real data.
 8. Calum reviews UI himself at the localhost link; don't send screenshots.
 
 ## Session Notes
+- **Nov 6, 2026 (Bali 3D walkthrough, branch `feat/bali-3d`):** Calum asked for a 3D floor-plan walkthrough like the tripo3d "scroll-driven 3D floor plan walkthrough" prompt (reference repo Sam1983Aing/casa-larga has no licence, so ideas only, no code), with every choice visibly changing the home and pricing moved to the last page.
+  - **Research.** Five lighter agents gathered the project history (`docs/3d-walkthrough/00-context-brief.md`), the casa-larga techniques, the Supreme Bali and Merlot web sheets, a code map, and CC0 textures, sky and models from Poly Haven and ambientCG (Calum: "Download away").
+  - **Build.** three.js 0.187, vanilla, in `components/bali3d/`. Plan traced from Supreme's Bali sheet into `plan.ts`. Ink shader turns the same model into the printed plan; walls rise; a reveal sweeps materials out from the door. Camera stop per screen, routes through doorways, view presets, drag to look, wheel tour on desktop only. Indoor materials use a neutral RoomEnvironment so steel and ceilings don't pick up the lawn's green.
+  - **Every choice visible.** Including insulation (wall cutaway), foundation, water and wastewater (see-through lawn), land (terrain props), lighting (evening scene). Full table in `docs/3d-walkthrough/01-build-notes.md`.
+  - **New option.** Enclosed entry vestibule (Bali only, est. $14,000, unapproved copy) wired through state, sanitize, share link (`vb`), pricing, selections and the spec sheet.
+  - **Prices.** `PriceVisibility` hides per-choice prices, monthly deltas, model and lot prices, site ranges and the running total in the flow; the review page shows everything.
+  - **Also fixed.** Duplicate React keys in CostBreakdown and SpecSheet when two items share a label ("Premium").
+  - **Checks.** Lint, tsc and build clean; every screen checked in the built-in browser.
 - **Sep 14, 2026 (handoff finished, live on main 5eda7d5):** Each stage was pushed after lint, `tsc --noEmit`, build and grep checks, under Calum's standing OK.
   - **C2b labels (c5d93f1).**
     - Lots renamed to clearly labelled examples ("Example: wooded lot near Chester Basin", "Example price") with one neutral description.

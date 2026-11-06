@@ -9,6 +9,7 @@ import type { ExteriorSection } from "@/components/configurator/steps/ExteriorSt
 import InteriorStep from "@/components/configurator/steps/InteriorStep";
 import SiteStep from "@/components/configurator/steps/SiteStep";
 import type { SiteSection } from "@/components/configurator/steps/SiteStep";
+import { usePricesShown } from "@/components/configurator/ui/PriceVisibility";
 
 interface DecisionChoicesProps {
   screenId: string;
@@ -23,6 +24,7 @@ interface DecisionChoicesProps {
 // them: price, monthly payment change and reason on every choice. Used by the
 // walkthrough and by the review page, so both always offer the same choices.
 export default function DecisionChoices({ screenId, chapter, state, onChange, inReview = false }: DecisionChoicesProps) {
+  const pricesShown = usePricesShown();
   switch (chapter) {
     case "land":
       return <LotStep state={state} onChange={onChange} />;
@@ -34,7 +36,7 @@ export default function DecisionChoices({ screenId, chapter, state, onChange, in
       return <InteriorStep state={state} onChange={onChange} only={screenId} />;
     case "ready":
       return (
-        <SiteStep state={state} onChange={onChange} only={screenId as SiteSection} showSiteEstimates={!inReview} />
+        <SiteStep state={state} onChange={onChange} only={screenId as SiteSection} showSiteEstimates={!inReview && pricesShown} />
       );
     default:
       return null;
