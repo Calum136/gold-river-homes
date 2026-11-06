@@ -40,7 +40,7 @@ export const STOPS: Record<string, Pose> = {
   interiorTrim: pose(46.6, 13.7, 4.4, 60.0, 13.6, 2.4, 58),
   lightingPackage: pose(39.8, 14.4, 5.0, 31.5, 4.0, 5.0, 62),
   hardwareFinish: pose(30.9, 5.3, 3.9, 27.4, 1.0, 2.5, 46),
-  insulation: pose(69.6, -7.4, 4.6, 71.0, 0.2, 4.0, 46),
+  insulation: pose(68.8, -10.5, 4.8, 71.0, 0.2, 4.0, 46),
   fireplace: pose(41.4, 22.2, 4.8, 30.2, 23.8, 3.6, 58),
   foundation: pose(-20, -28, 0.5, 14, 6, -5, 48),
   water: pose(-34, -66, 30, 4, -22, -7, 48),

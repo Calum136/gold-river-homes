@@ -244,6 +244,9 @@ export function disposeLandscapeKit(kit: LandscapeKit) {
 
 // ---------- Layout ----------
 
+/** Plan x range kept free of tall planting in front of the insulation cutaway (site.ts CUTAWAY, plus a margin). */
+const CUTAWAY_CLEAR: [number, number] = [67.6, 74.4];
+
 interface Placement {
   x: number;
   y: number;
@@ -337,14 +340,17 @@ export function buildLandscape(state: ConfiguratorState, kit: LandscapeKit, m: M
       prev = p;
     }
 
-    // Planting: evergreens at the back, hydrangeas between, lavender and grasses at the front.
-    const span = bed.x1 - bed.x0;
+    // Planting: evergreens at the back, hydrangeas between, lavender and grasses
+    // at the front. Taller plants stay clear of the insulation cutaway.
     const backRow = bed.back - 0.9;
+    const keepClear = (x: number) => bed.back === -1.0 && x > CUTAWAY_CLEAR[0] && x < CUTAWAY_CLEAR[1];
     for (let x = bed.x0 + 1.6; x < bed.x1 - 1.2; x += 4.2) {
+      if (keepClear(x)) continue;
       placements.boxwood.push({ x: x + (r() - 0.5) * 0.4, y: backRow - r() * 0.3, scale: 0.95 + r() * 0.3, rot: r() * 6.28 });
     }
     if (bed.depth >= 4) {
       for (let x = bed.x0 + 4.4; x < bed.x1 - 3; x += 8.4) {
+        if (keepClear(x)) continue;
         placements.hydrangea.push({ x, y: backRow - 1.5, scale: 1.05 + r() * 0.2, rot: r() * 6.28, color: r() > 0.5 ? "#e9edf4" : "#9fb3dc" });
       }
     }
@@ -354,13 +360,11 @@ export function buildLandscape(state: ConfiguratorState, kit: LandscapeKit, m: M
       if (alt++ % 2 === 0) placements.lavender.push({ x, y, scale: 0.85 + r() * 0.2, rot: r() * 6.28 });
       else placements.grass.push({ x, y: y - 0.1, scale: 0.85 + r() * 0.25, rot: r() * 6.28 });
     }
-    // A small maple at the outer end of each big bed
-    if (bed.back === -1.0 && span > 12) {
-      const atLeft = bed.x0 < 10;
-      const mx = atLeft ? bed.x0 + 2.4 : bed.x1 - 2.4;
-      placements.maple.push({ x: mx, y: edgeY(bed, mx) + 1.4, scale: 1, rot: r() * 6.28 });
-    }
   }
+
+  // A small red maple just off each front corner of the house, framing it.
+  placements.maple.push({ x: -4.5, y: -4.5, scale: 1, rot: 0.6 });
+  placements.maple.push({ x: 78.5, y: -4.5, scale: 1.08, rot: 2.1 });
 
   // River-rock strip along the foundation (the drip line under the eaves)
   b.box(1, entryX0 - 0.3, -1.0, -0.05, GRADE, GRADE + 0.12, "drainRock");

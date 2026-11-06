@@ -28,9 +28,9 @@ export function buildLot(state: ConfiguratorState, m: Materials): THREE.Group {
   const GRADE = gradeFor(state.foundationType);
   const b = new Builder();
   const terrain = terrainFor(state);
-  // Lawn: a disc of real grass texture reaching right out to the sky dome's
-  // edge, so the sky image's own ground never shows as a pale ring.
-  const lawn = new THREE.CircleGeometry(158 / FT, 96);
+  // Lawn: a disc of real grass texture reaching far past where the haze turns
+  // it the colour of the horizon, so it never shows an edge.
+  const lawn = new THREE.CircleGeometry(700 / FT, 128);
   b.shape("grass", lawn, { x: 37, y: 0, h: GRADE }, { rotX: -Math.PI / 2, worldUV: true });
 
   const drive = terrain === "town" ? "asphalt" : "gravel";
