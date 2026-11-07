@@ -23,16 +23,18 @@ const VIEW_BUTTONS: { id: string; label: string }[] = [
   { id: "top", label: "Top down" },
 ];
 
+// In order along the house, from the main suite's end to Bedroom 3's, so
+// going down the list walks the house once instead of back and forth.
 const ROOMS: { id: string; label: string }[] = [
-  { id: "kitchen", label: "Kitchen" },
-  { id: "living", label: "Living room" },
-  { id: "bedroom", label: "Main bedroom" },
   { id: "ensuite", label: "Main bath" },
-  { id: "bedroom2", label: "Bedroom 2" },
-  { id: "bedroom3", label: "Bedroom 3" },
-  { id: "bath", label: "Bathroom" },
+  { id: "bedroom", label: "Main bedroom" },
   { id: "laundry", label: "Laundry" },
   { id: "pantry", label: "Pantry" },
+  { id: "kitchen", label: "Kitchen" },
+  { id: "living", label: "Living room" },
+  { id: "bedroom2", label: "Bedroom 2" },
+  { id: "bath", label: "Bathroom" },
+  { id: "bedroom3", label: "Bedroom 3" },
 ];
 
 const ZOOMABLE = new Set(["dollhouse", "top"]);

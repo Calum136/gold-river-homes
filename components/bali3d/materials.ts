@@ -156,7 +156,6 @@ export type Slot =
   | "rockFace"
   // Below ground and inside walls (seen in the see-through and cutaway views)
   | "concrete"
-  | "soil"
   | "drainRock"
   | "pipeWater"
   | "pipeSewer"
@@ -233,7 +232,6 @@ export function createMaterials(): Materials {
     mulch: std({ ...scanSet("mulch", 1.6), color: "#8a7a6c", roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
     rockFace: std({ ...stone, color: "#a9a49c", roughness: 1 }),
     concrete: std({ ...scanSet("concrete", 2.4), color: "#bdbab4", roughness: 1 }),
-    soil: std({ ...scanSet("mulch", 3.0, ["nor"]), color: "#5a4636", roughness: 1 }),
     drainRock: std({ ...scanSet("gravel", 1.2), color: "#a8a39a", roughness: 1 }),
     pipeWater: std({ color: "#2f6fb5", roughness: 0.45 }),
     pipeSewer: std({ color: "#3f7f3f", roughness: 0.5 }),

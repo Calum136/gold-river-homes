@@ -14,17 +14,82 @@ import { FT, P, wx, wz } from "./space";
 // those screens, so these choices change the picture too.
 // ============================================
 
+/** How much lawn shows around the house, at its closest. */
+export const LAWN_FT = 20;
+
 /**
- * The modelled yard: an oval about 10 ft clear of the house all round, with
- * room at the front for the steps, garden and walk. Plan feet. A scenery ring
- * stands at its edge (engine.ts), so there's no field or road beyond it.
+ * The modelled yard: the house's outline (its corners joined, so the living
+ * room module's back corners run straight to the main module's) grown by
+ * LAWN_FT all round, with rounded corners. Plan feet, counter-clockwise.
+ * Beyond it is a plain studio backdrop (engine.ts).
  */
-export const LOT = { cx: 37, cy: 12, a: 52, b: 31 } as const;
+export const LOT_OUTLINE: [number, number][] = (() => {
+  const L = PLAN.living;
+  const hull: [number, number][] = [
+    [0, 0],
+    [PLAN.length, 0],
+    [PLAN.length, PLAN.width],
+    [L.x1, L.y1],
+    [L.x0, L.y1],
+    [0, PLAN.width],
+  ];
+  const out: [number, number][] = [];
+  const n = hull.length;
+  // Outward normal of the edge from hull[i] to hull[i + 1].
+  const normalAngle = (i: number) => {
+    const [ax, ay] = hull[i];
+    const [bx, by] = hull[(i + 1) % n];
+    return Math.atan2(-(bx - ax), by - ay);
+  };
+  for (let i = 0; i < n; i++) {
+    const [vx, vy] = hull[i];
+    const a0 = normalAngle((i + n - 1) % n);
+    let a1 = normalAngle(i);
+    if (a1 < a0) a1 += Math.PI * 2;
+    const steps = Math.max(1, Math.ceil((a1 - a0) / 0.08));
+    for (let s = 0; s <= steps; s++) {
+      const a = a0 + ((a1 - a0) * s) / steps;
+      out.push([vx + Math.cos(a) * LAWN_FT, vy + Math.sin(a) * LAWN_FT]);
+    }
+  }
+  return out;
+})();
+
+/** The middle of the yard, in plan feet. */
+export const LOT_CENTRE: [number, number] = [PLAN.length / 2, PLAN.living.y1 / 2];
 
 /** Where the yard's edge is along x, on the front (-1) or back (+1) side. */
 export function lotEdgeY(x: number, side: -1 | 1): number {
-  const k = 1 - ((x - LOT.cx) / LOT.a) ** 2;
-  return LOT.cy + side * LOT.b * Math.sqrt(Math.max(0, k));
+  const ys: number[] = [];
+  for (let i = 0; i < LOT_OUTLINE.length; i++) {
+    const [ax, ay] = LOT_OUTLINE[i];
+    const [bx, by] = LOT_OUTLINE[(i + 1) % LOT_OUTLINE.length];
+    if ((x - ax) * (x - bx) > 0 || ax === bx) continue;
+    ys.push(ay + ((x - ax) / (bx - ax)) * (by - ay));
+  }
+  if (!ys.length) return LOT_CENTRE[1];
+  return side < 0 ? Math.min(...ys) : Math.max(...ys);
+}
+
+/** How far the yard's edge is from its centre, in the direction of angle a (radians, plan axes). */
+function lotReach(a: number): number {
+  const [cx, cy] = LOT_CENTRE;
+  const dx = Math.cos(a);
+  const dy = Math.sin(a);
+  let best = 0;
+  for (let i = 0; i < LOT_OUTLINE.length; i++) {
+    const [ax, ay] = LOT_OUTLINE[i];
+    const [bx, by] = LOT_OUTLINE[(i + 1) % LOT_OUTLINE.length];
+    // Solve centre + r * d = a + s * (b - a)
+    const ex = bx - ax;
+    const ey = by - ay;
+    const den = dx * ey - dy * ex;
+    if (Math.abs(den) < 1e-9) continue;
+    const r = ((ax - cx) * ey - (ay - cy) * ex) / den;
+    const s = ((ax - cx) * dy - (ay - cy) * dx) / den;
+    if (r > 0 && s >= 0 && s <= 1) best = Math.max(best, r);
+  }
+  return best;
 }
 
 export function terrainFor(state: ConfiguratorState): LotTerrain {
@@ -34,13 +99,13 @@ export function terrainFor(state: ConfiguratorState): LotTerrain {
   return "meadow";
 }
 
-/** The yard: lawn out to the scenery ring and a paver walk from the steps to its edge. */
+/** The yard: lawn out to its edge and a paver walk from the steps to the edge. */
 export function buildLot(state: ConfiguratorState, m: Materials): THREE.Group {
   const GRADE = gradeFor(state.foundationType);
   const b = new Builder();
-  // Lawn: an oval disc (a unit circle stretched to the yard's shape).
-  const lawn = new THREE.CircleGeometry(1, 96);
-  b.shape("grass", lawn, { x: LOT.cx, y: LOT.cy, h: GRADE }, { rotX: -Math.PI / 2, scale: [LOT.a, LOT.b, 1], worldUV: true });
+  // Lawn: the yard's outline, drawn in plan feet (laid flat, plan y runs to the back).
+  const lawn = new THREE.ShapeGeometry(new THREE.Shape(LOT_OUTLINE.map(([x, y]) => new THREE.Vector2(x, y))), 1);
+  b.shape("grass", lawn, { x: 0, y: 0, h: GRADE }, { rotX: -Math.PI / 2, worldUV: true });
   // Paver walk from the front steps straight out to the edge of the yard
   const walkEnd = lotEdgeY(43.6, -1) + 0.6;
   b.box(41.6, 45.6, walkEnd, -7.5, GRADE, GRADE + 0.07, "paving");
@@ -96,7 +161,7 @@ export function lotProps(state: ConfiguratorState): PropPlacement[] {
       return s / 2147483647;
     };
   })();
-  // A few trees just inside the scenery ring, off the two ends of the house
+  // A few trees just inside the yard's edge, off the two ends of the house
   // and round toward its back corners. They frame the house: the front, and
   // the Back view behind the living room, stay open to the camera.
   const trees = terrain === "wooded" ? 11 : terrain === "meadow" ? 5 : terrain === "coastal" ? 3 : 4;
@@ -107,9 +172,9 @@ export function lotProps(state: ConfiguratorState): PropPlacement[] {
     // Right arc from behind the septic tank toward the back corner (the leach
     // field takes the rest); left arc from the well round to the back corner.
     const a = (right ? 0.12 + 0.4 * u : Math.PI + 0.15 - 0.95 * u) + (rnd() - 0.5) * 0.12;
-    const k = 0.84 + rnd() * 0.08;
-    const x = LOT.cx + Math.cos(a) * LOT.a * k;
-    const y = LOT.cy + Math.sin(a) * LOT.b * k;
+    const r = lotReach(a) - 5 - rnd() * 3;
+    const x = LOT_CENTRE[0] + Math.cos(a) * r;
+    const y = LOT_CENTRE[1] + Math.sin(a) * r;
     const rotY = rnd() * 6.28;
     const scale = 4.2 + rnd() * 2.2;
     if (treeBlocked(x, y)) continue;
@@ -256,7 +321,7 @@ export function buildUtilities(state: ConfiguratorState, m: Materials, ink: THRE
     const wy0 = 4;
     if (state.waterType === "drilled") {
       // A 6" steel casing standing 18" above grade, running down into bedrock
-      // (real wells go 100 to 250 ft; shown to the depth of the yard's soil base).
+      // (real wells go 100 to 250 ft; shown 20 ft down, as deep as the see-through view goes).
       pipe(b, "steelPipe", [[wx0, wy0, GRADE - 19.5], [wx0, wy0, GRADE + 1.5]], 0.3);
       b.shape("steelPipe", new THREE.CylinderGeometry(0.36, 0.36, 0.25, 16), { x: wx0, y: wy0, h: GRADE + 1.6 });
       b.box(wx0 - 1.6, wx0 + 1.6, wy0 - 0.2, wy0 + 0.2, GRADE - 19.5, GRADE - 11, "drainRock");

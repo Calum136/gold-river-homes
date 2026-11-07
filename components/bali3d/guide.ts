@@ -20,13 +20,13 @@ export interface ScreenGuide {
 }
 
 export const GUIDE: Record<string, ScreenGuide> = {
-  land: { label: "Your lot", look: "The land around the house changes with the lot you pick.", anchor: () => [8, -24, -2.2] },
+  land: { label: "Your lot", look: "The land around the house changes with the lot you pick.", anchor: () => [8, -14, -2.2] },
   model: { label: "Floor plan", look: "This is the Bali's floor plan. Press Next, or the arrow at the right of the picture, to raise the walls." },
   sidingStyle: { label: "Siding", look: "Watch the siding on the front of the house: the boards change direction and width.", anchor: () => [22, 0, 5] },
   sidingColor: { label: "Siding colour", look: "The whole house changes colour as you pick.", anchor: () => [22, 0, 5] },
   roofType: { label: "Roof", look: "Look at the roof: shingles, or standing-seam metal in your colour.", anchor: () => [24, 5, 11.4] },
   porch: { label: "Front entry", look: "Watch the front door: an open landing, a covered porch, or an enclosed vestibule.", anchor: () => [43.6, -3, 2] },
-  exteriorTrim: { label: "Trim", look: "Look at the trim around this window.", anchor: () => [54.3, -0.1, 7.2] },
+  exteriorTrim: { label: "Trim", look: "Look at the trim around this window.", anchor: () => [66.2, -0.1, 7.2] },
   flooring: { label: "Floors", look: "The floors through the kitchen, living room, bedrooms and halls change. Bathrooms and the entry keep tile.", anchor: () => [36.5, 23, 0] },
   countertops: { label: "Countertops", look: "Your choice shows on the kitchen island and the counters behind it.", anchor: () => [33.0, 7.4, 3.0] },
   cabinetStyle: { label: "Cabinets", look: "Look at the kitchen cabinets: the door style and the colour.", anchor: () => [26.9, 1.6, 5.8] },
@@ -40,12 +40,12 @@ export const GUIDE: Record<string, ScreenGuide> = {
   water: {
     label: "Water",
     look: "The lawn turns see-through so you can see where your water comes from.",
-    anchor: (s) => (s.waterType === "municipal" ? [8, -60, -6] : [-16, -30, -2]),
+    anchor: (s) => (s.waterType === "municipal" ? [8, -17, -6] : [-6, 4, -1]),
   },
   sewer: {
     label: "Wastewater",
     look: "The lawn turns see-through so you can see where wastewater goes.",
-    anchor: (s) => (s.sewerType === "municipal" ? [60, -40, -7] : [60, -26, -4]),
+    anchor: (s) => (s.sewerType === "municipal" ? [60, -17, -7] : [82, 6, -4]),
   },
 };
 

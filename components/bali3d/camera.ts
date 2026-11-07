@@ -25,14 +25,22 @@ export const pose = (x: number, y: number, h: number, tx: number, ty: number, th
 export const clonePose = (p: Pose): Pose => ({ pos: p.pos.clone(), target: p.target.clone(), fov: p.fov });
 
 // Ground is 2.25 ft below the floor, so an outdoor eye height is h of about 3.
+// The lawn runs 20 ft out from the house and ends at a plain backdrop, so
+// eye-level cameras stand on or just off the lawn (grass fills the bottom of
+// the frame), and the far views are high enough to show the whole yard.
 export const STOPS: Record<string, Pose> = {
-  land: pose(-40, -90, 60, 37, 6, 0, 40),
+  // The whole yard in view, from high over the front-left corner.
+  land: pose(-55, -105, 72, 37, 14, 0, 40),
   // "model" is the plan sheet, framed to the viewport by planPose().
-  sidingStyle: pose(8, -40, 3.6, 38, 4, 4.5, 42),
-  sidingColor: pose(37, -62, 4.5, 37, 6, 4.2, 34),
-  roofType: pose(84, -44, 34, 37, 10, 6, 40),
-  porch: pose(35.5, -27, 3.8, 43.6, -2, 4.6, 44),
-  exteriorTrim: pose(57.0, -10.5, 4.4, 54.3, 0.25, 5.0, 42),
+  // On the lawn by the front-left corner, looking along the front wall.
+  sidingStyle: pose(4, -18.5, 4.2, 40, 4, 4.2, 54),
+  sidingColor: pose(37, -31, 4.5, 37, 6, 4.0, 54),
+  // The whole roof, from high over the front-right corner.
+  roofType: pose(106, -60, 52, 37, 14, 2, 38),
+  // Far enough back to see the porch roof as well as the deck.
+  porch: pose(36, -30, 4.6, 42.5, -2, 5.6, 48),
+  // Bedroom 3's front window: no porch or vestibule post stands in front of it.
+  exteriorTrim: pose(64.5, -10.5, 4.4, 66.2, 0.25, 5.0, 42),
   flooring: pose(44.8, 6.8, 5.0, 35.5, 24.5, 0.6, 62),
   countertops: pose(37.0, 12.4, 5.7, 32.4, 7.3, 2.9, 52),
   cabinetStyle: pose(37.8, 13.6, 5.3, 31.5, 1.0, 4.2, 60),
@@ -42,11 +50,15 @@ export const STOPS: Record<string, Pose> = {
   hardwareFinish: pose(30.9, 5.3, 3.9, 27.4, 1.0, 2.5, 46),
   insulation: pose(68.8, -10.5, 4.8, 71.0, 0.2, 4.0, 46),
   fireplace: pose(41.4, 22.2, 4.8, 30.2, 23.8, 3.6, 58),
-  // Close in at the left end, where no shrubs stand in front of the space under the house.
-  foundation: pose(-4, -17, 1.0, 18, 6, -4, 50),
+  // Low by the front-left corner, looking under the house (the garden beds step aside on this step).
+  foundation: pose(-4, -17, 0.6, 18, 6, -3.2, 48),
   water: pose(-34, -38, 26, 0, 4, -6, 48),
+  // Septic: the tank off the right end and the leach field behind the house.
   sewer: pose(110, -18, 34, 68, 18, -6, 48),
-  summary: pose(6, -46, 5.5, 40, 6, 4.5, 42),
+  // Municipal sewer: the lateral out to the street line along the front of the yard.
+  sewerMunicipal: pose(112, -30, 44, 60, 6, -6, 50),
+  // The finished home and its yard, from a little above the front-left.
+  summary: pose(-24, -82, 30, 40, 18, 4, 38),
 };
 
 export interface ViewPreset {
@@ -60,9 +72,10 @@ export interface ViewPreset {
 }
 
 export const PRESETS: ViewPreset[] = [
-  { id: "aerial", label: "Aerial", group: "view", pose: pose(-40, -90, 60, 37, 6, 0, 40) },
+  { id: "aerial", label: "Aerial", group: "view", pose: STOPS.land },
   { id: "front", label: "Front", group: "view", pose: STOPS.sidingColor },
-  { id: "back", label: "Back", group: "view", pose: pose(30, 92, 6, 37, 14, 5, 36) },
+  // From the back-right, where the sun lights the living room's side wall (from the back-left you look into the sun).
+  { id: "back", label: "Back", group: "view", pose: pose(60, 92, 28, 38, 12, 1, 44) },
   { id: "dollhouse", label: "Dollhouse", group: "view", pose: pose(66, -34, 58, 37, 12, 0, 40), cutaway: true },
   { id: "top", label: "Top down", group: "view", pose: pose(37, 15.9, 150, 37, 16, 0, 26), cutaway: true },
   // Rooms, named as on Supreme's plan. Each camera stands where open doors sit beside it, not in front.
@@ -181,6 +194,11 @@ export class Route {
     this.fov0 = fov0;
     this.fov1 = fov1;
     this.length = this.posCurve.getLength();
+  }
+
+  /** Which way the camera sets off. */
+  startDirection(): THREE.Vector3 {
+    return this.posCurve.getTangentAt(0).normalize();
   }
 
   at(t: number, out: Pose): Pose {

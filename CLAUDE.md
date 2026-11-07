@@ -3,7 +3,7 @@
 
 @AGENTS.md
 
-## Status: ACTIVE: Bali 3D walkthrough (four review rounds) merged to `main` and deployed Nov 6, 2026 at Calum's request, to show Matt: plan sheet, walls rise, step arrows tour the house, preset views and a Rooms menu, every choice changes the 3D scene live, prices on the final page, small yard with a to-scale backdrop ring. Live at https://goldriverhomes.netlify.app (Netlify site `goldriverhomes` builds from GitHub `main`).
+## Status: ACTIVE: Bali 3D walkthrough (five review rounds) merged to `main` and deployed Nov 6, 2026 at Calum's request, to show Matt: plan sheet, walls rise, step arrows tour the house with eased flights, preset views and a Rooms menu in order along the house, every choice changes the 3D scene live, prices on the final page, 20 ft of lawn on a plain light grey backdrop. Live at https://goldriverhomes.netlify.app (Netlify site `goldriverhomes` builds from GitHub `main`).
 ## Next: (1) Calum shows Matt the live demo. (2) Questions for Matt at the demo: real pricing rules, kitchen flooring vs Supreme's spec, whether the Bali offers a basement and where its stairs go. (3) Cut the 3D page weight (about 70 MB on first load; KTX2 textures, Draco meshes, lighter pine). (4) Owner data request still open: real prices, lots, option list, Supreme permission for photos and plans.
 ## Completion: Bali 3D demo live on main; remaining items wait on Matt's answers and owner data
 
@@ -92,6 +92,11 @@ docs/
     - **What changed.** White ring gone (the paper reveal stopped at 70 m); utility closet wall joined; no siding on wall ends inside the house; even light above and below windows; 4x MSAA brings back anti-aliasing (the "zig-zag" lines); the black ball was the entry light, now a frosted globe; Rooms menu with every major room, and pocket doors on the laundry, pantry and ensuite.
     - **Yard and backdrop.** No fog. The yard is an oval about 10 to 15 ft around the house (`LOT` in `site.ts`), with the services inside it, and a to-scale scenery ring at its edge. The yard sits on a soil base: a thin plinth normally, 20 ft deep (inside faces only) on the underground steps, via a global clip plane in `engine.ts`. Trees stand off the ends and back corners and hide on the underground steps.
     - **Open question for Matt.** Whether the Bali offers a basement, and where its stairs go (the basement option draws them under the hall; Calum said leave as is).
+  - **Round 5 (demo prep, pushed live).** Calum asked for every screen checked from every angle before the demo to Matt; all fixed, see the round 5 table in the build notes.
+    - **Backdrop and yard.** Sky dome and scenery ring removed for a plain light grey backdrop. Lawn is the house outline grown by 20 ft (`LOT_OUTLINE` in `site.ts`). Soil base removed; the underground steps darken the backdrop below the horizon instead.
+    - **Camera.** Every move is one eased flight (quintic, speed carried over on interrupt, starts from the dragged view, skips in-between step effects). Roof and ceilings fade for Dollhouse and Top down. Outside poses re-framed for the 20 ft yard; trim view moved to Bedroom 3's window; municipal sewer has its own view.
+    - **Order.** Rooms menu runs end to end along the house; insulation now follows the fireplace in `lib/screens.ts`.
+    - **Also.** Ceilings get a daytime glow (they rendered dark grey); garden beds hide on the underground steps.
 - **Sep 14, 2026 (handoff finished, live on main 5eda7d5):** Each stage was pushed after lint, `tsc --noEmit`, build and grep checks, under Calum's standing OK.
   - **C2b labels (c5d93f1).**
     - Lots renamed to clearly labelled examples ("Example: wooded lot near Chester Basin", "Example price") with one neutral description.

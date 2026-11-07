@@ -17,7 +17,7 @@ import { PULSE_FOR } from "./guide";
 import { buildCeiling, buildEntry, buildFeatureWall, buildFixtures, buildFloors, buildFurniture, buildKitchen, buildLabels, buildRoof, buildShell } from "./house";
 import type { LightSpot } from "./house";
 import { disposeGroup } from "./builder";
-import { FURNITURE_PROPS, buildCutaway, buildFoundation, buildLot, buildUtilities, cutawayPlanes, lotProps, terrainFor, CUTAWAY, LOT } from "./site";
+import { FURNITURE_PROPS, buildCutaway, buildFoundation, buildLot, buildUtilities, cutawayPlanes, lotProps, terrainFor, CUTAWAY } from "./site";
 import type { PropPlacement } from "./site";
 import { PLAN, gradeFor } from "./plan";
 import { FLOOR_Y, P, wx, wy, wz } from "./space";
@@ -42,10 +42,17 @@ export interface EngineOptions {
 }
 
 const GOLD = new THREE.Color("#c4882a");
-/** How deep the yard's soil base goes; everything buried is drawn within it. */
-const SOIL_DEPTH_FT = 20;
-/** Away from the underground steps, the base is cut to a thin plinth this deep (deep enough for basement window wells). */
-const PLINTH_FT = 2.5;
+/** How far below ground the underground steps show (the well, footings and pipes all fit within it). */
+const UNDERGROUND_FT = 21;
+/**
+ * Everywhere else, anything more than this far below ground is cut away, so
+ * nothing buried shows past the lawn's edge against the backdrop.
+ */
+const BURIED_FT = 0.3;
+/** The plain studio backdrop, before tone mapping (a light neutral grey on screen). */
+const BACKDROP = new THREE.Color().setRGB(1.0, 0.995, 0.98, THREE.LinearSRGBColorSpace);
+/** Below the horizon on the underground steps: a darker neutral grey (no earth colour, so it never reads as a dirt base). */
+const UNDERGROUND = new THREE.Color().setRGB(0.11, 0.11, 0.11, THREE.LinearSRGBColorSpace);
 /** Views where the wheel zooms and dragging with Shift (or the right button) pans. */
 const ZOOMABLE = new Set(["dollhouse", "top"]);
 /** Lot models drawn as baked cut-outs rather than full meshes. */
@@ -58,14 +65,33 @@ interface Flight {
   duration: number;
   pFrom: number;
   pTo: number;
+  /** Leaving a view preset, or arriving at one: that end shows no step's effects. */
+  fromPreset: boolean;
   toPreset: boolean;
+  /** Starting speed, as a share of the flight's average speed. */
+  v0: number;
+  /** How far the roof and ceilings are lifted off, at the start and the end. */
+  lidFrom: number;
+  lidTo: number;
 }
 
 const smooth = (e0: number, e1: number, x: number) => {
   const t = THREE.MathUtils.clamp((x - e0) / (e1 - e0), 0, 1);
   return t * t * (3 - 2 * t);
 };
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+/**
+ * Flight easing: starts at speed v0 (as a share of the flight's average
+ * speed, 0 from rest) and settles to a stop with no jolt at either end
+ * (a quintic curve: speed and acceleration both ease). From rest its peak
+ * speed is under twice the average, so long flights don't race through the middle.
+ */
+const glide = (t: number, v0 = 0) => {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  const t4 = t3 * t;
+  const t5 = t4 * t;
+  return v0 * (t - 6 * t3 + 8 * t4 - 3 * t5) + (10 * t3 - 15 * t4 + 6 * t5);
+};
 
 const PROP_FILES: Record<string, string> = {
   pine: "/3d/models/pine/pine_sapling_small_1k.gltf",
@@ -104,8 +130,7 @@ export class BaliEngine {
   private hemi = new THREE.HemisphereLight(0xe4ebf2, 0xb3aa9c, 0.35);
   private roomLights: THREE.PointLight[] = [];
   private spots: LightSpot[] = [];
-  private sky: THREE.Mesh | null = null;
-  private ring: THREE.Mesh | null = null;
+  private backdrop: THREE.Mesh;
   private roomEnv: THREE.Texture;
   private props = new THREE.Group();
   private lotPropGroup = new THREE.Group();
@@ -119,7 +144,6 @@ export class BaliEngine {
   // Tour
   private ids: string[];
   private stops: Pose[] = [];
-  private segments: Route[] = [];
   private p = 0;
   private pTarget = 0;
   private flight: Flight | null = null;
@@ -155,14 +179,24 @@ export class BaliEngine {
   private zoom = 1;
   private panOffset = new THREE.Vector3();
   private groundY = 0;
-  /** Deep soil under the see-through lawn, so underground pieces read against earth, not sky. */
-  private soil: THREE.Mesh;
   /**
-   * Cuts away everything below the plinth (soil, footings, the well, the
-   * septic tank) except on the underground steps, so eye-level views from
-   * outside the yard see a thin model base, not a wall of earth.
+   * Cuts away everything buried (footings, the well, the septic tank, pipes)
+   * except on the underground steps. The lawn hides them from above, but a
+   * camera beyond the lawn's edge would see them hanging under it.
    */
   private groundClip = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  /** Where the camera is shown right now, look-around included: flights start here, so nothing jumps. */
+  private shown: Pose = { pos: new THREE.Vector3(), target: new THREE.Vector3(), fov: 45 };
+  private lastCamPos = new THREE.Vector3();
+  /** Camera velocity in metres per second, so a flight that interrupts another carries on at speed. */
+  private camVel = new THREE.Vector3();
+  /** How far the roof and ceilings are lifted off (0 on, 1 off) for the Dollhouse and Top down views. */
+  private lid = 0;
+  private lidShadows = true;
+  /** The roof's trim, apart from the walls' trim so it can fade with the roof. */
+  private fascia: THREE.MeshStandardMaterial;
+  /** Everything that fades with the roof: roof, soffits, ceilings and the roof's trim. */
+  private lidMaterials: THREE.MeshStandardMaterial[];
   private impostors = new Map<string, { geometry: THREE.BufferGeometry; material: THREE.MeshBasicMaterial }>();
   private impostorTargets: THREE.WebGLRenderTarget[] = [];
 
@@ -182,8 +216,8 @@ export class BaliEngine {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.localClippingEnabled = true;
-    // Global, so it applies to every built-in material; the sky dome and the
-    // scenery ring are custom shaders and ignore it.
+    // Global, so it applies to every built-in material; the backdrop is a
+    // custom shader and ignores it.
     this.renderer.clippingPlanes = [this.groundClip];
     this.renderer.domElement.style.display = "block";
     this.renderer.domElement.style.width = "100%";
@@ -208,8 +242,15 @@ export class BaliEngine {
       mat.clippingPlanes = this.clipOff;
       mat.clipIntersection = true;
     }
+    // The roof and ceilings can fade, so they draw as see-through (fully opaque until they fade).
+    this.fascia = this.m.trimExt.clone();
+    this.fascia.onBeforeCompile = this.m.trimExt.onBeforeCompile;
+    this.fascia.customProgramCacheKey = this.m.trimExt.customProgramCacheKey;
+    this.fascia.clippingPlanes = null;
+    this.lidMaterials = [this.m.roof, this.m.soffit, this.m.ceiling, this.fascia];
+    for (const mat of this.lidMaterials) mat.transparent = true;
 
-    // Lights. The sun's direction is read from the sky image once it loads.
+    // Lights. The sun's direction is read from the outdoor light image once it loads.
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     const sc = this.sun.shadow.camera;
@@ -250,23 +291,25 @@ export class BaliEngine {
 
     INK.uInkCenter.value.set(wx(PLAN.frontDoor.x), wz(0));
     this.landKit = createLandscapeKit();
-    // The yard sits on a block of soil, like the base of an architect's model:
-    // its sides close off everything below ground (footings, pipes, the well),
-    // and its floor is what the see-through lawn shows beneath them.
-    this.soil = this.makeSoilBlock();
-    this.scene.add(this.soil);
     this.scene.add(this.props, this.lotPropGroup);
-    this.scene.background = new THREE.Color("#d9d8d4");
+    // The yard stands on a plain light grey, like a model on a studio table.
+    this.backdrop = this.makeBackdrop();
+    this.scene.add(this.backdrop);
 
     // Static parts of the house.
     this.setGroup("floors", buildFloors(this.m, this.inkLines), this.scene);
     this.setGroup("ceiling", buildCeiling(this.m), this.riserInner);
-    this.setGroup("roof", buildRoof(this.m, this.inkLines), this.riserInner);
+    const roofGroup = buildRoof(this.m, this.inkLines);
+    roofGroup.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh && mesh.material === this.m.trimExt) mesh.material = this.fascia;
+    });
+    this.setGroup("roof", roofGroup, this.riserInner);
     this.setGroup("furniture", buildFurniture(this.m, this.inkLines), this.riserInner);
     this.setGroup("details", buildDetails(this.m, this.inkLines), this.riserInner);
 
     this.buildStops();
-    this.loadSky();
+    this.loadOutdoorLight();
     this.loadFurnitureProps();
 
     if (this.highQuality) this.setupComposer();
@@ -326,6 +369,14 @@ export class BaliEngine {
       this.placeGround(gradeFor(next.foundationType));
     }
     if (changed("waterType", "sewerType") || ground) this.setGroup("utilities", buildUtilities(next, this.m, this.inkLines), this.scene);
+    if (changed("sewerType")) {
+      this.buildStops();
+      // Settled on the wastewater step: glide to the view for the new choice.
+      const i = this.ids.indexOf("sewer");
+      if (prev && !this.preset && !this.flight && !this.reducedMotion && this.p === i) {
+        this.startFlight(this.currentPose(), this.stops[i], i, i, { fromPreset: false, toPreset: false, lid: 0 });
+      }
+    }
     if (changed("insulationId", "sidingStyleId")) this.setGroup("cutaway", buildCutaway(next, this.m), this.scene);
     const terrain = terrainFor(next);
     if (terrain !== this.terrain || ground) {
@@ -346,7 +397,7 @@ export class BaliEngine {
     // Already there (or on the way): nothing to do.
     if (idx === this.reportedIndex && this.pTarget === idx && !opts.instant && !this.preset) return;
     this.reportedIndex = idx;
-    const leavingPreset = !!this.preset;
+    const fromPreset = !!this.preset;
     if (this.preset) {
       this.preset = null;
       this.opts.onPresetChange?.(null);
@@ -359,12 +410,9 @@ export class BaliEngine {
       this.invalidate(4);
       return;
     }
-    if (!leavingPreset && !this.flight && Math.abs(idx - this.p) <= 1.01) {
-      this.pTarget = idx; // a neighbouring stop: glide along the tour
-    } else {
-      this.startFlight(this.currentPose(), this.stops[idx], this.p, idx, false);
-      this.pTarget = idx;
-    }
+    // Every move, near or far, is one eased flight from wherever the camera is now.
+    this.startFlight(this.currentPose(), this.stops[idx], this.p, idx, { fromPreset, toPreset: false, lid: 0 });
+    this.pTarget = idx;
     this.invalidate(4);
   }
 
@@ -374,7 +422,11 @@ export class BaliEngine {
       const idx = Math.round(this.pTarget);
       if (this.preset) {
         this.preset = null;
-        this.startFlight(this.currentPose(), this.stops[idx], idx, idx, false);
+        this.yaw = 0;
+        this.pitch = 0;
+        if (this.reducedMotion) this.flight = null;
+        else this.startFlight(this.currentPose(), this.stops[idx], idx, idx, { fromPreset: true, toPreset: false, lid: 0 });
+        this.invalidate(4);
       }
       this.opts.onPresetChange?.(null);
       return;
@@ -382,6 +434,7 @@ export class BaliEngine {
     const preset = PRESETS.find((p) => p.id === id);
     if (!preset) return;
     const from = this.currentPose();
+    const fromPreset = !!this.preset;
     this.preset = { id, pose: clonePose(preset.pose), cutaway: !!preset.cutaway };
     this.yaw = 0;
     this.pitch = 0;
@@ -393,7 +446,7 @@ export class BaliEngine {
     if (this.reducedMotion) {
       this.flight = null;
     } else {
-      this.startFlight(from, this.preset.pose, this.p, this.p, true);
+      this.startFlight(from, this.preset.pose, this.p, this.p, { fromPreset, toPreset: true, lid: this.preset.cutaway ? 1 : 0 });
     }
     this.opts.onPresetChange?.(id);
     this.invalidate(4);
@@ -420,6 +473,7 @@ export class BaliEngine {
       mat.dispose();
     }
     disposeMaterials(this.m);
+    this.fascia.dispose();
     for (const { geometry, material } of this.impostors.values()) {
       geometry.dispose();
       material.dispose();
@@ -449,67 +503,22 @@ export class BaliEngine {
 
   private buildStops() {
     const aspect = this.camera.aspect || 1.6;
-    this.stops = this.ids.map((id) => clonePose(id === "model" ? planPose(aspect) : STOPS[id] ?? STOPS.summary));
-    this.segments = [];
-    for (let i = 0; i < this.stops.length - 1; i++) this.segments.push(makeRoute(this.stops[i], this.stops[i + 1]));
+    // A municipal sewer runs to the street at the front, a septic system to the right end and back.
+    const stopId = (id: string) => (id === "sewer" && this.state?.sewerType === "municipal" ? "sewerMunicipal" : id);
+    this.stops = this.ids.map((id) => clonePose(id === "model" ? planPose(aspect) : STOPS[stopId(id)] ?? STOPS.summary));
   }
 
-  /** The yard's soil base: an oval wall 20 ft deep with a floor, top at ground level. */
-  private makeSoilBlock(): THREE.Mesh {
-    const depth = SOIL_DEPTH_FT * 0.3048;
-    const segs = 128;
-    const pos: number[] = [];
-    const uv: number[] = [];
-    const index: number[] = [];
-    let run = 0;
-    let prev: THREE.Vector2 | null = null;
-    for (let i = 0; i <= segs; i++) {
-      const t = (i / segs) * Math.PI * 2;
-      const x = wx(LOT.cx + Math.cos(t) * LOT.a);
-      const z = wz(LOT.cy + Math.sin(t) * LOT.b);
-      const p = new THREE.Vector2(x, z);
-      if (prev) run += p.distanceTo(prev);
-      prev = p;
-      pos.push(x, 0, z, x, -depth, z);
-      uv.push(run, 0, run, -depth);
-      if (i < segs) {
-        const k = i * 2;
-        index.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
-      }
-    }
-    const sides = new THREE.BufferGeometry();
-    sides.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    sides.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-    sides.setIndex(index);
-    // The sides face outward and the floor faces down, so drawing back faces
-    // (on the underground steps) shows the box's inside: the far walls and
-    // the floor, with the near wall out of the way of the pipes.
-    const floor = new THREE.CircleGeometry(1, 64)
-      .scale(LOT.a * 0.3048, LOT.b * 0.3048, 1)
-      .rotateX(Math.PI / 2)
-      .translate(wx(LOT.cx), -depth, wz(LOT.cy));
-    floor.deleteAttribute("normal");
-    const merged = mergeGeometries([sides.toNonIndexed(), floor.toNonIndexed()], false)!;
-    merged.computeVertexNormals();
-    const mesh = new THREE.Mesh(merged, this.m.soil);
-    mesh.name = "soil-block";
-    this.m.soil.side = THREE.DoubleSide;
-    return mesh;
-  }
-
-  /** Move the ground-level pieces: the soil base and the scenery ring. */
+  /** Move the ground level (it follows the foundation). */
   private placeGround(grade: number) {
     this.groundY = wy(grade);
-    this.soil.position.y = this.groundY;
-    this.placeScenery(this.ring);
     this.shadowDirty = true;
   }
 
-  // The scenery is a ring at the edge of the yard carrying the sky image,
-  // projected as it looks from eye height in the middle of the lot, so its
-  // trees stand in proportion to the house. Above the ring is the sky; below
-  // the horizon, beyond the yard, a plain studio floor colour (no haze).
-  private async loadSky() {
+  /**
+   * The outdoor light image: lights the house and gives reflections their
+   * sky, and sets the sun's direction. It's never shown as a background.
+   */
+  private async loadOutdoorLight() {
     try {
       const tex = await new HDRLoader().loadAsync("/3d/hdri/lilienstein_2k.hdr");
       if (this.disposed) {
@@ -518,21 +527,29 @@ export class BaliEngine {
       }
       tex.mapping = THREE.EquirectangularReflectionMapping;
       this.scene.environment = tex;
-      this.sky = this.makeSkyDome(tex);
-      this.ring = this.makeScenery(tex);
-      this.scene.add(this.sky, this.ring);
-      this.scene.background = null;
       this.aimSunAtBrightestPixel(tex);
     } catch {
-      // No sky image: the flat background and fill lights still show the house.
+      // No light image: the sun, fill lights and room reflections still light the house.
     }
     this.invalidate(4);
   }
 
-  /** The sky image on a dome that follows the camera; a plain light floor below the horizon. */
-  private makeSkyDome(tex: THREE.Texture): THREE.Mesh {
+  /**
+   * The backdrop: a plain light grey on a sphere that follows the camera.
+   * Drawn as a mesh (not a background colour) so it's tone mapped the same
+   * way with or without the occlusion pass, and dims for the evening view.
+   * On the underground steps everything below the horizon turns a dark
+   * neutral, so pipes and footings under the see-through lawn read against
+   * it (over the light grey the lawn would look white).
+   */
+  private makeBackdrop(): THREE.Mesh {
     const material = new THREE.ShaderMaterial({
-      uniforms: { map: { value: tex }, floor: { value: new THREE.Color().setRGB(0.85, 0.845, 0.83, THREE.LinearSRGBColorSpace) }, intensity: { value: 1 } },
+      uniforms: {
+        color: { value: BACKDROP.clone() },
+        below: { value: UNDERGROUND.clone() },
+        underground: { value: 0 },
+        intensity: { value: 1 },
+      },
       vertexShader: `
         varying vec3 vDir;
         void main() {
@@ -540,106 +557,27 @@ export class BaliEngine {
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }`,
       fragmentShader: `
-        uniform sampler2D map;
-        uniform vec3 floor;
+        uniform vec3 color;
+        uniform vec3 below;
+        uniform float underground;
         uniform float intensity;
         varying vec3 vDir;
-        #include <common>
         void main() {
-          vec3 dir = normalize(vDir);
-          gl_FragColor = vec4(texture2D(map, equirectUv(dir)).rgb * intensity, 1.0);
+          float down = (1.0 - smoothstep(-0.08, 0.03, normalize(vDir).y)) * underground;
+          gl_FragColor = vec4(mix(color, below, down) * intensity, 1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
-          gl_FragColor.rgb = mix(floor * (0.75 + 0.25 * intensity), gl_FragColor.rgb, smoothstep(-0.02, 0.06, dir.y));
         }`,
       side: THREE.BackSide,
       depthWrite: false,
       toneMapped: true,
     });
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(1000, 48, 24), material);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 16), material);
+    dome.name = "backdrop";
     dome.renderOrder = -10;
     dome.frustumCulled = false;
     dome.userData.noAO = true;
     return dome;
-  }
-
-  /**
-   * The scenery ring: an oval wall at the yard's edge showing the sky image
-   * as seen from eye height at the centre of the lot, fading out at the top
-   * into the sky above. Seen from inside the yard it surrounds you; from
-   * further out only the far side shows, behind the house.
-   */
-  private makeScenery(tex: THREE.Texture): THREE.Mesh {
-    const segs = 160;
-    const height = 60; // feet
-    const positions: number[] = [];
-    const index: number[] = [];
-    for (let i = 0; i <= segs; i++) {
-      const t = (i / segs) * Math.PI * 2;
-      const x = wx(LOT.cx + Math.cos(t) * LOT.a * 1.005);
-      const z = wz(LOT.cy + Math.sin(t) * LOT.b * 1.005);
-      positions.push(x, -2 * 0.3048, z, x, height * 0.3048, z);
-      if (i < segs) {
-        const k = i * 2;
-        index.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-      }
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setIndex(index);
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        map: { value: tex },
-        eye: { value: new THREE.Vector3() },
-        intensity: { value: 1 },
-        top: { value: height * 0.3048 },
-      },
-      vertexShader: `
-        varying vec3 vWorld;
-        void main() {
-          vec4 w = modelMatrix * vec4(position, 1.0);
-          vWorld = w.xyz;
-          gl_Position = projectionMatrix * viewMatrix * w;
-        }`,
-      fragmentShader: `
-        uniform sampler2D map;
-        uniform vec3 eye;
-        uniform float intensity;
-        uniform float top;
-        varying vec3 vWorld;
-        #include <common>
-        void main() {
-          vec3 dir = normalize(vWorld - eye);
-          gl_FragColor = vec4(texture2D(map, equirectUv(dir)).rgb * intensity, 1.0);
-          #include <tonemapping_fragment>
-          #include <colorspace_fragment>
-          float h = (vWorld.y - eye.y) / (top - eye.y);
-          gl_FragColor.a = 1.0 - smoothstep(0.55, 0.95, h);
-        }`,
-      // The ring's faces point outward, so drawing back faces shows its inside
-      // from within the yard, and from outside only the far side (the near
-      // side, which would stand between the camera and the house, is culled).
-      side: THREE.BackSide,
-      transparent: true,
-      depthWrite: false,
-      toneMapped: true,
-    });
-    const ring = new THREE.Mesh(geometry, material);
-    ring.name = "scenery";
-    ring.frustumCulled = false;
-    ring.userData.noAO = true;
-    ring.userData.height = height * 0.3048;
-    this.placeScenery(ring);
-    return ring;
-  }
-
-  /** Stand the ring on the ground, its view taken from eye height at the yard's centre. */
-  private placeScenery(ring: THREE.Mesh | null) {
-    if (!ring) return;
-    ring.position.y = this.groundY;
-    const u = (ring.material as THREE.ShaderMaterial).uniforms;
-    (u.eye.value as THREE.Vector3).set(wx(LOT.cx), this.groundY + 1.7, wz(LOT.cy));
-    u.top.value = this.groundY + (ring.userData.height as number);
   }
 
   /** Point the sun light where the sun is in the sky image, so shadows agree with the sky. */
@@ -989,30 +927,35 @@ export class BaliEngine {
     this.invalidate(3);
   }
 
-  private startFlight(from: Pose, to: Pose, pFrom: number, pTo: number, toPreset: boolean) {
+  private startFlight(from: Pose, to: Pose, pFrom: number, pTo: number, opts: { fromPreset: boolean; toPreset: boolean; lid: number }) {
     const route = makeRoute(from, to);
-    const duration = THREE.MathUtils.clamp(1.1 + route.length * 0.022, 1.2, 3.2);
-    this.flight = { route, t: 0, duration, pFrom, pTo, toPreset };
-  }
-
-  /** Where the camera is right now, before drag offsets. */
-  private currentPose(): Pose {
-    return clonePose(this.pose);
-  }
-
-  private tourPose(p: number, out: Pose): Pose {
-    const i = Math.min(Math.floor(p), this.segments.length);
-    const f = p - i;
-    if (f < 1e-4 || i >= this.segments.length) {
-      const s = this.stops[Math.min(i, this.stops.length - 1)];
-      out.pos.copy(s.pos);
-      out.target.copy(s.target);
-      out.fov = s.fov;
-      return out;
+    // Longer for further and for a bigger turn of the head, so neither feels rushed.
+    const look = (p: Pose) => p.target.clone().sub(p.pos).normalize();
+    const turn = look(from).angleTo(look(to));
+    const duration = THREE.MathUtils.clamp(1.25 + route.length * 0.02 + turn * 0.3, 1.4, 3.4);
+    // Interrupting a flight: carry on at the speed the camera already has, as
+    // far as it was already heading this way, rather than stopping dead.
+    let v0 = 0;
+    const speed = this.camVel.length();
+    if (this.flight && speed > 0.05 && route.length > 0.05) {
+      const along = this.camVel.dot(route.startDirection()) / speed;
+      if (along > 0) v0 = Math.min(2, (speed * along * duration) / route.length);
     }
-    // Half eased, half linear: the camera still settles gently at a stop but
-    // doesn't stall at each one when the wheel carries it past several.
-    return this.segments[i].at(0.5 * f + 0.5 * easeInOut(f), out);
+    this.flight = { route, t: 0, duration, pFrom, pTo, fromPreset: opts.fromPreset, toPreset: opts.toPreset, v0, lidFrom: this.lid, lidTo: opts.lid };
+  }
+
+  /** Where the camera is shown right now, look-around included. */
+  private currentPose(): Pose {
+    return clonePose(this.shown);
+  }
+
+  /** The stop for the screen at tour position p, settled. */
+  private tourPose(p: number, out: Pose): Pose {
+    const s = this.stops[THREE.MathUtils.clamp(Math.round(p), 0, this.stops.length - 1)];
+    out.pos.copy(s.pos);
+    out.target.copy(s.target);
+    out.fov = s.fov;
+    return out;
   }
 
   private frame = () => {
@@ -1022,16 +965,17 @@ export class BaliEngine {
     let moving = false;
 
     // 1. Camera pose
-    if (this.flight) {
-      const f = this.flight;
-      f.t = Math.min(1, f.t + dt / f.duration);
-      const e = easeInOut(f.t);
-      f.route.at(e, this.pose);
-      this.p = THREE.MathUtils.lerp(f.pFrom, f.pTo, e);
+    const fl = this.flight;
+    let flightE = 0;
+    if (fl) {
+      fl.t = Math.min(1, fl.t + dt / fl.duration);
+      flightE = glide(fl.t, fl.v0);
+      fl.route.at(flightE, this.pose);
+      this.p = THREE.MathUtils.lerp(fl.pFrom, fl.pTo, flightE);
       moving = true;
-      if (f.t >= 1) {
+      if (fl.t >= 1) {
         this.flight = null;
-        if (!f.toPreset) this.p = this.pTarget = f.pTo;
+        if (!fl.toPreset) this.p = this.pTarget = fl.pTo;
       }
     } else if (this.preset) {
       // Zoom pulls the camera toward its target; pan slides both across the ground.
@@ -1040,11 +984,7 @@ export class BaliEngine {
       this.pose.pos.copy(pos).sub(target).multiplyScalar(this.zoom).add(this.pose.target);
       this.pose.fov = fov;
     } else {
-      const k = 1 - Math.exp(-dt * 5.5);
-      const before = this.p;
-      this.p += (this.pTarget - this.p) * k;
-      if (Math.abs(this.pTarget - this.p) < 1e-4) this.p = this.pTarget;
-      if (this.p !== before) moving = true;
+      this.p = this.pTarget;
       this.tourPose(this.p, this.pose);
     }
 
@@ -1072,15 +1012,36 @@ export class BaliEngine {
     }
     this.camera.position.copy(pos);
     this.camera.lookAt(target);
+    this.shown.pos.copy(pos);
+    this.shown.target.copy(target);
+    this.shown.fov = this.pose.fov;
+    if (dt > 1e-4) this.camVel.copy(pos).sub(this.lastCamPos).divideScalar(dt);
+    this.lastCamPos.copy(pos);
     if (Math.abs(this.camera.fov - this.pose.fov) > 1e-3) {
       this.camera.fov = this.pose.fov;
       this.camera.updateProjectionMatrix();
     }
+    // How far (in steps) the view is from each step's own view. During a
+    // flight only its two ends count, so a jump across several steps never
+    // flashes the effects of the steps in between (the evening light, the
+    // see-through ground). A view preset at either end shows no step's effects.
+    const idx = (id: string) => this.ids.indexOf(id);
+    const dist = (k: number) => {
+      if (k < 0) return Infinity;
+      // Not flying, or only re-framing the same step: just how far the tour is from the step.
+      if (!fl || (fl.pFrom === fl.pTo && !fl.fromPreset && !fl.toPreset)) return Math.abs(this.p - k);
+      const from = fl.fromPreset ? Infinity : Math.abs(fl.pFrom - k) + flightE;
+      const to = fl.toPreset ? Infinity : Math.abs(fl.pTo - k) + 1 - flightE;
+      return Math.min(from, to);
+    };
+    const near1 = (id: string, a: number, b: number) => 1 - smooth(a, b, dist(idx(id)));
+    const dModel = dist(idx("model"));
+
     // Keep near/far tight for depth precision (too loose and distant surfaces
     // flicker): very far on the plan sheet, a little closer outdoors than in.
     const camH = pos.y;
     const indoors = isInside(pos);
-    const planView = !this.preset && camH > 40 && Math.abs(this.p - this.ids.indexOf("model")) < 0.9;
+    const planView = !this.preset && camH > 40 && dModel < 0.9;
     const near = planView ? camH * 0.5 : indoors ? 0.08 : 0.25;
     const far = planView ? camH * 2.5 : 1200;
     if (this.camera.near !== near || this.camera.far !== far) {
@@ -1091,9 +1052,6 @@ export class BaliEngine {
 
     // 3. Story effects driven by tour progress
     const atPreset = !!this.preset && !this.flight;
-    const idx = (id: string) => this.ids.indexOf(id);
-    const near1 = (id: string, a: number, b: number) => (idx(id) < 0 ? 0 : 1 - smooth(a, b, Math.abs(this.p - idx(id))));
-    const dModel = Math.abs(this.p - idx("model"));
     const rise = this.preset ? 1 : smooth(0.08, 0.7, dModel);
     const reveal = this.preset ? 1 : smooth(0.05, 0.9, dModel);
     // The materials sweep out from the front door across the house and garden,
@@ -1113,39 +1071,54 @@ export class BaliEngine {
     for (const c of this.labels.children) ((c as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = labelAlpha;
     this.inkLines.visible = inkActive;
 
-    // Roof and ceilings drop on once the walls are up; lifted off for cutaway views.
-    const cut = !!this.preset?.cutaway;
+    // Roof and ceilings drop on once the walls are up.
     const roofIn = smooth(0.86, 1, rise);
     const roof = this.groups.roof;
     if (roof) {
-      roof.visible = roofIn > 0.001 && !cut;
+      roof.visible = roofIn > 0.001;
       roof.position.y = (1 - roofIn) * 4;
     }
-    if (this.groups.ceiling) this.groups.ceiling.visible = rise > 0.999 && !cut;
+    if (this.groups.ceiling) this.groups.ceiling.visible = rise > 0.999;
     // Porch and vestibule roofs arrive with the main roof, not ahead of it.
     for (const part of ["entry:roof", "entry:soffit"]) {
       const o = this.groups.entry?.getObjectByName(part);
-      if (o) o.visible = roofIn > 0.001 && !cut;
+      if (o) o.visible = roofIn > 0.001;
     }
+    // For the Dollhouse and Top down views the roof and ceilings fade off
+    // while the camera flies there, and fade back on as it leaves.
+    this.lid = fl ? THREE.MathUtils.lerp(fl.lidFrom, fl.lidTo, smooth(0.1, 0.75, flightE)) : this.preset?.cutaway ? 1 : 0;
+    const lidOn = 1 - this.lid;
+    for (const mat of this.lidMaterials) {
+      mat.opacity = lidOn;
+      mat.depthWrite = lidOn > 0.99;
+      mat.visible = lidOn > 0.002;
+    }
+    // While fading they cast no shadow, so the rooms are already sunlit when the roof has gone.
+    if (lidOn > 0.999 !== this.lidShadows) {
+      this.lidShadows = lidOn > 0.999;
+      this.riserInner.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (mesh.isMesh && this.lidMaterials.includes(mesh.material as THREE.MeshStandardMaterial)) mesh.castShadow = this.lidShadows;
+      });
+      this.shadowDirty = true;
+    }
+    const cut = this.lid > 0.002;
 
     // Evening light for the lighting decision
     const evening = near1("lightingPackage", 0.35, 0.9) * (atPreset ? 0 : 1);
     this.sun.intensity = 3.2 * (1 - 0.88 * evening);
     this.hemi.intensity = 0.35 * (1 - 0.7 * evening);
     this.scene.environmentIntensity = 1 - 0.85 * evening;
-    this.scene.backgroundIntensity = 1 - 0.75 * evening;
-    // Sky and scenery ring: dimmer at evening, and hidden while the plan sheet's paper covers everything.
-    const outdoorsShown = !inkActive || (this.paper.material as THREE.MeshBasicMaterial).opacity < 0.99;
-    if (this.sky) {
-      this.sky.position.copy(pos);
-      (this.sky.material as THREE.ShaderMaterial).uniforms.intensity.value = 1 - 0.75 * evening;
-      this.sky.visible = outdoorsShown;
-    }
-    if (this.ring) {
-      (this.ring.material as THREE.ShaderMaterial).uniforms.intensity.value = 1 - 0.75 * evening;
-      this.ring.visible = outdoorsShown && reveal > 0.6;
-    }
+    // The backdrop: dimmer at evening, and off while the plan sheet's paper covers everything.
+    this.backdrop.position.copy(pos);
+    const backdropU = (this.backdrop.material as THREE.ShaderMaterial).uniforms;
+    backdropU.intensity.value = 1 - 0.75 * evening;
+    this.backdrop.visible = !inkActive || (this.paper.material as THREE.MeshBasicMaterial).opacity < 0.99;
     this.m.lamp.emissiveIntensity = 0.35 + 2.8 * evening;
+    // Ceilings face away from the sun and the room's fill light, so by day a
+    // soft glow stands in for the light bouncing up off the floor and walls
+    // (without it a white ceiling reads dark grey). The room lights take over at evening.
+    this.m.ceiling.emissiveIntensity = 0.06 + 0.26 * (1 - evening);
     if (Math.abs(evening - this.lastEvening) > 1e-3) {
       this.lastEvening = evening;
       for (const slot of INDOOR_SLOTS) {
@@ -1161,7 +1134,7 @@ export class BaliEngine {
 
     // See-through ground for the foundation, water and wastewater decisions
     const xray = atPreset ? 0 : Math.max(near1("foundation", 0.3, 0.85), near1("water", 0.3, 0.85), near1("sewer", 0.3, 0.85));
-    // A smooth fade (not a dithered one, which shimmers), over a backdrop of soil.
+    // A smooth fade (not a dithered one, which shimmers).
     const seeThrough = xray > 0.01;
     for (const mat of [this.m.grass, this.m.mulch, this.m.gravel]) {
       if (mat.transparent !== seeThrough) {
@@ -1171,22 +1144,19 @@ export class BaliEngine {
       }
       mat.opacity = 1 - 0.8 * xray;
     }
-    // The soil base deepens from a thin plinth to its full depth as the ground turns see-through.
+    // What's buried shows down to its full depth as the ground turns see-through.
     // Plane: keeps y >= groundY - depth.
-    const baseFt = THREE.MathUtils.lerp(PLINTH_FT, SOIL_DEPTH_FT + 1, xray);
-    this.groundClip.constant = baseFt * 0.3048 - this.groundY;
-    // As a plinth it's solid from every side; see-through, only its inside shows.
-    const soilSide = seeThrough ? THREE.BackSide : THREE.DoubleSide;
-    if (this.m.soil.side !== soilSide) {
-      this.m.soil.side = soilSide;
-      this.m.soil.needsUpdate = true;
-    }
+    const buriedFt = THREE.MathUtils.lerp(BURIED_FT, UNDERGROUND_FT, xray);
+    backdropU.underground.value = xray;
+    this.groundClip.constant = buriedFt * 0.3048 - this.groundY;
     // Under a crawlspace house, the road-facing wall opens to show the space beneath.
     const crawlFront = this.groups.foundation?.getObjectByName("foundation-front");
     if (crawlFront) crawlFront.visible = xray < 0.5;
     // The lot's trees stay off the plan sheet, and step aside on the
     // underground steps so none stands over the well or the leach field.
     this.lotPropGroup.visible = reveal > 0.6 && xray < 0.5;
+    // The garden beds along the front step aside too, so they don't hide the space under the house.
+    if (this.groups.landscape) this.groups.landscape.visible = xray < 0.5;
     if (this.groups.utilities) this.groups.utilities.visible = xray > 0.01 || reveal > 0.99;
     if (this.groups.foundation) this.groups.foundation.visible = rise > 0.5;
 
